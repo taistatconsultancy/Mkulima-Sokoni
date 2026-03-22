@@ -251,6 +251,7 @@ API_SECRET=your_api_secret
 # Firebase
 FIREBASE_PROJECT_ID=your_project_id
 FIREBASE_SERVICE_ACCOUNT_PATH=path/to/service-account.json
+PUBLIC_APP_URL=Public link to access the app
 ```
 
 ---
