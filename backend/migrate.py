@@ -36,6 +36,10 @@ def run_migration(phase='all'):
             migrations.append('007_verification_audit.sql')
         if phase == 'all' or phase == '8':
             migrations.append('008_create_support_tickets.sql')
+        if phase == 'all' or phase == '9':
+            migrations.append('009_create_chat_tables.sql')
+        if phase == 'all' or phase == '10':
+            migrations.append('010_create_commerce_tables.sql')
         
         # Connect to database
         print("Connecting to Neon Database...")
@@ -111,6 +115,10 @@ if __name__ == '__main__':
         print("Phase 7: Verification audit & admin logs")
     elif phase == '8':
         print("Phase 8: Support tickets tables")
+    elif phase == '9':
+        print("Phase 9: Chat conversations and messages tables")
+    elif phase == '10':
+        print("Phase 10: Commerce tables (carts, orders, tenders)")
     else:
         print("All Phases")
     print("=" * 50)

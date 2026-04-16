@@ -18,6 +18,10 @@ from routes.profiles import profiles_bp
 from routes.uploads import uploads_bp
 from routes.products import products_bp
 from routes.support import support_bp
+from routes.chat import chat_bp
+from routes.cart import cart_bp
+from routes.orders import orders_bp
+from routes.tenders import tenders_bp
 from asgiref.wsgi import WsgiToAsgi
 import logging
 import os
@@ -40,6 +44,10 @@ app.register_blueprint(profiles_bp)
 app.register_blueprint(uploads_bp)
 app.register_blueprint(products_bp)
 app.register_blueprint(support_bp)
+app.register_blueprint(chat_bp)
+app.register_blueprint(cart_bp)
+app.register_blueprint(orders_bp)
+app.register_blueprint(tenders_bp)
 
 @app.route('/api/health')
 def health():

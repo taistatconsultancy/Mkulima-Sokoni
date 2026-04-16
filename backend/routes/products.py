@@ -298,11 +298,18 @@ def get_product_detail(product_id):
         try:
             from database import execute_query
             q = """
-                SELECT fp.id AS profile_id, fp.farm_name, fp.location AS seller_location,
-                       fp.county AS seller_county, fp.bio, fp.profile_image_url,
-                       fp.certification_status, fp.farming_experience_years,
-                       u.email, u.phone_number, u.first_name, u.last_name,
-                       u.firebase_uid, u.created_at AS member_since
+                SELECT fp.id AS profile_id,
+                       fp.farm_name,
+                       fp.location AS seller_location,
+                       fp.county AS seller_county,
+                       fp.bio,
+                       fp.profile_image_url,
+                       fp.certification_status,
+                       fp.farming_experience_years,
+                       u.first_name,
+                       u.last_name,
+                       u.firebase_uid,
+                       u.created_at AS member_since
                 FROM farmer_profiles fp
                 INNER JOIN users u ON fp.user_id = u.id
                 WHERE fp.id = %s::uuid
@@ -311,6 +318,9 @@ def get_product_detail(product_id):
             if result:
                 seller = dict(result)
                 seller['profile_id'] = str(seller['profile_id'])
+                # Standardized verification flag for frontend badge
+                cert = (seller.get('certification_status') or '').lower()
+                seller['is_verified'] = cert not in ('', 'pending', 'rejected')
         except Exception as e:
             logger.warning(f"Could not fetch seller info: {e}")
 

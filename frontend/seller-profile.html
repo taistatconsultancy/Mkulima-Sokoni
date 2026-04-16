@@ -45,9 +45,30 @@
     .profile-farm { font-size: .88rem; color: var(--lime); margin-top: 2px; }
     .profile-badges { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
     .role-badge { padding: 3px 11px; border-radius: 100px; font-size: .72rem; font-weight: 600; background: rgba(116,198,157,.18); color: var(--lime); }
-    .verify-badge { padding: 3px 11px; border-radius: 100px; font-size: .72rem; font-weight: 600; }
-    .verify-badge.verified { background: rgba(16,185,129,.15); color: var(--success); }
-    .verify-badge.not-verified { background: rgba(239,68,68,.12); color: var(--danger); }
+    .verify-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: .7rem;
+      font-weight: 600;
+      background: #1DA1F2;
+      color: #fff;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.6);
+    }
+    .verify-badge-icon {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #1DA1F2;
+      font-size: 10px;
+    }
 
     /* Back link */
     .back-bar { max-width: 900px; margin: 0 auto; padding: 14px 28px 0; }
@@ -285,9 +306,9 @@ function renderBanner(p, u) {
 
   var isVerified = p.certification_status && p.certification_status.toLowerCase() !== 'pending';
   var badges = '<span class="role-badge">🌾 Farmer</span>';
-  badges += isVerified
-    ? '<span class="verify-badge verified">✅ Verified</span>'
-    : '<span class="verify-badge not-verified">❌ Not Verified</span>';
+  if (isVerified) {
+    badges += '<span class="verify-badge"><span class="verify-badge-icon">✔</span>Verified</span>';
+  }
   document.getElementById('profileBadges').innerHTML = badges;
 }
 
@@ -298,27 +319,9 @@ function renderSidebar(p, u) {
   if (memberSince) rows += '<div class="info-row"><span class="info-icon">📅</span><span class="info-label">Joined</span><span class="info-value">' + memberSince + '</span></div>';
   if (p.farming_experience_years) rows += '<div class="info-row"><span class="info-icon">🌾</span><span class="info-label">Experience</span><span class="info-value">' + p.farming_experience_years + ' years</span></div>';
   if (p.farm_size_acres) rows += '<div class="info-row"><span class="info-icon">📐</span><span class="info-label">Farm Size</span><span class="info-value">' + p.farm_size_acres + ' acres</span></div>';
-  if (u.email) rows += '<div class="info-row"><span class="info-icon">📧</span><span class="info-label">Email</span><span class="info-value" style="font-size:.78rem;">' + esc(u.email) + '</span></div>';
-  if (u.phone_number) rows += '<div class="info-row"><span class="info-icon">📞</span><span class="info-label">Phone</span><span class="info-value">' + esc(u.phone_number) + '</span></div>';
   document.getElementById('infoRows').innerHTML = rows;
 
-  if (u.phone_number || u.email) {
-    var cc = document.getElementById('contactCard');
-    cc.style.display = '';
-    var phone = u.phone_number || '';
-    var clean = phone.replace(/\s/g,'');
-    var name = ((u.first_name||p.first_name||'')+ ' '+(u.last_name||p.last_name||'')).trim();
-    var msg = encodeURIComponent('Hi ' + name + ', I found your profile on Mkulima sokoni and would like to connect. ' + window.location.href);
-    var html = '';
-    if (phone) {
-      html += '<a href="https://wa.me/' + clean.replace('+','') + '?text=' + msg + '" target="_blank" class="btn btn-whatsapp" onclick="return requireAuthLink(event)" style="text-decoration:none;">💬 WhatsApp</a>';
-      html += '<a href="tel:' + clean + '" class="btn btn-primary" onclick="return requireAuthLink(event)" style="text-decoration:none;">📞 Call ' + esc(phone) + '</a>';
-    }
-    if (u.email) {
-      html += '<a href="mailto:' + esc(u.email) + '" class="btn btn-outline" onclick="return requireAuthLink(event)" style="text-decoration:none;">📧 Send Email</a>';
-    }
-    document.getElementById('contactActions').innerHTML = html;
-  }
+  // Hide direct email/phone for public view; buyers contact via in-app flows.
 }
 
 function renderAbout(p) {

@@ -77,13 +77,42 @@
     .topbar-nav-link:hover { color: #fff; background: rgba(255,255,255,.08); }
     .topbar-nav-link.active { color: var(--lime); background: rgba(116,198,157,.12); font-weight: 600; }
 
+    /* Unread indicator (red dot) */
+    .nav-unread-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 0 2px rgba(27,67,50,.65);
+      display: none;
+    }
+    .nav-unread-dot.show { display: inline-block; }
+
     /* Right side of topbar */
     .topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
     .verified-badge {
-      display: flex; align-items: center; gap: 5px;
-      background: rgba(116,198,157,.15); border: 1px solid rgba(116,198,157,.3);
-      border-radius: 100px; padding: 4px 10px;
-      font-size: .7rem; color: var(--lime); font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: .7rem;
+      font-weight: 600;
+      background: #1DA1F2;
+      color: #fff;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.4);
+    }
+    .verified-badge-icon {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #1DA1F2;
+      font-size: 10px;
     }
 
     /* User avatar + dropdown */
@@ -228,7 +257,7 @@
       background: var(--forest); border-radius: 14px;
       padding: 16px 22px; margin-bottom: 18px;
     }
-    .section-header-text {}
+    .section-header-text { display: block; }
     .section-title { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 700; color: #fff; }
     .section-subtitle { font-size: .78rem; color: rgba(255,255,255,.6); margin-top: 2px; }
 
@@ -484,6 +513,164 @@
     .empty-state h4 { font-size: 1rem; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
 
     /* ════════════════════════════════════
+       MESSAGES (Chat inbox)
+    ════════════════════════════════════ */
+    .chat-shell {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 14px;
+      min-height: 520px;
+    }
+    .chat-list {
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-list-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: var(--cream);
+    }
+    .chat-list-title { font-weight: 800; color: var(--forest); }
+    .chat-refresh-btn {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: .75rem;
+      color: var(--forest);
+    }
+    .chat-items { overflow-y: auto; }
+    .chat-item {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      transition: background .15s;
+    }
+    .chat-item:hover { background: rgba(27,67,50,.03); }
+    .chat-item.active { background: rgba(116,198,157,.12); }
+    .chat-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--leaf), var(--lime));
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .chat-item-main { flex: 1; min-width: 0; }
+    .chat-item-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .chat-item-name { font-weight: 800; font-size: .84rem; color: var(--ink); }
+    .chat-item-time { font-size: .72rem; color: var(--muted); flex-shrink: 0; }
+    .chat-item-snippet { font-size: .78rem; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-unread-pill {
+      background: #ef4444;
+      color: #fff;
+      font-weight: 800;
+      font-size: .7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+    .chat-thread {
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-thread-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: var(--cream);
+    }
+    .chat-thread-title { font-weight: 800; color: var(--forest); }
+    .chat-thread-body {
+      flex: 1;
+      padding: 12px 14px;
+      overflow-y: auto;
+      background: #f1f2f6;
+    }
+    .chat-empty { text-align: center; color: var(--muted); font-weight: 600; padding: 26px 10px; }
+    .chat-bubble {
+      max-width: 78%;
+      padding: 8px 10px;
+      border-radius: 14px;
+      font-size: .84rem;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+    .chat-bubble.me {
+      margin-left: auto;
+      background: #d1f7c4;
+      border-bottom-right-radius: 4px;
+    }
+    .chat-bubble.them {
+      margin-right: auto;
+      background: #fff;
+      border-bottom-left-radius: 4px;
+    }
+    .chat-meta { display:block; font-size:.7rem; color:#6b7280; margin-top:3px; text-align:right; }
+    .chat-thread-foot {
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+      background: #fff;
+    }
+    .chat-input-row { display:flex; gap:10px; align-items:flex-end; }
+    .chat-input-row textarea {
+      flex:1;
+      resize:none;
+      min-height: 42px;
+      max-height: 110px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      padding: 8px 10px;
+      font-size: .85rem;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--cream);
+      outline: none;
+      transition: all .2s;
+    }
+    .chat-input-row textarea:focus { background:#fff; border-color: var(--leaf); box-shadow: 0 0 0 3px rgba(64,145,108,.12); }
+    .chat-send-btn {
+      padding: 9px 14px;
+      border-radius: 999px;
+      border: none;
+      background: #25D366;
+      color: #fff;
+      font-size: .82rem;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 3px 8px rgba(37,211,102,.35);
+    }
+    .chat-send-btn:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
+    .chat-send-btn:hover { background: #1fb85a; }
+    .chat-note { font-size:.72rem; color: var(--muted); margin-top: 8px; }
+
+    /* ════════════════════════════════════
        FOOTER  — identical to index.html
     ════════════════════════════════════ */
     footer { background: var(--forest); padding: 52px 28px 0; margin-top: 40px; }
@@ -613,12 +800,13 @@ function exitSuperUser() {
     <button class="topbar-nav-link active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
     <button class="topbar-nav-link" onclick="showPage('tenders',this)">📋 Tenders</button>
     <button class="topbar-nav-link" onclick="showPage('orders',this)">🛒 Orders</button>
+    <button class="topbar-nav-link" onclick="showPage('messages',this)">💬 Messages <span class="nav-unread-dot" id="messagesNavDot"></span></button>
     <button class="topbar-nav-link" onclick="showPage('analytics',this)">📊 Analytics</button>
     <button class="topbar-nav-link" onclick="showPage('support',this)">💬 Support</button>
   </nav>
 
   <div class="topbar-right">
-    <div class="verified-badge">✅ Verified</div>
+    <div class="verified-badge"><span class="verified-badge-icon">✔</span>Verified</div>
     <div class="user-menu" id="userMenu">
       <div class="user-menu-btn" onclick="toggleDropdown()">
         <div class="user-avatar" id="userAvatar">?</div>
@@ -658,10 +846,7 @@ function exitSuperUser() {
         <h1 class="welcome-title" id="welcomeTitle">Welcome back, <em>Farmer</em>! 👋</h1>
         <p class="welcome-sub">Grow, sell, and thrive manage your produce directly with buyers.</p>
       </div>
-      <div class="welcome-badge">
-        <div class="verified-badge" style="background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.3); color:#fff;">✅ Account Verified</div>
       </div>
-    </div>
 
     <!-- Products -->
     <div class="section-header">
@@ -718,27 +903,46 @@ function exitSuperUser() {
       <div class="table-wrap">
         <table>
           <thead><tr><th>Product & Buyer</th><th>Quantity</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            <tr>
-              <td><strong>Sukuma Wiki</strong><div class="farmer-sub">Buyer: Nairobi Market Ltd</div></td>
-              <td>10 crates</td><td><strong>KSh 2,800</strong></td>
-              <td><span class="status-pill pending">Pending</span></td>
-              <td><button class="btn btn-outline btn-sm" onclick="viewOrder(1)">View</button></td>
-            </tr>
-            <tr>
-              <td><strong>Mango (Apple)</strong><div class="farmer-sub">Buyer: Export Co.</div></td>
-              <td>500 pcs</td><td><strong>KSh 19,000</strong></td>
-              <td><span class="status-pill confirmed">Confirmed</span></td>
-              <td><button class="btn btn-outline btn-sm" onclick="viewOrder(2)">View</button></td>
-            </tr>
-            <tr>
-              <td><strong>Red Onions</strong><div class="farmer-sub">Buyer: Hotel Group</div></td>
-              <td>50 nets</td><td><strong>KSh 2,750</strong></td>
-              <td><span class="status-pill completed">Completed</span></td>
-              <td><button class="btn btn-outline btn-sm" onclick="viewOrder(3)">View</button></td>
-            </tr>
-          </tbody>
+          <tbody id="sellerOrdersBody"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MESSAGES ── -->
+  <div id="messages" class="page-section">
+    <div class="section-header">
+      <div class="section-header-text">
+        <div class="section-title">Messages 💬</div>
+        <div class="section-subtitle">Reply to buyers and follow up on orders</div>
+      </div>
+    </div>
+
+    <div class="chat-shell">
+      <div class="chat-list">
+        <div class="chat-list-head">
+          <div class="chat-list-title">Inbox</div>
+          <button class="chat-refresh-btn" onclick="refreshInbox()">Refresh</button>
+        </div>
+        <div class="chat-items" id="chatInbox">
+          <div class="chat-empty">Loading conversations…</div>
+        </div>
+      </div>
+
+      <div class="chat-thread">
+        <div class="chat-thread-head">
+          <div class="chat-thread-title" id="chatThreadTitle">Select a conversation</div>
+        </div>
+        <div class="chat-thread-body" id="chatThreadBody">
+          <div class="chat-empty">Choose a buyer from the inbox to view messages.</div>
+        </div>
+        <div class="chat-thread-foot">
+          <div class="chat-input-row">
+            <textarea id="chatReplyInput" placeholder="Type your reply…" disabled></textarea>
+            <button class="chat-send-btn" id="chatReplySendBtn" onclick="sendReply()" disabled>Send</button>
+          </div>
+          <div class="chat-note">Unread messages show a red badge. Opening a thread marks it as read.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -747,19 +951,16 @@ function exitSuperUser() {
   <div id="analytics" class="page-section">
     <div class="section-header">
       <div class="section-header-text">
-        <div class="section-title">Sales Analytics 📊</div>
-        <div class="section-subtitle">Track your performance and earnings</div>
+        <div class="section-title">Analytics 📊</div>
+        <div class="section-subtitle">Upcoming feature</div>
       </div>
     </div>
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Total Earnings</div><div class="stat-value">KSh 245,600</div><div class="stat-change up">↑ 12% from last month</div></div>
-      <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-label">Active Products</div><div class="stat-value">8</div><div class="stat-change">3 new this month</div></div>
-      <div class="stat-card"><div class="stat-icon">🛒</div><div class="stat-label">Pending Orders</div><div class="stat-value">5</div><div class="stat-change">2 require action</div></div>
-      <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-label">Total Sales</div><div class="stat-value">127</div><div class="stat-change up">↑ 8% from last month</div></div>
-      <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">This Month Revenue</div><div class="stat-value">KSh 89,400</div><div class="stat-change up">↑ 15% vs last month</div></div>
-      <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-label">Active Buyers</div><div class="stat-value">24</div><div class="stat-change up">↑ 3 new buyers</div></div>
-      <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-label">Average Rating</div><div class="stat-value">4.8</div><div class="stat-change">Based on 127 reviews</div></div>
-      <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-label">Total Products Sold</div><div class="stat-value">1,245</div><div class="stat-change up">↑ 8% this month</div></div>
+    <div class="panel">
+      <div class="empty-state">
+        <div class="icon">📊</div>
+        <h4>Upcoming feature</h4>
+        <p style="font-size:.82rem;">We’re building insights for orders, tenders, and sales.</p>
+      </div>
     </div>
   </div>
 
@@ -775,48 +976,7 @@ function exitSuperUser() {
       <div class="table-wrap">
         <table>
           <thead><tr><th>Tender & Buyer</th><th>Product Required</th><th>Quantity</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            <tr>
-              <td><strong>Fresh Vegetables Supply</strong><div class="farmer-sub">Buyer: Nairobi Market Ltd</div></td>
-              <td><strong>Sukuma Wiki, Cabbage</strong><div class="farmer-sub">Grade A, Fresh</div></td>
-              <td>500 kg</td>
-              <td><strong>Dec 15, 2024</strong><div class="farmer-sub">5 days left</div></td>
-              <td><span class="status-pill open">Open</span></td>
-              <td><button class="btn btn-primary btn-sm" onclick="bidOnTender(1)">Bid</button></td>
-            </tr>
-            <tr>
-              <td><strong>Export Grade Mangoes</strong><div class="farmer-sub">Buyer: Export Co.</div></td>
-              <td><strong>Mango (Apple & Ngowe)</strong><div class="farmer-sub">Export quality, Certified</div></td>
-              <td>2,000 pcs</td>
-              <td><strong>Dec 20, 2024</strong><div class="farmer-sub">10 days left</div></td>
-              <td><span class="status-pill open">Open</span></td>
-              <td><button class="btn btn-primary btn-sm" onclick="bidOnTender(2)">Bid</button></td>
-            </tr>
-            <tr>
-              <td><strong>Bulk Maize Supply</strong><div class="farmer-sub">Buyer: Grain Millers Ltd</div></td>
-              <td><strong>Dry Maize</strong><div class="farmer-sub">13% moisture, Lab tested</div></td>
-              <td>10 tonnes</td>
-              <td><strong>Dec 18, 2024</strong><div class="farmer-sub">8 days left</div></td>
-              <td><span class="status-pill bidding">Bidding</span></td>
-              <td><button class="btn btn-outline btn-sm" onclick="viewTender(3)">View</button></td>
-            </tr>
-            <tr>
-              <td><strong>Hass Avocado Export</strong><div class="farmer-sub">Buyer: Fresh Produce Exporters</div></td>
-              <td><strong>Hass Avocado</strong><div class="farmer-sub">GlobalG.A.P certified</div></td>
-              <td>5 tonnes</td>
-              <td><strong>Dec 12, 2024</strong><div class="farmer-sub">2 days left</div></td>
-              <td><span class="status-pill open">Open</span></td>
-              <td><button class="btn btn-primary btn-sm" onclick="bidOnTender(4)">Bid</button></td>
-            </tr>
-            <tr>
-              <td><strong>French Beans Supply</strong><div class="farmer-sub">Buyer: Hotel Group</div></td>
-              <td><strong>French Beans</strong><div class="farmer-sub">Export grade, Fresh</div></td>
-              <td>300 kg</td>
-              <td><strong>Dec 25, 2024</strong><div class="farmer-sub">15 days left</div></td>
-              <td><span class="status-pill open">Open</span></td>
-              <td><button class="btn btn-primary btn-sm" onclick="bidOnTender(5)">Bid</button></td>
-            </tr>
-          </tbody>
+          <tbody id="sellerTendersBody"></tbody>
         </table>
       </div>
     </div>
@@ -1077,6 +1237,109 @@ function exitSuperUser() {
 </div>
 
 <!-- ════════════════════════════
+     EDIT PRODUCT MODAL
+════════════════════════════ -->
+<div id="editProductModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>✏️ Edit Product</h2>
+      <button class="modal-close" onclick="closeEditProductModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="editProductForm">
+        <input type="hidden" id="edit-product-id" />
+        <div class="type-toggle">
+          <button type="button" class="type-toggle-btn active" onclick="toggleEditProductType('farm')">🌾 Farm Product</button>
+          <button type="button" class="type-toggle-btn" onclick="toggleEditProductType('livestock')">🐄 Livestock</button>
+        </div>
+        <div class="form-grid">
+          <div class="form-group form-full"><label>Product Name *</label><input type="text" id="edit-product-name" placeholder="e.g., Fresh Sukuma Wiki bundle" required /></div>
+          <div class="form-group"><label>Category *</label>
+            <select id="edit-product-category" required>
+              <option value="">Select category</option>
+              <option value="Vegetables">Vegetables</option><option value="Fruits">Fruits</option><option value="Cereals">Cereals</option><option value="Legumes">Legumes</option><option value="Nuts">Nuts</option><option value="Herbs">Herbs</option><option value="Potatoes">Potatoes</option><option value="Livestock">Livestock</option><option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Location (County) *</label><input type="text" id="edit-product-location" placeholder="e.g., Kiambu" required /></div>
+        </div>
+
+        <!-- Farm-only fields -->
+        <div id="edit-farming-methods" class="conditional-field show">
+          <div class="form-grid">
+            <div class="form-group"><label>Planting Time</label><input type="text" id="edit-planting-time" placeholder="e.g., March–April" /></div>
+            <div class="form-group"><label>Fertilizer Used</label><input type="text" id="edit-fertilizer-used" placeholder="e.g., Organic compost" /></div>
+            <div class="form-group form-full"><label>Harvest Time</label><input type="text" id="edit-harvest-time" placeholder="e.g., 3–4 weeks" /></div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group"><label>Quantity *</label><input type="number" id="edit-product-quantity" placeholder="e.g., 45" required min="1" /></div>
+          <div class="form-group"><label>Measurement Unit *</label>
+            <select id="edit-measurement-metric" required>
+              <option value="">Select unit</option>
+              <option value="kg">Kilograms (kg)</option><option value="g">Grams (g)</option><option value="crate">Crate</option><option value="sack">Sack</option><option value="bag">Bag</option><option value="piece">Piece</option><option value="bunch">Bunch</option><option value="litre">Litre</option><option value="tonne">Tonne</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Single price (farm) -->
+        <div id="edit-price-single" class="conditional-field show">
+          <div class="form-group"><label>Price (KSh) *</label><input type="number" id="edit-product-price" placeholder="e.g., 280" required min="0" step="0.01" /><div class="form-hint">Price per unit</div></div>
+        </div>
+        <!-- Range price (livestock) -->
+        <div id="edit-price-range" class="conditional-field">
+          <div class="form-grid">
+            <div class="form-group"><label>Min Price (KSh) *</label><input type="number" id="edit-price-min" placeholder="Min" min="0" step="0.01" /></div>
+            <div class="form-group"><label>Max Price (KSh) *</label><input type="number" id="edit-price-max" placeholder="Max" min="0" step="0.01" /></div>
+          </div>
+        </div>
+
+        <div class="form-group"><label>Minimum Order *</label><input type="number" id="edit-min-order" placeholder="e.g., 5" required min="1" /></div>
+
+        <div class="form-group">
+          <label>Replace Product Image (optional)</label>
+          <label class="file-label" for="edit-product-image">📷 Click to upload a new image<br><span style="font-size:.72rem;">PNG, JPG up to 5MB</span></label>
+          <input type="file" id="edit-product-image" accept="image/*" style="display:none;" />
+          <img id="edit-image-preview" class="img-preview" alt="Preview" />
+          <div class="form-hint">Leave empty to keep the current image.</div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-outline" onclick="closeEditProductModal()" id="cancelEditProductBtn">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="submitEditProductForm()" id="saveEditProductBtn">
+        <span id="saveEditProductBtnText">Save Changes</span>
+        <span id="saveEditProductBtnSpinner" style="display:none;"><div class="spinner-sm"></div></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     PRODUCT STATUS MODAL
+════════════════════════════ -->
+<div id="productStatusModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>⚙️ Update Status</h2>
+      <button class="modal-close" onclick="closeStatusModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-weight:800;color:var(--forest);margin-bottom:8px;" id="statusModalTitle">Product</div>
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:14px;">Choose what you want to do with this product.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="confirmStatusChange('active')">Activate</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmStatusChange('sold_out')">Mark Sold Out</button>
+        <button class="btn btn-outline btn-sm" onclick="confirmStatusChange('draft')">Save as Draft</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-outline" onclick="closeStatusModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════
      FOOTER  — matches index.html
 ════════════════════════════ -->
 <footer>
@@ -1146,6 +1409,38 @@ function exitSuperUser() {
   const isProduction = !['localhost','127.0.0.1'].includes(window.location.hostname);
   const API_BASE_URL = isProduction ? '/api' : 'http://localhost:5000/api';
 
+  async function apiJson(url, opts = {}) {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+      ...opts,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = data?.error || data?.message || `Request failed (${res.status})`;
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  let sellerOrdersPollTimer = null;
+  let sellerTendersPollTimer = null;
+
+  function stopSellerCommercePolling() {
+    if (sellerOrdersPollTimer) clearInterval(sellerOrdersPollTimer);
+    if (sellerTendersPollTimer) clearInterval(sellerTendersPollTimer);
+    sellerOrdersPollTimer = sellerTendersPollTimer = null;
+  }
+
+  function startSellerOrdersPolling() {
+    if (sellerOrdersPollTimer) return;
+    sellerOrdersPollTimer = setInterval(() => loadSellerOrders(true), 20000);
+  }
+
+  function startSellerTendersPolling() {
+    if (sellerTendersPollTimer) return;
+    sellerTendersPollTimer = setInterval(() => loadOpenTenders(true), 20000);
+  }
+
   /* ── Navigation ── */
   function showPage(pageName, el) {
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
@@ -1161,6 +1456,206 @@ function exitSuperUser() {
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (pageName === 'profile') loadFarmerProfile();
+    stopSellerCommercePolling();
+    if (pageName === 'messages') {
+      loadInbox();
+      startInboxPolling();
+    } else {
+      stopInboxPolling();
+    }
+    if (pageName === 'orders') {
+      loadSellerOrders(false);
+      startSellerOrdersPolling();
+    }
+    if (pageName === 'tenders') {
+      loadOpenTenders(false);
+      startSellerTendersPolling();
+    }
+  }
+
+  /* ── Chat inbox ── */
+  let inboxPollTimer = null;
+  let activeConversationId = null;
+  let inboxCache = [];
+
+  function _getAuthUid() {
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || 'null');
+      return u && (u.firebase_uid || u.id) ? (u.firebase_uid || u.id) : null;
+    } catch { return null; }
+  }
+
+  function _getUserId() {
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || 'null');
+      return u && u.id ? String(u.id) : null;
+    } catch { return null; }
+  }
+
+  function startInboxPolling() {
+    stopInboxPolling();
+    inboxPollTimer = setInterval(() => {
+      loadInbox(true);
+    }, 12000);
+  }
+  function stopInboxPolling() {
+    if (inboxPollTimer) clearInterval(inboxPollTimer);
+    inboxPollTimer = null;
+  }
+
+  function refreshInbox() {
+    loadInbox(false);
+  }
+
+  async function loadInbox(silent = false) {
+    const uid = _getAuthUid();
+    const inboxEl = document.getElementById('chatInbox');
+    if (!uid) {
+      if (inboxEl) inboxEl.innerHTML = '<div class="chat-empty">Please sign in to view messages.</div>';
+      return;
+    }
+    if (!silent && inboxEl) {
+      inboxEl.innerHTML = '<div class="chat-empty">Loading conversations…</div>';
+    }
+    try {
+      const res = await fetch(`${API_BASE_URL}/chat/conversations?firebase_uid=${encodeURIComponent(uid)}&role=farmer`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load inbox');
+      inboxCache = data.conversations || [];
+      renderInbox(inboxCache);
+      updateUnreadDot(inboxCache);
+
+      // If a conversation is active, keep it refreshed too
+      if (activeConversationId) {
+        await loadThread(activeConversationId, true);
+      }
+    } catch (e) {
+      console.error(e);
+      if (inboxEl) inboxEl.innerHTML = '<div class="chat-empty">Could not load inbox.</div>';
+    }
+  }
+
+  function renderInbox(conversations) {
+    const inboxEl = document.getElementById('chatInbox');
+    if (!inboxEl) return;
+    if (!conversations.length) {
+      inboxEl.innerHTML = '<div class="chat-empty">No conversations yet. Buyers will appear here when they message you.</div>';
+      return;
+    }
+    inboxEl.innerHTML = conversations.map(c => {
+      const id = c.id;
+      const name = (c.farm_name || 'Conversation').toString();
+      const snippet = (c.last_message_body || '').toString();
+      const t = c.last_message_created_at || c.last_message_at || c.created_at;
+      const time = t ? new Date(t).toLocaleDateString('en-KE',{month:'short',day:'numeric'}) : '';
+      const unread = Number(c.unread_count || 0);
+      const initials = name.trim().charAt(0).toUpperCase() || 'C';
+      return `
+        <div class="chat-item ${activeConversationId===id?'active':''}" onclick="openConversation('${id}')">
+          <div class="chat-avatar">${initials}</div>
+          <div class="chat-item-main">
+            <div class="chat-item-top">
+              <div class="chat-item-name">${escapeHtml(name)}</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                ${unread>0 ? `<span class="chat-unread-pill">${unread}</span>` : ''}
+                <span class="chat-item-time">${escapeHtml(time)}</span>
+              </div>
+            </div>
+            <div class="chat-item-snippet">${escapeHtml(snippet || '—')}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function updateUnreadDot(conversations) {
+    const dot = document.getElementById('messagesNavDot');
+    if (!dot) return;
+    const totalUnread = (conversations || []).reduce((sum, c) => sum + Number(c.unread_count || 0), 0);
+    dot.classList.toggle('show', totalUnread > 0);
+  }
+
+  // Minimal escaping for chat list
+  function escapeHtml(s) {
+    return (s || '').toString().replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function openConversation(conversationId) {
+    activeConversationId = conversationId;
+    renderInbox(inboxCache);
+    await loadThread(conversationId, false);
+  }
+
+  async function loadThread(conversationId, silent = false) {
+    const uid = _getAuthUid();
+    const bodyEl = document.getElementById('chatThreadBody');
+    const titleEl = document.getElementById('chatThreadTitle');
+    const input = document.getElementById('chatReplyInput');
+    const sendBtn = document.getElementById('chatReplySendBtn');
+    if (!uid) return;
+    if (!silent && bodyEl) bodyEl.innerHTML = '<div class="chat-empty">Loading messages…</div>';
+    try {
+      const res = await fetch(`${API_BASE_URL}/chat/conversations/${conversationId}/messages?firebase_uid=${encodeURIComponent(uid)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load messages');
+      const msgs = data.messages || [];
+      const convo = data.conversation || {};
+      if (titleEl) titleEl.textContent = convo.farm_name ? `Chat • ${convo.farm_name}` : 'Chat';
+      renderThread(msgs);
+      if (input) input.disabled = false;
+      if (sendBtn) sendBtn.disabled = false;
+
+      // Reload inbox to refresh unread counts after auto mark-read
+      await loadInbox(true);
+    } catch (e) {
+      console.error(e);
+      if (bodyEl) bodyEl.innerHTML = '<div class="chat-empty">Could not load messages.</div>';
+    }
+  }
+
+  function renderThread(messages) {
+    const bodyEl = document.getElementById('chatThreadBody');
+    if (!bodyEl) return;
+    if (!messages.length) {
+      bodyEl.innerHTML = '<div class="chat-empty">No messages yet.</div>';
+      return;
+    }
+    const myUserId = _getUserId();
+    bodyEl.innerHTML = messages.map(m => {
+      const mine = myUserId && String(m.sender_user_id) === myUserId;
+      const cls = mine ? 'chat-bubble me' : 'chat-bubble them';
+      const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : '';
+      return `<div class="${cls}"><div>${escapeHtml(m.body || '')}</div>${time?`<span class="chat-meta">${escapeHtml(time)}</span>`:''}</div>`;
+    }).join('');
+    bodyEl.scrollTop = bodyEl.scrollHeight;
+  }
+
+  async function sendReply() {
+    if (!activeConversationId) return;
+    const uid = _getAuthUid();
+    const input = document.getElementById('chatReplyInput');
+    const btn = document.getElementById('chatReplySendBtn');
+    if (!uid || !input || !btn) return;
+    const text = (input.value || '').trim();
+    if (!text) return;
+    try {
+      btn.disabled = true;
+      const res = await fetch(`${API_BASE_URL}/chat/conversations/${activeConversationId}/messages`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ firebase_uid: uid, body: text })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.message) throw new Error(data.error || 'Failed to send');
+      input.value = '';
+      // Reload thread to include server timestamp + keep consistent
+      await loadThread(activeConversationId, true);
+    } catch (e) {
+      console.error(e);
+      alert(e.message || 'Could not send message.');
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   /* ── Dropdown ── */
@@ -1318,6 +1813,8 @@ function exitSuperUser() {
   }
 
   /* ── Load products ── */
+  let myProducts = [];
+
   async function loadProducts() {
     const grid = document.getElementById('products-grid');
     const loading = document.getElementById('products-loading');
@@ -1334,6 +1831,7 @@ function exitSuperUser() {
       const res = await fetch(`${API_BASE_URL}/products/farmer/${uid}`);
       if (!res.ok) throw new Error('Failed');
       const products = await res.json();
+      myProducts = products || [];
 
       if (loading) loading.style.display = 'none';
       grid.querySelectorAll('.product-card,[data-empty]').forEach(el => el.remove());
@@ -1354,6 +1852,10 @@ function exitSuperUser() {
       grid.querySelectorAll('.product-card,[data-empty]').forEach(el => el.remove());
       showProductsEmpty(grid, null, 'Error loading products — please refresh the page.');
     }
+  }
+
+  function getMyProductById(id) {
+    return (myProducts || []).find(p => String(p.id) === String(id)) || null;
   }
 
   function showProductsEmpty(grid, loading, msg) {
@@ -1413,7 +1915,12 @@ function exitSuperUser() {
   }
 
   async function publishProduct(id) {
-    if (!confirm('Publish this product? It will be visible to all buyers.')) return;
+    openStatusModal(id);
+    window.__statusModalPreferred = 'active';
+    return;
+  }
+
+  async function _publishProductNow(id) {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const uid = user.firebase_uid || user.id;
     try {
@@ -1433,8 +1940,13 @@ function exitSuperUser() {
   }
 
   async function updateProductStatus(id, status) {
-    const labels = { active:'activate', sold_out:'mark as sold out', draft:'save as draft' };
-    if (!confirm(`Are you sure you want to ${labels[status]||'update'} this product?`)) return;
+    // Use status modal instead of confirm()
+    openStatusModal(id);
+    window.__statusModalPreferred = status;
+    return;
+  }
+
+  async function _updateProductStatusNow(id, status) {
     const user = JSON.parse(localStorage.getItem('user')||'{}');
     const uid = user.firebase_uid || user.id;
     try {
@@ -1453,11 +1965,368 @@ function exitSuperUser() {
     } catch(err) { hideLoading(); alert('❌ '+err.message); }
   }
 
-  function editProduct(id)   { alert(`✏️ Edit Product #${id}`); }
-  function viewOrder(id)     { alert(`📋 View Order #${id}`); }
+  /* ── Edit product modal ── */
+  function openEditProductModal() {
+    document.getElementById('editProductModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeEditProductModal() {
+    document.getElementById('editProductModal').classList.remove('active');
+    document.body.style.overflow = '';
+    document.getElementById('editProductForm').reset();
+    document.getElementById('edit-image-preview').classList.remove('show');
+    setEditSaveLoading(false);
+  }
+
+  function setEditSaveLoading(on) {
+    const btn = document.getElementById('saveEditProductBtn');
+    const txt = document.getElementById('saveEditProductBtnText');
+    const spn = document.getElementById('saveEditProductBtnSpinner');
+    const can = document.getElementById('cancelEditProductBtn');
+    btn.disabled = on; can.disabled = on;
+    txt.textContent = on ? 'Saving…' : 'Save Changes';
+    spn.style.display = on ? 'inline-flex' : 'none';
+  }
+
+  function toggleEditProductType(type) {
+    const btns = document.querySelectorAll('#editProductModal .type-toggle-btn');
+    btns.forEach(b => b.classList.remove('active'));
+    if (type === 'farm') {
+      btns[0].classList.add('active');
+      document.getElementById('edit-farming-methods').classList.add('show');
+      document.getElementById('edit-price-single').classList.add('show');
+      document.getElementById('edit-price-range').classList.remove('show');
+      document.getElementById('edit-product-price').required = true;
+      document.getElementById('edit-price-min').required = false;
+      document.getElementById('edit-price-max').required = false;
+    } else {
+      btns[1].classList.add('active');
+      document.getElementById('edit-farming-methods').classList.remove('show');
+      document.getElementById('edit-price-single').classList.remove('show');
+      document.getElementById('edit-price-range').classList.add('show');
+      document.getElementById('edit-product-price').required = false;
+      document.getElementById('edit-price-min').required = true;
+      document.getElementById('edit-price-max').required = true;
+    }
+  }
+
+  function editProduct(id) {
+    const p = getMyProductById(id);
+    if (!p) { alert('Could not find product. Please refresh.'); return; }
+    document.getElementById('edit-product-id').value = p.id;
+    document.getElementById('edit-product-name').value = p.name || '';
+    document.getElementById('edit-product-category').value = p.category || '';
+    document.getElementById('edit-product-location').value = p.location || '';
+    document.getElementById('edit-product-quantity').value = p.quantity || 0;
+    document.getElementById('edit-measurement-metric').value = p.measurement_metric || '';
+    document.getElementById('edit-min-order').value = p.min_order || 1;
+    document.getElementById('edit-planting-time').value = p.planting_time || '';
+    document.getElementById('edit-fertilizer-used').value = p.fertilizer_used || '';
+    document.getElementById('edit-harvest-time').value = p.harvest_time || '';
+
+    const type = p.product_type || 'farm';
+    toggleEditProductType(type);
+    if (type === 'livestock') {
+      document.getElementById('edit-price-min').value = p.price_min != null ? p.price_min : '';
+      document.getElementById('edit-price-max').value = p.price_max != null ? p.price_max : '';
+    } else {
+      document.getElementById('edit-product-price').value = p.price != null ? p.price : '';
+    }
+
+    // Reset image input + preview
+    const img = document.getElementById('edit-product-image');
+    if (img) img.value = '';
+    const prev = document.getElementById('edit-image-preview');
+    if (prev) prev.classList.remove('show');
+
+    openEditProductModal();
+  }
+
+  document.getElementById('editProductModal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeEditProductModal();
+  });
+
+  document.getElementById('edit-product-image').addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => {
+      const p = document.getElementById('edit-image-preview');
+      p.src = ev.target.result;
+      p.classList.add('show');
+    };
+    r.readAsDataURL(f);
+  });
+
+  async function submitEditProductForm() {
+    const form = document.getElementById('editProductForm');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    const userStr = localStorage.getItem('user');
+    if (!userStr) { alert('❌ Please log in to edit products'); return; }
+    const user = JSON.parse(userStr);
+    const firebaseUid = user.firebase_uid || user.id;
+    if (!firebaseUid) { alert('❌ Authentication required'); return; }
+
+    const id = document.getElementById('edit-product-id').value;
+    if (!id) { alert('Missing product id'); return; }
+
+    setEditSaveLoading(true);
+    showLoading('Saving changes…', 'Updating product in database');
+
+    const productType = document.querySelector('#editProductModal .type-toggle-btn.active').textContent.includes('Livestock') ? 'livestock' : 'farm';
+    const imageFile = document.getElementById('edit-product-image').files[0] || null;
+
+    const doSave = async (imageBase64) => {
+      const data = {
+        firebase_uid: firebaseUid,
+        name: document.getElementById('edit-product-name').value,
+        category: document.getElementById('edit-product-category').value,
+        product_type: productType,
+        location: document.getElementById('edit-product-location').value,
+        measurement_metric: document.getElementById('edit-measurement-metric').value,
+        quantity: parseInt(document.getElementById('edit-product-quantity').value || '0', 10),
+        min_order: parseInt(document.getElementById('edit-min-order').value || '1', 10) || 1,
+      };
+      if (imageBase64) data.image = imageBase64;
+
+      if (productType === 'farm') {
+        data.price = parseFloat(document.getElementById('edit-product-price').value || '0');
+        data.planting_time = document.getElementById('edit-planting-time').value || null;
+        data.fertilizer_used = document.getElementById('edit-fertilizer-used').value || null;
+        data.harvest_time = document.getElementById('edit-harvest-time').value || null;
+        data.price_min = null;
+        data.price_max = null;
+      } else {
+        data.price_min = parseFloat(document.getElementById('edit-price-min').value || '0');
+        data.price_max = parseFloat(document.getElementById('edit-price-max').value || '0');
+        data.price = null;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/products/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to update product');
+
+      await loadProducts();
+      await loadMarketplaceListings();
+      if (window.SokoMarketplaceSync) window.SokoMarketplaceSync.invalidate();
+      hideLoading();
+      closeEditProductModal();
+      alert('✅ Product updated successfully!');
+    };
+
+    try {
+      if (imageFile) {
+        const reader = new FileReader();
+        reader.onload = async ev => {
+          try { await doSave(ev.target.result); }
+          catch (err) { hideLoading(); alert('❌ ' + (err.message || 'Failed')); }
+          finally { setEditSaveLoading(false); }
+        };
+        reader.onerror = () => { setEditSaveLoading(false); hideLoading(); alert('❌ Could not read image'); };
+        reader.readAsDataURL(imageFile);
+      } else {
+        await doSave(null);
+        setEditSaveLoading(false);
+      }
+    } catch (err) {
+      setEditSaveLoading(false);
+      hideLoading();
+      alert('❌ ' + (err.message || 'Failed'));
+    }
+  }
+
+  /* ── Status modal ── */
+  let statusModalProductId = null;
+  function openStatusModal(productId) {
+    statusModalProductId = productId;
+    const p = getMyProductById(productId);
+    const title = document.getElementById('statusModalTitle');
+    if (title) title.textContent = p ? `Product: ${p.name || 'Unnamed'}` : 'Product';
+    document.getElementById('productStatusModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeStatusModal() {
+    document.getElementById('productStatusModal').classList.remove('active');
+    document.body.style.overflow = '';
+    statusModalProductId = null;
+    window.__statusModalPreferred = null;
+  }
+  async function confirmStatusChange(status) {
+    const id = statusModalProductId;
+    closeStatusModal();
+    if (!id) return;
+    if (window.__statusModalPreferred === 'active') {
+      // If publish was clicked, use publish endpoint for draft -> active
+      const p = getMyProductById(id);
+      if (p && p.status === 'draft') {
+        await _publishProductNow(id);
+        return;
+      }
+    }
+    await _updateProductStatusNow(id, status);
+  }
+  function formatKsh(n) {
+    const x = Number(n || 0);
+    try { return 'KSh ' + x.toLocaleString(undefined, { maximumFractionDigits: 2 }); } catch { return 'KSh ' + x; }
+  }
+
+  async function loadSellerOrders(silent=false) {
+    const uid = _getAuthUid();
+    const body = document.getElementById('sellerOrdersBody');
+    if (!uid) {
+      if (body) body.innerHTML = '<tr><td colspan="5"><div class="empty-state" style="padding:26px 10px;"><div class="icon">🧾</div><h4>Please sign in</h4><p style="font-size:.82rem;">Sign in to view seller orders.</p></div></td></tr>';
+      return;
+    }
+    if (!silent && body) body.innerHTML = '<tr><td colspan="5"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading orders…</div></td></tr>';
+    try {
+      const d = await apiJson(`${API_BASE_URL}/orders/seller?firebase_uid=${encodeURIComponent(uid)}`);
+      renderSellerOrders(d?.orders || []);
+    } catch (e) {
+      if (!silent) alert(e.message || 'Failed to load orders');
+      if (body) body.innerHTML = '<tr><td colspan="5"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load orders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
+    }
+  }
+
+  function renderSellerOrders(orders) {
+    const body = document.getElementById('sellerOrdersBody');
+    if (!body) return;
+    if (!orders.length) {
+      body.innerHTML = '<tr><td colspan="5"><div class="empty-state" style="padding:26px 10px;"><div class="icon">🛒</div><h4>No orders yet</h4><p style="font-size:.82rem;">When buyers checkout, their orders will appear here.</p></div></td></tr>';
+      return;
+    }
+    body.innerHTML = orders.map(o => {
+      const status = (o.status || 'pending').toLowerCase();
+      const pillClass = status === 'completed' ? 'completed' : (status === 'confirmed' ? 'confirmed' : (status === 'cancelled' ? 'rejected' : 'pending'));
+      const itemsLabel = (o.items || []).map(it => `${it.product_name || 'Item'} × ${it.quantity || 0}`).slice(0, 2).join(', ');
+      const more = (o.items || []).length > 2 ? ` +${(o.items || []).length - 2} more` : '';
+      const actions = status === 'pending'
+        ? `<button class="btn btn-primary btn-sm" onclick="updateOrderStatus('${o.id}','confirmed')">Confirm</button>
+           <button class="btn btn-outline btn-sm" onclick="updateOrderStatus('${o.id}','cancelled')">Cancel</button>`
+        : (status === 'confirmed'
+          ? `<button class="btn btn-primary btn-sm" onclick="updateOrderStatus('${o.id}','completed')">Complete</button>
+             <button class="btn btn-outline btn-sm" onclick="updateOrderStatus('${o.id}','cancelled')">Cancel</button>`
+          : '');
+      return `
+        <tr>
+          <td><strong>#${String(o.id).slice(0, 8)}</strong><div class="farmer-sub">Buyer: ${(o.buyer_email || o.buyer_phone || 'Buyer').toString().replace(/</g,'&lt;')}</div></td>
+          <td>${(itemsLabel + more).replace(/</g,'&lt;') || '—'}</td>
+          <td><strong>${formatKsh(o.total_amount || 0)}</strong></td>
+          <td><span class="status-pill ${pillClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></td>
+          <td style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="viewOrder('${o.id}')">View</button>
+            <button class="btn btn-primary btn-sm" onclick="openMessagesFromOrder()">Chat</button>
+            ${actions}
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  async function updateOrderStatus(orderId, status) {
+    const uid = _getAuthUid();
+    if (!uid) return;
+    try {
+      await apiJson(`${API_BASE_URL}/orders/${encodeURIComponent(orderId)}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ firebase_uid: uid, status }),
+      });
+      loadSellerOrders(true);
+    } catch (e) {
+      alert(e.message || 'Failed to update order');
+    }
+  }
+
+  function viewOrder(orderId) {
+    alert(`Order #${String(orderId).slice(0, 8)}\nOpen Messages to chat with the buyer.\n(Status updates are available in the Actions column.)`);
+  }
+  function openMessagesFromOrder() {
+    showPage('messages');
+    // Best-effort: load inbox and let farmer pick the right buyer thread.
+    // (When real orders are wired, this can open a specific conversation directly.)
+    setTimeout(() => { try { loadInbox(false); } catch(e){} }, 50);
+  }
   
-  function bidOnTender(id)   { alert(`💰 Bid form for Tender #${id}`); }
-  function viewTender(id)    { alert(`👁 Tender #${id} details`); }
+  async function loadOpenTenders(silent=false) {
+    const uid = _getAuthUid();
+    const body = document.getElementById('sellerTendersBody');
+    if (!uid) {
+      if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">📋</div><h4>Please sign in</h4><p style="font-size:.82rem;">Sign in to view available tenders.</p></div></td></tr>';
+      return;
+    }
+    if (!silent && body) body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading tenders…</div></td></tr>';
+    try {
+      const d = await apiJson(`${API_BASE_URL}/tenders?firebase_uid=${encodeURIComponent(uid)}`);
+      renderOpenTenders(d?.tenders || []);
+    } catch (e) {
+      if (!silent) alert(e.message || 'Failed to load tenders');
+      if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load tenders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
+    }
+  }
+
+  function renderOpenTenders(tenders) {
+    const body = document.getElementById('sellerTendersBody');
+    if (!body) return;
+    if (!tenders.length) {
+      body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">📋</div><h4>No open tenders</h4><p style="font-size:.82rem;">Check back later for new buyer demand.</p></div></td></tr>';
+      return;
+    }
+    body.innerHTML = tenders.map(t => {
+      const status = (t.status || 'open').toLowerCase();
+      const pill = status === 'open' ? 'open' : 'completed';
+      const qty = (t.quantity ? `${t.quantity} ${t.unit||''}` : (t.unit||''));
+      const deadline = t.deadline ? String(t.deadline).slice(0, 10) : '—';
+      const myBid = t.my_bid_price ? `${formatKsh(t.my_bid_price)} (${(t.my_bid_status||'submitted')})` : '—';
+      return `
+        <tr>
+          <td><strong>${(t.title||'').replace(/</g,'&lt;')}</strong><div class="farmer-sub">${(t.location||'').replace(/</g,'&lt;')}</div></td>
+          <td><strong>${(t.product_category||'—').replace(/</g,'&lt;')}</strong><div class="farmer-sub">My bid: ${myBid}</div></td>
+          <td>${qty.replace(/</g,'&lt;') || '—'}</td>
+          <td><strong>${deadline}</strong></td>
+          <td><span class="status-pill ${pill}">${status.charAt(0).toUpperCase()+status.slice(1)}</span></td>
+          <td style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="bidOnTender('${t.id}')">${t.my_bid_price ? 'Update bid' : 'Bid'}</button>
+            <button class="btn btn-outline btn-sm" onclick="viewTender('${t.id}')">View</button>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  async function bidOnTender(tenderId) {
+    const uid = _getAuthUid();
+    if (!uid) return;
+    const priceRaw = (prompt('Your bid price (KSh)') || '').trim();
+    if (!priceRaw) return;
+    const price = Number(priceRaw);
+    if (!Number.isFinite(price) || price <= 0) return alert('Please enter a valid price.');
+    const message = (prompt('Message to buyer (optional)') || '').trim();
+    try {
+      await apiJson(`${API_BASE_URL}/tenders/${encodeURIComponent(tenderId)}/bids`, {
+        method: 'POST',
+        body: JSON.stringify({ firebase_uid: uid, price, message }),
+      });
+      loadOpenTenders(true);
+    } catch (e) {
+      alert(e.message || 'Failed to submit bid');
+    }
+  }
+
+  async function viewTender(tenderId) {
+    const uid = _getAuthUid();
+    if (!uid) return;
+    try {
+      const d = await apiJson(`${API_BASE_URL}/tenders/${encodeURIComponent(tenderId)}/bids?firebase_uid=${encodeURIComponent(uid)}`);
+      const bids = d?.bids || [];
+      if (!bids.length) return alert('No bid submitted yet.');
+      const b = bids[0];
+      alert(`Your bid:\n${formatKsh(b.price)}\nStatus: ${(b.status||'submitted')}\nMessage: ${(b.message||'').toString()}`);
+    } catch (e) {
+      alert(e.message || 'Failed to load tender details');
+    }
+  }
 
   /* ── User profile ── */
   async function loadUserProfile() {

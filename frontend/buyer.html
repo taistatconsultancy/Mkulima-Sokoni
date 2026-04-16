@@ -81,10 +81,28 @@
     /* Right side */
     .topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
     .verified-badge {
-      display: flex; align-items: center; gap: 5px;
-      background: rgba(116,198,157,.15); border: 1px solid rgba(116,198,157,.3);
-      border-radius: 100px; padding: 4px 10px;
-      font-size: .7rem; color: var(--lime); font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: .7rem;
+      font-weight: 600;
+      background: #1DA1F2;
+      color: #fff;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.4);
+    }
+    .verified-badge-icon {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #1DA1F2;
+      font-size: 10px;
     }
 
     /* User menu */
@@ -497,13 +515,16 @@ function exitSuperUser() {
   <nav class="topbar-nav">
     <button class="topbar-nav-link active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
     <button class="topbar-nav-link" onclick="showPage('tenders',this)">📋 Tenders</button>
-    <button class="topbar-nav-link" onclick="showPage('cart',this)">🛒 Cart</button>
+    <button class="topbar-nav-link" onclick="showPage('cart',this)">
+      🛒 Cart <span id="cartNavBadge" style="display:none;margin-left:6px;min-width:18px;height:18px;padding:0 6px;border-radius:999px;background:var(--lime);color:#16302b;font-weight:800;font-size:.72rem;align-items:center;justify-content:center;"></span>
+    </button>
+    <button class="topbar-nav-link" onclick="showPage('orders',this)">🧾 Orders</button>
     <button class="topbar-nav-link" onclick="showPage('analytics',this)">📊 Analytics</button>
     <button class="topbar-nav-link" onclick="showPage('support',this)">💬 Support</button>
   </nav>
 
   <div class="topbar-right">
-    <div class="verified-badge">✅ Verified</div>
+    <div class="verified-badge"><span class="verified-badge-icon">✔</span>Verified</div>
     <div class="user-menu" id="userMenu">
       <div class="user-menu-btn" onclick="toggleDropdown()">
         <div class="user-avatar" id="userAvatar">?</div>
@@ -542,9 +563,16 @@ function exitSuperUser() {
       <div class="welcome-text">
         <h1 class="welcome-title" id="welcomeTitle">Welcome back, <em>Buyer</em>! 🎯</h1>
         <p class="welcome-sub">Discover fresh produce directly from Kenyan farmers. Quality guaranteed, prices transparent.</p>
-      </div>
-      <div class="welcome-badge">
-        <div class="verified-badge" style="background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.3); color:#fff;">✅ Account Verified</div>
+      </div>  
+    </div>
+
+    <div class="panel" style="margin:14px 0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div>
+          <div style="font-weight:800;color:var(--forest);">Cart</div>
+          <div class="td-sub">You have <strong><span id="dashboardCartCount">0</span></strong> items ready to checkout.</div>
+        </div>
+        <button class="btn btn-primary" onclick="showPage('cart')">Open Cart →</button>
       </div>
     </div>
 
@@ -603,22 +631,7 @@ function exitSuperUser() {
           <thead>
             <tr><th>Tender Title</th><th>Product Required</th><th>Quantity</th><th>Deadline</th><th>Bids</th><th>Status</th><th>Actions</th></tr>
           </thead>
-          <tbody>
-            <tr>
-              <td><strong>Fresh Vegetables Supply</strong><div class="td-sub">Posted 2 days ago</div></td>
-              <td>Sukuma Wiki, Cabbage</td><td>500 kg</td><td>Dec 15, 2024</td>
-              <td><strong>5 bids</strong></td>
-              <td><span class="status-pill open">Open</span></td>
-              <td><button class="btn btn-outline btn-sm" onclick="viewTender(1)">View</button></td>
-            </tr>
-            <tr>
-              <td><strong>Export Grade Mangoes</strong><div class="td-sub">Posted 5 days ago</div></td>
-              <td>Mango (Apple & Ngowe)</td><td>2,000 pcs</td><td>Dec 20, 2024</td>
-              <td><strong>8 bids</strong></td>
-              <td><span class="status-pill bidding">Bidding</span></td>
-              <td><button class="btn btn-outline btn-sm" onclick="viewTender(2)">View</button></td>
-            </tr>
-          </tbody>
+          <tbody id="buyerTendersBody"></tbody>
         </table>
       </div>
     </div>
@@ -638,32 +651,35 @@ function exitSuperUser() {
           <thead>
             <tr><th>Product</th><th>Farmer</th><th>Quantity</th><th>Unit Price</th><th>Total</th><th>Actions</th></tr>
           </thead>
-          <tbody>
-            <tr>
-              <td><strong>Sukuma Wiki</strong><div class="td-sub">10 kg crate</div></td>
-              <td>Wanjiku K.</td>
-              <td><input type="number" value="10" min="1" style="width:60px; padding:5px 8px; border:1.5px solid var(--border); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:.82rem;" /></td>
-              <td>KSh 280</td>
-              <td><strong>KSh 2,800</strong></td>
-              <td><button class="btn btn-danger btn-sm" onclick="removeFromCart(1)">Remove</button></td>
-            </tr>
-            <tr>
-              <td><strong>Mango (Apple)</strong><div class="td-sub">per piece</div></td>
-              <td>Mutiso Family Farm</td>
-              <td><input type="number" value="500" min="1" style="width:60px; padding:5px 8px; border:1.5px solid var(--border); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:.82rem;" /></td>
-              <td>KSh 38</td>
-              <td><strong>KSh 19,000</strong></td>
-              <td><button class="btn btn-danger btn-sm" onclick="removeFromCart(2)">Remove</button></td>
-            </tr>
-          </tbody>
+          <tbody id="buyerCartBody"></tbody>
         </table>
       </div>
       <div class="cart-totals">
         <div class="cart-total-row">
           <span>Order Total</span>
-          <span class="cart-total-val">KSh 21,800</span>
+          <span class="cart-total-val" id="cartTotalVal">KSh 0</span>
         </div>
         <button class="btn btn-primary" style="width:100%; padding:12px; font-size:.9rem; border-radius:12px;" onclick="checkout()">Proceed to Checkout →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ORDERS ── -->
+  <div id="orders" class="page-section">
+    <div class="section-header">
+      <div>
+        <div class="section-title">My Orders 🧾</div>
+        <div class="section-subtitle">Track confirmations, delivery progress, and completed purchases</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Order</th><th>Seller</th><th>Items</th><th>Total</th><th>Status</th><th>Last update</th></tr>
+          </thead>
+          <tbody id="buyerOrdersBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -672,63 +688,15 @@ function exitSuperUser() {
   <div id="analytics" class="page-section">
     <div class="section-header">
       <div>
-        <div class="section-title">Buyer Analytics 📊</div>
-        <div class="section-subtitle">Track your spending and order activity</div>
-      </div>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-label">Active Orders</div><div class="stat-value">8</div><div class="stat-change">3 pending confirmation</div></div>
-      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Total Spent</div><div class="stat-value">KSh 156K</div><div class="stat-change up">↑ This month</div></div>
-      <div class="stat-card"><div class="stat-icon">⭐</div><div class="stat-label">Saved Products</div><div class="stat-value">12</div><div class="stat-change">In your shortlist</div></div>
-      <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-label">Farmers Connected</div><div class="stat-value">24</div><div class="stat-change up">↑ Active suppliers</div></div>
-    </div>
-
-    <div class="section-header">
-      <div>
-        <div class="section-title">Purchase History 📦</div>
-        <div class="section-subtitle">All your completed orders</div>
+        <div class="section-title">Analytics 📊</div>
+        <div class="section-subtitle">Upcoming feature</div>
       </div>
     </div>
     <div class="panel">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Product & Farmer</th><th>Quantity</th><th>Amount</th><th>Date</th><th>Status</th><th>Actions</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Red Onions</strong><div class="td-sub">Farmer: Njeri Produce</div></td>
-              <td>50 nets</td><td><strong>KSh 2,750</strong></td><td>Nov 28, 2024</td>
-              <td><span class="status-pill completed">Completed</span></td>
-              <td><button class="btn btn-outline btn-sm" onclick="reorderProduct(1)">Reorder</button></td>
-            </tr>
-            <tr>
-              <td><strong>Mango (Apple)</strong><div class="td-sub">Farmer: Mutiso Family Farm</div></td>
-              <td>500 pcs</td><td><strong>KSh 19,000</strong></td><td>Nov 25, 2024</td>
-              <td><span class="status-pill completed">Completed</span></td>
-              <td><button class="btn btn-outline btn-sm" onclick="reorderProduct(2)">Reorder</button></td>
-            </tr>
-            <tr>
-              <td><strong>Sukuma Wiki</strong><div class="td-sub">Farmer: Wanjiku K.</div></td>
-              <td>10 crates</td><td><strong>KSh 2,800</strong></td><td>Nov 20, 2024</td>
-              <td><span class="status-pill completed">Completed</span></td>
-              <td><button class="btn btn-outline btn-sm" onclick="reorderProduct(3)">Reorder</button></td>
-            </tr>
-            <tr>
-              <td><strong>Hass Avocado</strong><div class="td-sub">Farmer: Kamau Orchards</div></td>
-              <td>1 tonne</td><td><strong>KSh 95,000</strong></td><td>Nov 15, 2024</td>
-              <td><span class="status-pill completed">Completed</span></td>
-              <td><button class="btn btn-outline btn-sm" onclick="reorderProduct(4)">Reorder</button></td>
-            </tr>
-            <tr>
-              <td><strong>Dry Maize</strong><div class="td-sub">Coop: Uasin Gishu Maize Group</div></td>
-              <td>100 bags</td><td><strong>KSh 450,000</strong></td><td>Nov 10, 2024</td>
-              <td><span class="status-pill completed">Completed</span></td>
-              <td><button class="btn btn-outline btn-sm" onclick="reorderProduct(5)">Reorder</button></td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="empty-state">
+        <div class="icon">📊</div>
+        <h4>Upcoming feature</h4>
+        <p style="font-size:.82rem;">We’re building insights for orders, tenders, and spending.</p>
       </div>
     </div>
   </div>
@@ -995,8 +963,56 @@ function exitSuperUser() {
   const isProduction = !['localhost','127.0.0.1'].includes(window.location.hostname);
   const API_BASE_URL = isProduction ? '/api' : 'http://localhost:5000/api';
 
+  /* ── Auth helpers ── */
+  function getFirebaseUid() {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      return user.firebase_uid || user.id || '';
+    } catch { return ''; }
+  }
+
+  async function apiJson(url, opts = {}) {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+      ...opts,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = data?.error || data?.message || `Request failed (${res.status})`;
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  /* ── Polling (commerce) ── */
+  let cartPollTimer = null;
+  let tendersPollTimer = null;
+  let ordersPollTimer = null;
+
+  function stopCommercePolling() {
+    if (cartPollTimer) clearInterval(cartPollTimer);
+    if (tendersPollTimer) clearInterval(tendersPollTimer);
+    if (ordersPollTimer) clearInterval(ordersPollTimer);
+    cartPollTimer = tendersPollTimer = ordersPollTimer = null;
+  }
+
+  function startCartPolling() {
+    if (cartPollTimer) return;
+    cartPollTimer = setInterval(() => loadBuyerCart(true), 12000);
+  }
+  function startTendersPolling() {
+    if (tendersPollTimer) return;
+    tendersPollTimer = setInterval(() => loadBuyerTenders(true), 20000);
+  }
+  function startOrdersPolling() {
+    if (ordersPollTimer) return;
+    ordersPollTimer = setInterval(() => loadBuyerOrders(true), 25000);
+  }
+
   /* ── Navigation ── */
   function showPage(pageName, el) {
+    // Support deep links like buyer.html#cart
+    if (!pageName && location.hash) pageName = location.hash.replace('#', '');
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     const t = document.getElementById(pageName);
     if (t) t.classList.add('active');
@@ -1009,8 +1025,25 @@ function exitSuperUser() {
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (pageName === 'profile') loadBuyerProfile();
-    if (pageName === 'dashboard') { loadProducts(); startProductPolling(); }
-    else stopProductPolling();
+    stopProductPolling();
+    stopCommercePolling();
+    if (pageName === 'dashboard') {
+      loadProducts();
+      startProductPolling();
+      refreshCartBadge();
+    }
+    if (pageName === 'cart') {
+      loadBuyerCart();
+      startCartPolling();
+    }
+    if (pageName === 'tenders') {
+      loadBuyerTenders();
+      startTendersPolling();
+    }
+    if (pageName === 'orders') {
+      loadBuyerOrders();
+      startOrdersPolling();
+    }
   }
 
   /* ── Dropdown ── */
@@ -1172,7 +1205,10 @@ function exitSuperUser() {
       </div>
       <div class="product-footer">
         <div class="star-rating">⭐⭐⭐⭐☆ <span style="color:var(--muted);font-size:.7rem;">(${p.orders||0} orders)</span></div>
-        <button class="btn btn-primary btn-sm" onclick="viewProductDetails('${p.id}')">View →</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-outline btn-sm" onclick="addToCart('${p.id}', 1)">Add</button>
+          <button class="btn btn-primary btn-sm" onclick="viewProductDetails('${p.id}')">View →</button>
+        </div>
       </div>`;
     return card;
   }
@@ -1291,11 +1327,305 @@ function exitSuperUser() {
   }
 
   /* ── Cart / Tender / Order actions ── */
-  function removeFromCart(id)   { if(confirm('Remove this item from cart?')) alert('🗑️ Item removed.'); }
-  function checkout()           { alert('🛒 Redirecting to checkout…'); }
-  function createTender()       { alert('📋 Tender creation form will open…'); }
-  function viewTender(id)       { alert(`👁 Tender #${id} details and bids.`); }
-  function reorderProduct(id)   { alert(`🛒 Product #${id} added to cart for reorder!`); }
+  function formatKsh(n) {
+    const x = Number(n || 0);
+    try { return 'KSh ' + x.toLocaleString(undefined, { maximumFractionDigits: 2 }); } catch { return 'KSh ' + x; }
+  }
+
+  async function refreshCartBadge() {
+    const uid = getFirebaseUid();
+    if (!uid) return;
+    try {
+      const d = await apiJson(`${API_BASE_URL}/cart?firebase_uid=${encodeURIComponent(uid)}`);
+      const count = Number(d?.summary?.item_count || 0);
+      const badge = document.getElementById('cartNavBadge');
+      const dash = document.getElementById('dashboardCartCount');
+      if (dash) dash.textContent = String(count);
+      if (badge) {
+        badge.textContent = String(count);
+        badge.style.display = count > 0 ? 'inline-flex' : 'none';
+      }
+    } catch {}
+  }
+
+  async function addToCart(productId, quantity=1) {
+    const uid = getFirebaseUid();
+    if (!uid) {
+      alert('Please sign in to add items to cart.');
+      location.href = 'auth.html';
+      return;
+    }
+    const q = Math.max(1, parseInt(quantity, 10) || 1);
+    try {
+      const d = await apiJson(`${API_BASE_URL}/cart/items`, {
+        method: 'POST',
+        body: JSON.stringify({ firebase_uid: uid, product_id: productId, quantity: q }),
+      });
+      // Update badge + dashboard count immediately
+      renderBuyerCart(d);
+      // Lightweight confirmation (avoid noisy alerts on every click)
+      try {
+        const badge = document.getElementById('cartNavBadge');
+        if (badge) {
+          badge.style.transform = 'scale(1.15)';
+          setTimeout(() => { badge.style.transform = ''; }, 160);
+        }
+      } catch {}
+    } catch (e) {
+      alert(e.message || 'Failed to add to cart');
+    }
+  }
+
+  async function loadBuyerCart(silent=false) {
+    const uid = getFirebaseUid();
+    if (!uid) return;
+    try {
+      const d = await apiJson(`${API_BASE_URL}/cart?firebase_uid=${encodeURIComponent(uid)}`);
+      renderBuyerCart(d);
+    } catch (e) {
+      if (!silent) alert(e.message || 'Failed to load cart');
+    }
+  }
+
+  function renderBuyerCart(d) {
+    const body = document.getElementById('buyerCartBody');
+    const totalEl = document.getElementById('cartTotalVal');
+    const items = d?.items || [];
+
+    const count = Number(d?.summary?.item_count || 0);
+    const badge = document.getElementById('cartNavBadge');
+    const dash = document.getElementById('dashboardCartCount');
+    if (dash) dash.textContent = String(count);
+    if (badge) {
+      badge.textContent = String(count);
+      badge.style.display = count > 0 ? 'inline-flex' : 'none';
+    }
+
+    if (!body) return;
+    if (!items.length) {
+      body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">🛒</div><h4>Your cart is empty</h4><p style="font-size:.82rem;">Browse the marketplace and add items to your cart.</p></div></td></tr>';
+      if (totalEl) totalEl.textContent = 'KSh 0';
+      return;
+    }
+
+    body.innerHTML = items.map(it => {
+      const unit = Number(it.unit_price_snapshot || it.price || it.price_min || 0);
+      const line = Number(it.line_total || (Number(it.quantity||0) * unit));
+      const seller = (it.seller_name || 'Seller');
+      return `
+        <tr>
+          <td><strong>${(it.product_name||'').replace(/</g,'&lt;')}</strong><div class="td-sub">${(it.measurement_metric||'').replace(/</g,'&lt;')}</div></td>
+          <td>${seller.replace(/</g,'&lt;')}</td>
+          <td>
+            <input type="number" value="${Number(it.quantity||1)}" min="1"
+              onchange="updateCartQty('${it.id}', this.value)"
+              style="width:76px; padding:5px 8px; border:1.5px solid var(--border); border-radius:8px; font-family:'DM Sans',sans-serif; font-size:.82rem;" />
+          </td>
+          <td>${formatKsh(unit)}</td>
+          <td><strong>${formatKsh(line)}</strong></td>
+          <td><button class="btn btn-danger btn-sm" onclick="removeFromCart('${it.id}')">Remove</button></td>
+        </tr>`;
+    }).join('');
+
+    if (totalEl) totalEl.textContent = formatKsh(d?.summary?.total_amount || 0);
+  }
+
+  async function updateCartQty(itemId, qty) {
+    const uid = getFirebaseUid();
+    if (!uid) return;
+    const q = Math.max(1, parseInt(qty, 10) || 1);
+    try {
+      const d = await apiJson(`${API_BASE_URL}/cart/items/${encodeURIComponent(itemId)}`, {
+        method: 'PUT',
+        body: JSON.stringify({ firebase_uid: uid, quantity: q }),
+      });
+      renderBuyerCart(d);
+    } catch (e) {
+      alert(e.message || 'Failed to update quantity');
+      loadBuyerCart(true);
+    }
+  }
+
+  async function removeFromCart(itemId) {
+    const uid = getFirebaseUid();
+    if (!uid) return;
+    if (!confirm('Remove this item from cart?')) return;
+    try {
+      const d = await apiJson(`${API_BASE_URL}/cart/items/${encodeURIComponent(itemId)}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ firebase_uid: uid }),
+      });
+      renderBuyerCart(d);
+    } catch (e) {
+      alert(e.message || 'Failed to remove item');
+    }
+  }
+
+  async function checkout() {
+    const uid = getFirebaseUid();
+    if (!uid) return;
+    try {
+      showLoading('Checking out…', 'Creating your order');
+      const d = await apiJson(`${API_BASE_URL}/cart/checkout`, {
+        method: 'POST',
+        body: JSON.stringify({ firebase_uid: uid }),
+      });
+      hideLoading();
+      alert(`✅ Order created (${(d.orders||[]).length} seller order${(d.orders||[]).length===1?'':'s'}).`);
+      refreshCartBadge();
+      loadBuyerOrders(true);
+      showPage('orders');
+    } catch (e) {
+      hideLoading();
+      alert(e.message || 'Checkout failed');
+    }
+  }
+
+  async function loadBuyerTenders(silent=false) {
+    const uid = getFirebaseUid();
+    if (!uid) return;
+    try {
+      const d = await apiJson(`${API_BASE_URL}/tenders?firebase_uid=${encodeURIComponent(uid)}`);
+      renderBuyerTenders(d?.tenders || []);
+    } catch (e) {
+      if (!silent) alert(e.message || 'Failed to load tenders');
+    }
+  }
+
+  function renderBuyerTenders(tenders) {
+    const body = document.getElementById('buyerTendersBody');
+    if (!body) return;
+    if (!tenders.length) {
+      body.innerHTML = '<tr><td colspan="7"><div class="empty-state" style="padding:26px 10px;"><div class="icon">📋</div><h4>No tenders yet</h4><p style="font-size:.82rem;">Create a tender to let farmers bid on your demand.</p></div></td></tr>';
+      return;
+    }
+    body.innerHTML = tenders.map(t => {
+      const status = (t.status || 'open').toLowerCase();
+      const pill = status === 'closed' ? 'completed' : 'open';
+      const bidCount = Number(t.bid_count || 0);
+      const qty = (t.quantity ? `${t.quantity} ${t.unit||''}` : (t.unit||''));
+      const deadline = t.deadline ? String(t.deadline).slice(0, 10) : '—';
+      const closeBtn = status === 'open'
+        ? `<button class="btn btn-outline btn-sm" onclick="closeTender('${t.id}')">Close</button>`
+        : '';
+      return `
+        <tr>
+          <td><strong>${(t.title||'').replace(/</g,'&lt;')}</strong><div class="td-sub">${t.created_at ? String(t.created_at).slice(0,10) : ''}</div></td>
+          <td>${(t.product_category||'—').replace(/</g,'&lt;')}</td>
+          <td>${qty.replace(/</g,'&lt;') || '—'}</td>
+          <td>${deadline}</td>
+          <td><strong>${bidCount} bid${bidCount===1?'':'s'}</strong></td>
+          <td><span class="status-pill ${pill}">${status.charAt(0).toUpperCase()+status.slice(1)}</span></td>
+          <td style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="viewTender('${t.id}')">View</button>
+            ${closeBtn}
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  async function createTender() {
+    const uid = getFirebaseUid();
+    if (!uid) return;
+    const title = (prompt('Tender title (e.g., Fresh Vegetables Supply)') || '').trim();
+    if (!title) return;
+    const product_category = (prompt('Product required (e.g., Sukuma Wiki)') || '').trim() || null;
+    const quantityRaw = (prompt('Quantity (number, optional)') || '').trim();
+    const quantity = quantityRaw ? Number(quantityRaw) : null;
+    const unit = (prompt('Unit (e.g., kg, pcs, bags)') || '').trim() || null;
+    const location = (prompt('Delivery location (optional)') || '').trim() || null;
+    const deadline = (prompt('Deadline (YYYY-MM-DD, optional)') || '').trim();
+    const notes = (prompt('Notes (optional)') || '').trim() || null;
+    try {
+      showLoading('Creating tender…', 'Posting your demand to sellers');
+      await apiJson(`${API_BASE_URL}/tenders`, {
+        method: 'POST',
+        body: JSON.stringify({
+          firebase_uid: uid,
+          title,
+          product_category,
+          quantity: Number.isFinite(quantity) ? quantity : null,
+          unit,
+          location,
+          deadline: deadline ? `${deadline}T00:00:00Z` : null,
+          notes,
+        }),
+      });
+      hideLoading();
+      loadBuyerTenders(true);
+    } catch (e) {
+      hideLoading();
+      alert(e.message || 'Failed to create tender');
+    }
+  }
+
+  async function viewTender(tenderId) {
+    const uid = getFirebaseUid();
+    if (!uid) return;
+    try {
+      const d = await apiJson(`${API_BASE_URL}/tenders/${encodeURIComponent(tenderId)}/bids?firebase_uid=${encodeURIComponent(uid)}`);
+      const bids = d?.bids || [];
+      if (!bids.length) return alert('No bids yet.');
+      const summary = bids.slice(0, 8).map(b => `• ${formatKsh(b.price)} — ${(b.farm_name || b.first_name || 'Seller')}`).join('\n');
+      alert(`Bids:\n${summary}${bids.length>8 ? `\n… +${bids.length-8} more` : ''}`);
+    } catch (e) {
+      alert(e.message || 'Failed to load bids');
+    }
+  }
+
+  async function closeTender(tenderId) {
+    const uid = getFirebaseUid();
+    if (!uid) return;
+    if (!confirm('Close this tender?')) return;
+    try {
+      await apiJson(`${API_BASE_URL}/tenders/${encodeURIComponent(tenderId)}`, {
+        method: 'PUT',
+        body: JSON.stringify({ firebase_uid: uid }),
+      });
+      loadBuyerTenders(true);
+    } catch (e) {
+      alert(e.message || 'Failed to close tender');
+    }
+  }
+
+  async function loadBuyerOrders(silent=false) {
+    const uid = getFirebaseUid();
+    if (!uid) return;
+    try {
+      const d = await apiJson(`${API_BASE_URL}/orders/buyer?firebase_uid=${encodeURIComponent(uid)}`);
+      renderBuyerOrders(d?.orders || []);
+    } catch (e) {
+      if (!silent) alert(e.message || 'Failed to load orders');
+    }
+  }
+
+  function renderBuyerOrders(orders) {
+    const body = document.getElementById('buyerOrdersBody');
+    if (!body) return;
+    if (!orders.length) {
+      body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">🧾</div><h4>No orders yet</h4><p style="font-size:.82rem;">Checkout your cart to create your first order.</p></div></td></tr>';
+      return;
+    }
+    body.innerHTML = orders.map(o => {
+      const itemsCount = (o.items || []).reduce((n, it) => n + Number(it.quantity || 0), 0);
+      const seller = (o.seller_name || 'Seller');
+      const status = (o.status || 'pending').toLowerCase();
+      const pillClass = status === 'completed' ? 'completed' : (status === 'confirmed' ? 'open' : (status === 'cancelled' ? 'rejected' : 'bidding'));
+      return `
+        <tr>
+          <td><strong>#${String(o.id).slice(0, 8)}</strong><div class="td-sub">${o.created_at ? String(o.created_at).slice(0,10) : ''}</div></td>
+          <td>${seller.replace(/</g,'&lt;')}</td>
+          <td>${itemsCount} item${itemsCount===1?'':'s'}</td>
+          <td><strong>${formatKsh(o.total_amount || 0)}</strong></td>
+          <td><span class="status-pill ${pillClass}">${status.charAt(0).toUpperCase()+status.slice(1)}</span></td>
+          <td>${o.updated_at ? String(o.updated_at).slice(0,10) : '—'}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  function reorderProduct(id) {
+    alert('Reorder is coming soon. For now, open the product and add it to cart.');
+  }
 
   /* ── Contact form ── */
   function submitContact(e) { e.preventDefault(); alert('✅ Message sent! Our team will get back to you shortly.'); e.target.reset(); }
@@ -1458,10 +1788,12 @@ function exitSuperUser() {
 
   /* ── Init ── */
   window.addEventListener('DOMContentLoaded', () => {
-    showPage('dashboard');
+    // If URL has hash, open that tab (e.g., #cart)
+    showPage(location.hash ? location.hash.replace('#','') : 'dashboard');
     loadUserProfile();
     loadProducts();
     startProductPolling();
+    refreshCartBadge();
     if (window.SokoSupportCenter) {
       window.SokoSupportCenter.initUserSupport({
         rootId: 'buyerSupportCenterRoot',

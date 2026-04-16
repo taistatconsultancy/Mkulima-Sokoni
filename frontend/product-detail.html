@@ -81,9 +81,32 @@
     .farmer-card-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; color: #fff; position: relative; z-index: 1; }
     .farmer-card-farm { font-size: .8rem; color: var(--lime); position: relative; z-index: 1; margin-top: 2px; }
     .farmer-card-body { padding: 18px 22px; }
-    .verification-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 100px; font-size: .74rem; font-weight: 600; margin-bottom: 14px; }
-    .verified { background: rgba(16,185,129,.12); color: var(--success); }
-    .not-verified { background: rgba(239,68,68,.1); color: var(--danger); }
+    /* Unified Twitter-style verified badge */
+    .verified-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: .7rem;
+      font-weight: 600;
+      background: #1DA1F2;
+      color: #fff;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.6);
+      margin-bottom: 10px;
+    }
+    .verified-badge-icon {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #1DA1F2;
+      font-size: 10px;
+    }
     .farmer-detail-list { list-style: none; margin-bottom: 18px; }
     .farmer-detail-list li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: .84rem; }
     .farmer-detail-list li:last-child { border-bottom: none; }
@@ -123,6 +146,100 @@
     .login-prompt-box { text-align: center; }
     .login-prompt-box p { margin-bottom: 16px; }
     .login-prompt-box .btn { width: 100%; margin-bottom: 8px; text-decoration: none; }
+
+    /* Chat styles (WhatsApp-like) */
+    .chat-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 420px;
+    }
+    .chat-thread {
+      flex: 1;
+      min-height: 180px;
+      max-height: 280px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 10px;
+      overflow-y: auto;
+      background: #f1f2f6;
+    }
+    .chat-empty {
+      text-align: center;
+      font-size: .8rem;
+      color: var(--muted);
+      padding: 12px 4px;
+    }
+    .chat-bubble {
+      max-width: 78%;
+      padding: 8px 10px;
+      border-radius: 14px;
+      font-size: .82rem;
+      margin-bottom: 6px;
+      position: relative;
+      word-break: break-word;
+    }
+    .chat-bubble.me {
+      margin-left: auto;
+      background: #d1f7c4;
+      border-bottom-right-radius: 4px;
+    }
+    .chat-bubble.them {
+      margin-right: auto;
+      background: #fff;
+      border-bottom-left-radius: 4px;
+    }
+    .chat-meta {
+      display: block;
+      font-size: .7rem;
+      color: #6b7280;
+      margin-top: 3px;
+      text-align: right;
+    }
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+      margin-top: 6px;
+    }
+    .chat-input-row textarea {
+      flex: 1;
+      resize: none;
+      min-height: 42px;
+      max-height: 90px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      padding: 8px 10px;
+      font-size: .85rem;
+      font-family: 'DM Sans', system-ui, sans-serif;
+    }
+    .chat-input-row textarea:focus {
+      outline: none;
+      border-color: var(--leaf);
+      box-shadow: 0 0 0 2px rgba(64,145,108,.15);
+      background: #fff;
+    }
+    .chat-send-btn {
+      padding: 9px 14px;
+      border-radius: 999px;
+      border: none;
+      background: #25D366;
+      color: #fff;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      box-shadow: 0 3px 8px rgba(37,211,102,.35);
+    }
+    .chat-send-btn:hover { background: #1fb85a; }
+    .chat-note {
+      font-size: .72rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
 
     /* Footer */
     footer { background: var(--forest); padding: 52px 28px 0; }
@@ -203,15 +320,20 @@
   </div>
 </div>
 
-<!-- Contact Modal -->
+<!-- Contact / Chat Modal -->
 <div class="modal-overlay" id="contactModal">
   <div class="modal-box">
-    <h3>Contact Farmer</h3>
-    <p>Choose how you want to reach <strong id="contactSellerName">the farmer</strong>.</p>
-    <div class="phone-display" id="contactPhone">📞 Loading...</div>
-    <div style="display:flex;gap:8px;margin-top:12px;">
-      <a id="whatsappLink" href="#" target="_blank" class="btn btn-primary" style="flex:1;text-decoration:none;">💬 WhatsApp</a>
-      <a id="callLink" href="#" class="btn btn-outline" style="flex:1;text-decoration:none;">📞 Call</a>
+    <h3>Chat with Farmer</h3>
+    <p>Start a private chat with <strong id="contactSellerName">the farmer</strong> about this product.</p>
+    <div class="chat-wrap">
+      <div class="chat-thread" id="chatThread">
+        <div class="chat-empty">Loading conversation…</div>
+      </div>
+      <div class="chat-input-row">
+        <textarea id="chatInput" placeholder="Type your message…"></textarea>
+        <button class="chat-send-btn" onclick="sendChatMessage()" id="chatSendBtn">➤ Send</button>
+      </div>
+      <div class="chat-note">For your safety, avoid sharing passwords or sensitive financial information in chat.</div>
     </div>
     <button class="modal-close" onclick="closeModal('contactModal')">Close</button>
   </div>
@@ -272,6 +394,49 @@ function priceStr(p) {
   return 'Price on request';
 }
 
+function getFirebaseUid() {
+  try {
+    var u = JSON.parse(localStorage.getItem('user') || 'null');
+    return u && (u.firebase_uid || u.id) ? (u.firebase_uid || u.id) : null;
+  } catch(e) { return null; }
+}
+
+async function apiJson(url, opts) {
+  opts = opts || {};
+  var res = await fetch(url, {
+    headers: Object.assign({'Content-Type':'application/json'}, opts.headers || {}),
+    method: opts.method || 'GET',
+    body: opts.body
+  });
+  var data = {};
+  try { data = await res.json(); } catch(e) {}
+  if (!res.ok) throw new Error(data.error || data.message || ('Request failed (' + res.status + ')'));
+  return data;
+}
+
+function addToCartFromDetail() {
+  requireAuth(async function() {
+    if (!currentProduct || !currentProduct.id) return;
+    var uid = getFirebaseUid();
+    if (!uid) return openModal('loginModal');
+    var qtyRaw = prompt('Quantity', String(currentProduct.min_order || 1));
+    if (qtyRaw === null) return;
+    var qty = parseInt(qtyRaw, 10);
+    if (!qty || qty < 1) qty = 1;
+    try {
+      await apiJson(API + '/cart/items', {
+        method: 'POST',
+        body: JSON.stringify({ firebase_uid: uid, product_id: currentProduct.id, quantity: qty })
+      });
+      if (confirm('Added to cart. Open cart now?')) {
+        location.href = 'buyer.html#cart';
+      }
+    } catch(e) {
+      alert(e.message || 'Failed to add to cart');
+    }
+  });
+}
+
 /* ── Render product column (instant from cache or API) ── */
 function renderProductCol(p) {
   currentProduct = p;
@@ -297,6 +462,10 @@ function renderProductCol(p) {
       '<h1 class="product-title">' + esc(p.name||'Unnamed') + '</h1>' +
       '<div class="product-location">📍 ' + esc(p.location||'') + (p.county ? ', ' + esc(p.county) : '') + '</div>' +
       '<div class="price-card"><span class="price-main">' + priceStr(p) + '</span><span class="price-unit">/ ' + esc(p.measurement_metric||'unit') + '</span></div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;">' +
+        '<button class="topbar-btn solid" style="height:40px;" onclick="addToCartFromDetail()">🛒 Add to cart</button>' +
+        '<button class="topbar-btn" style="height:40px;border-color:var(--border);color:var(--forest);background:#fff;" onclick="requireAuth(showContactSeller)">💬 Message seller</button>' +
+      '</div>' +
       '<div class="meta-strip">' +
         '<div class="meta-chip"><div class="meta-chip-label">Available</div><div class="meta-chip-value">' + (p.quantity||0) + ' ' + esc(p.measurement_metric||'') + '</div></div>' +
         '<div class="meta-chip"><div class="meta-chip-label">Min Order</div><div class="meta-chip-value">' + (p.min_order||1) + ' ' + esc(p.measurement_metric||'') + '</div></div>' +
@@ -330,10 +499,10 @@ function renderFarmerCol(seller) {
     ? new Date(seller.member_since).toLocaleDateString('en-KE',{year:'numeric',month:'short'})
     : '';
 
-  var isVerified = seller.certification_status && seller.certification_status.toLowerCase() !== 'pending';
+  var isVerified = !!seller.is_verified;
   var verifyBadge = isVerified
-    ? '<span class="verification-badge verified">✅ Verified</span>'
-    : '<span class="verification-badge not-verified">❌ Not Verified</span>';
+    ? '<span class="verified-badge"><span class="verified-badge-icon">✔</span>Verified</span>'
+    : '';
 
   var profileUrl = 'seller-profile.html?uid=' + encodeURIComponent(seller.firebase_uid || '');
 
@@ -350,7 +519,6 @@ function renderFarmerCol(seller) {
           '<li><span class="fd-icon">📍</span><span class="fd-label">Location</span><span class="fd-value">' + esc(seller.seller_location||'N/A') + (seller.seller_county ? ', ' + esc(seller.seller_county) : '') + '</span></li>' +
           (memberSince ? '<li><span class="fd-icon">📅</span><span class="fd-label">Joined</span><span class="fd-value">' + memberSince + '</span></li>' : '') +
           (seller.farming_experience_years ? '<li><span class="fd-icon">🌾</span><span class="fd-label">Experience</span><span class="fd-value">' + seller.farming_experience_years + ' years</span></li>' : '') +
-          (seller.email ? '<li><span class="fd-icon">📧</span><span class="fd-label">Email</span><span class="fd-value" style="font-size:.78rem;">' + esc(seller.email) + '</span></li>' : '') +
         '</ul>' +
         (seller.bio ? '<p style="font-size:.84rem;color:var(--muted);margin-bottom:16px;line-height:1.6;">' + esc(seller.bio) + '</p>' : '') +
         '<div class="farmer-actions">' +
@@ -474,15 +642,143 @@ function showContactSeller() {
   if (!currentSeller) return;
   var name = ((currentSeller.first_name||'')+' '+(currentSeller.last_name||'')).trim() || 'Farmer';
   document.getElementById('contactSellerName').textContent = name;
-  var phone = currentSeller.phone_number || 'Not provided';
-  document.getElementById('contactPhone').innerHTML = '📞 ' + phone;
-  if (phone && phone !== 'Not provided') {
-    var clean = phone.replace(/\s/g,'');
-    var msg = encodeURIComponent('Hi ' + name + ', I am interested in your product "' + (currentProduct.name||'') + '" listed on Mkulima sokoni. ' + window.location.href);
-    document.getElementById('whatsappLink').href = 'https://wa.me/' + clean.replace('+','') + '?text=' + msg;
-    document.getElementById('callLink').href = 'tel:' + clean;
+  startChat();
+}
+
+var currentConversationId = null;
+var isLoadingChat = false;
+
+async function startChat() {
+  if (!currentProduct || !currentProduct.id) {
+    alert('Product information is missing. Please refresh the page.');
+    return;
+  }
+  var thread = document.getElementById('chatThread');
+  if (thread) {
+    thread.innerHTML = '<div class="chat-empty">Loading conversation…</div>';
   }
   openModal('contactModal');
+  try {
+    isLoadingChat = true;
+    var userStr = localStorage.getItem('user') || 'null';
+    var user = JSON.parse(userStr);
+    var firebaseUid = user && (user.firebase_uid || user.id);
+    if (!firebaseUid) {
+      alert('We could not find your account details. Please sign in again.');
+      return;
+    }
+    var body = {
+      firebase_uid: firebaseUid,
+      product_id: currentProduct.id
+    };
+    var res = await fetch(API + '/chat/conversations', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    var data = await res.json();
+    if (!res.ok || !data.conversation) {
+      throw new Error(data.error || 'Could not start chat');
+    }
+    currentConversationId = data.conversation.id;
+    await loadChatMessages(firebaseUid);
+  } catch (e) {
+    console.error(e);
+    if (thread) {
+      thread.innerHTML = '<div class="chat-empty">Could not load chat. Please try again.</div>';
+    }
+  } finally {
+    isLoadingChat = false;
+  }
+}
+
+async function loadChatMessages(firebaseUid) {
+  if (!currentConversationId) return;
+  var thread = document.getElementById('chatThread');
+  try {
+    var url = API + '/chat/conversations/' + currentConversationId + '/messages?firebase_uid=' + encodeURIComponent(firebaseUid);
+    var res = await fetch(url);
+    var data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to load messages');
+    var messages = data.messages || [];
+    renderChatMessages(messages);
+  } catch (e) {
+    console.error(e);
+    if (thread) {
+      thread.innerHTML = '<div class="chat-empty">Could not load chat messages.</div>';
+    }
+  }
+}
+
+function renderChatMessages(messages) {
+  var thread = document.getElementById('chatThread');
+  if (!thread) return;
+  if (!messages.length) {
+    thread.innerHTML = '<div class="chat-empty">No messages yet. Say hi to the farmer to start the conversation.</div>';
+    return;
+  }
+  var userId = null;
+  try {
+    var u = JSON.parse(localStorage.getItem('user') || 'null');
+    userId = u && u.id ? String(u.id) : null;
+  } catch(e) {}
+  thread.innerHTML = messages.map(function(m) {
+    var mine = userId && String(m.sender_user_id) === userId;
+    var cls = 'chat-bubble ' + (mine ? 'me' : 'them');
+    var time = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : '';
+    return '<div class="' + cls + '"><div>' + esc(m.body || '') + '</div>' +
+           (time ? '<span class="chat-meta">' + time + '</span>' : '') +
+           '</div>';
+  }).join('');
+  thread.scrollTop = thread.scrollHeight;
+}
+
+async function sendChatMessage() {
+  if (!currentConversationId || isLoadingChat) return;
+  var input = document.getElementById('chatInput');
+  var btn = document.getElementById('chatSendBtn');
+  if (!input || !btn) return;
+  var text = (input.value || '').trim();
+  if (!text) return;
+  try {
+    btn.disabled = true;
+    var userStr = localStorage.getItem('user') || 'null';
+    var user = JSON.parse(userStr);
+    var firebaseUid = user && (user.firebase_uid || user.id);
+    if (!firebaseUid) {
+      alert('We could not find your account details. Please sign in again.');
+      btn.disabled = false;
+      return;
+    }
+    var body = {
+      firebase_uid: firebaseUid,
+      body: text
+    };
+    var res = await fetch(API + '/chat/conversations/' + currentConversationId + '/messages', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    var data = await res.json();
+    if (!res.ok || !data.message) {
+      throw new Error(data.error || 'Could not send message');
+    }
+    var thread = document.getElementById('chatThread');
+    if (thread) {
+      var time = data.message.created_at ? new Date(data.message.created_at).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : '';
+      var html = '<div class="chat-bubble me"><div>' + esc(data.message.body || '') + '</div>' +
+                 (time ? '<span class="chat-meta">' + time + '</span>' : '') +
+                 '</div>';
+      thread.insertAdjacentHTML('beforeend', html);
+      thread.scrollTop = thread.scrollHeight;
+    }
+    input.value = '';
+  } catch (e) {
+    console.error(e);
+    alert(e.message || 'Could not send message. Please try again.');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function requireAuthLink(e) {

@@ -207,6 +207,8 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
     <button class="topbar-nav-link" onclick="showPage('inventory',this)">📦 My Products</button>
     <button class="topbar-nav-link" onclick="showPage('add-product',this)">➕ Add Product</button>
     <button class="topbar-nav-link" onclick="showPage('marketplace',this)">🛒 Marketplace</button>
+    <button class="topbar-nav-link" onclick="showPage('orders',this)">🛒 Orders</button>
+    <button class="topbar-nav-link" onclick="showPage('tenders',this)">📋 Tenders</button>
     <button class="topbar-nav-link" onclick="showPage('support',this)">💬 Support</button>
   </nav>
   <div class="topbar-right">
@@ -372,6 +374,42 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
   </div>
 </div>
 
+<!-- ── ORDERS ── -->
+<div id="orders" class="page-section">
+  <div class="wrap">
+    <div class="section-card">
+      <h2>🛒 Orders</h2>
+      <p class="sub">Manage incoming orders from buyers (live updates)</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Order</th><th>Buyer</th><th>Items</th><th>Total</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="dealerOrdersBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── TENDERS ── -->
+<div id="tenders" class="page-section">
+  <div class="wrap">
+    <div class="section-card">
+      <h2>📋 Tenders</h2>
+      <p class="sub">Browse open tenders posted by buyers and submit bids (live updates)</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Tender</th><th>Category</th><th>Quantity</th><th>Deadline</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="dealerTendersBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── PROFILE ── -->
 <div id="support" class="page-section">
   <div class="wrap">
@@ -497,6 +535,35 @@ let allMarketProducts = [];
 let mkPage = 0;
 const MK_PER_PAGE = 12;
 
+async function apiJson(url, opts = {}) {
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+    ...opts,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = data?.error || data?.message || `Request failed (${res.status})`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+let dealerOrdersPollTimer = null;
+let dealerTendersPollTimer = null;
+function stopDealerCommercePolling() {
+  if (dealerOrdersPollTimer) clearInterval(dealerOrdersPollTimer);
+  if (dealerTendersPollTimer) clearInterval(dealerTendersPollTimer);
+  dealerOrdersPollTimer = dealerTendersPollTimer = null;
+}
+function startDealerOrdersPolling() {
+  if (dealerOrdersPollTimer) return;
+  dealerOrdersPollTimer = setInterval(() => loadDealerOrders(true), 20000);
+}
+function startDealerTendersPolling() {
+  if (dealerTendersPollTimer) return;
+  dealerTendersPollTimer = setInterval(() => loadDealerTenders(true), 20000);
+}
+
 function showPage(name, btn) {
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.topbar-nav-link').forEach(l => l.classList.remove('active'));
@@ -504,7 +571,10 @@ function showPage(name, btn) {
   if (section) section.classList.add('active');
   if (btn && btn.classList) btn.classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
+  stopDealerCommercePolling();
   if (name === 'profile' && firebaseUid) loadProfile();
+  if (name === 'orders') { loadDealerOrders(false); startDealerOrdersPolling(); }
+  if (name === 'tenders') { loadDealerTenders(false); startDealerTendersPolling(); }
 }
 
 function previewImg(input) {
@@ -866,6 +936,145 @@ async function saveProfile(e) {
     else { const d = await res.json(); alert('Error: ' + (d.error || 'Save failed')); }
   } catch(e) { alert('Error: ' + e.message); }
   finally { btn.disabled = false; btn.textContent = 'Save Profile'; }
+}
+
+function formatKsh(n) {
+  const x = Number(n || 0);
+  try { return 'KSh ' + x.toLocaleString(undefined, { maximumFractionDigits: 2 }); } catch { return 'KSh ' + x; }
+}
+
+async function loadDealerOrders(silent=false) {
+  const body = document.getElementById('dealerOrdersBody');
+  if (!firebaseUid) {
+    if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">🧾</div><h4>Please sign in</h4><p style="font-size:.82rem;">Sign in to view seller orders.</p></div></td></tr>';
+    return;
+  }
+  if (!silent && body) body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading orders…</div></td></tr>';
+  try {
+    const d = await apiJson(`${API}/orders/seller?firebase_uid=${encodeURIComponent(firebaseUid)}`);
+    renderDealerOrders(d?.orders || []);
+  } catch (e) {
+    if (!silent) alert(e.message || 'Failed to load orders');
+    if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load orders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
+  }
+}
+
+function renderDealerOrders(orders) {
+  const body = document.getElementById('dealerOrdersBody');
+  if (!body) return;
+  if (!orders.length) {
+    body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">🛒</div><h4>No orders yet</h4><p style="font-size:.82rem;">When buyers checkout, their orders will appear here.</p></div></td></tr>';
+    return;
+  }
+  body.innerHTML = orders.map(o => {
+    const status = (o.status || 'pending').toLowerCase();
+    const pillClass = status === 'completed' ? 'completed' : (status === 'confirmed' ? 'open' : (status === 'cancelled' ? 'rejected' : 'bidding'));
+    const itemsCount = (o.items || []).reduce((n, it) => n + Number(it.quantity || 0), 0);
+    const actions = status === 'pending'
+      ? `<button class="btn-sm solid" onclick="updateDealerOrderStatus('${o.id}','confirmed')">Confirm</button>
+         <button class="btn-sm" onclick="updateDealerOrderStatus('${o.id}','cancelled')">Cancel</button>`
+      : (status === 'confirmed'
+        ? `<button class="btn-sm solid" onclick="updateDealerOrderStatus('${o.id}','completed')">Complete</button>
+           <button class="btn-sm" onclick="updateDealerOrderStatus('${o.id}','cancelled')">Cancel</button>`
+        : '');
+    return `
+      <tr>
+        <td><strong>#${String(o.id).slice(0, 8)}</strong></td>
+        <td>${(o.buyer_email || o.buyer_phone || 'Buyer').toString().replace(/</g,'&lt;')}</td>
+        <td>${itemsCount} item${itemsCount===1?'':'s'}</td>
+        <td><strong>${formatKsh(o.total_amount || 0)}</strong></td>
+        <td><span class="status-pill ${pillClass}">${status.charAt(0).toUpperCase()+status.slice(1)}</span></td>
+        <td style="display:flex;gap:10px;flex-wrap:wrap;">${actions}</td>
+      </tr>`;
+  }).join('');
+}
+
+async function updateDealerOrderStatus(orderId, status) {
+  if (!firebaseUid) return;
+  try {
+    await apiJson(`${API}/orders/${encodeURIComponent(orderId)}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ firebase_uid: firebaseUid, status })
+    });
+    loadDealerOrders(true);
+  } catch (e) {
+    alert(e.message || 'Failed to update order');
+  }
+}
+
+async function loadDealerTenders(silent=false) {
+  const body = document.getElementById('dealerTendersBody');
+  if (!firebaseUid) {
+    if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">📋</div><h4>Please sign in</h4><p style="font-size:.82rem;">Sign in to view available tenders.</p></div></td></tr>';
+    return;
+  }
+  if (!silent && body) body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading tenders…</div></td></tr>';
+  try {
+    const d = await apiJson(`${API}/tenders?firebase_uid=${encodeURIComponent(firebaseUid)}`);
+    renderDealerTenders(d?.tenders || []);
+  } catch (e) {
+    if (!silent) alert(e.message || 'Failed to load tenders');
+    if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load tenders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
+  }
+}
+
+function renderDealerTenders(tenders) {
+  const body = document.getElementById('dealerTendersBody');
+  if (!body) return;
+  if (!tenders.length) {
+    body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">📋</div><h4>No open tenders</h4><p style="font-size:.82rem;">Check back later for new buyer demand.</p></div></td></tr>';
+    return;
+  }
+  body.innerHTML = tenders.map(t => {
+    const status = (t.status || 'open').toLowerCase();
+    const pill = status === 'open' ? 'open' : 'completed';
+    const qty = (t.quantity ? `${t.quantity} ${t.unit||''}` : (t.unit||''));
+    const deadline = t.deadline ? String(t.deadline).slice(0, 10) : '—';
+    const myBid = t.my_bid_price ? `${formatKsh(t.my_bid_price)} (${(t.my_bid_status||'submitted')})` : '—';
+    return `
+      <tr>
+        <td><strong>${(t.title||'').replace(/</g,'&lt;')}</strong><div class="sub">My bid: ${myBid}</div></td>
+        <td>${(t.product_category||'—').replace(/</g,'&lt;')}</td>
+        <td>${qty.replace(/</g,'&lt;') || '—'}</td>
+        <td>${deadline}</td>
+        <td><span class="status-pill ${pill}">${status.charAt(0).toUpperCase()+status.slice(1)}</span></td>
+        <td style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn-sm solid" onclick="bidDealerTender('${t.id}')">${t.my_bid_price ? 'Update bid' : 'Bid'}</button>
+          <button class="btn-sm" onclick="viewDealerTender('${t.id}')">View</button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+async function bidDealerTender(tenderId) {
+  if (!firebaseUid) return;
+  const priceRaw = (prompt('Your bid price (KSh)') || '').trim();
+  if (!priceRaw) return;
+  const price = Number(priceRaw);
+  if (!Number.isFinite(price) || price <= 0) return alert('Please enter a valid price.');
+  const message = (prompt('Message to buyer (optional)') || '').trim();
+  try {
+    await apiJson(`${API}/tenders/${encodeURIComponent(tenderId)}/bids`, {
+      method: 'POST',
+      body: JSON.stringify({ firebase_uid: firebaseUid, price, message })
+    });
+    loadDealerTenders(true);
+  } catch (e) {
+    alert(e.message || 'Failed to submit bid');
+  }
+}
+
+async function viewDealerTender(tenderId) {
+  if (!firebaseUid) return;
+  try {
+    const d = await apiJson(`${API}/tenders/${encodeURIComponent(tenderId)}/bids?firebase_uid=${encodeURIComponent(firebaseUid)}`);
+    const bids = d?.bids || [];
+    if (!bids.length) return alert('No bid submitted yet.');
+    const b = bids[0];
+    alert(`Your bid:\n${formatKsh(b.price)}\nStatus: ${(b.status||'submitted')}\nMessage: ${(b.message||'').toString()}`);
+  } catch (e) {
+    alert(e.message || 'Failed to load tender');
+  }
 }
 
 function logout() {
