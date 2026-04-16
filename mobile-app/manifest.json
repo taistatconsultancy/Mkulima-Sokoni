@@ -1,0 +1,25 @@
+{
+  "name": "Soko Safi Mobile",
+  "short_name": "SokoSafi",
+  "description": "Mobile marketplace for buyers, farmers, and agro-dealers.",
+  "start_url": "/mobile-app/index.html",
+  "scope": "/mobile-app/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f8fb",
+  "theme_color": "#2f855a",
+  "icons": [
+    {
+      "src": "/mobile-app/assets/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/mobile-app/assets/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
