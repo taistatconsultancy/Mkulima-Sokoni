@@ -410,6 +410,42 @@
     .empty-state .icon { font-size: 44px; margin-bottom: 10px; }
     .empty-state h4 { font-size: 1rem; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
 
+    /* Messaging inbox */
+    .chat-shell { display:grid; grid-template-columns:320px 1fr; gap:14px; min-height:520px; }
+    .chat-list { background:#fff; border:1.5px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; }
+    .chat-list-head { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--cream); }
+    .chat-list-title { font-weight:800; color:var(--forest); }
+    .chat-refresh-btn { padding:6px 10px; border-radius:999px; border:1.5px solid var(--border); background:#fff; cursor:pointer; font-weight:700; font-size:.75rem; color:var(--forest); }
+    .chat-items { overflow-y:auto; }
+    .chat-item { padding:12px 14px; border-bottom:1px solid var(--border); cursor:pointer; display:flex; gap:10px; align-items:flex-start; transition:background .15s; }
+    .chat-item:hover { background:rgba(27,67,50,.03); }
+    .chat-item.active { background:rgba(116,198,157,.12); }
+    .chat-avatar { width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--leaf),var(--lime)); color:#fff; display:grid; place-items:center; font-weight:800; flex-shrink:0; }
+    .chat-item-main { flex:1; min-width:0; }
+    .chat-item-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .chat-item-name { font-weight:800; font-size:.84rem; color:var(--ink); }
+    .chat-item-time { font-size:.72rem; color:var(--muted); flex-shrink:0; }
+    .chat-item-snippet { font-size:.78rem; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .chat-unread-pill { background:#ef4444; color:#fff; font-weight:800; font-size:.7rem; padding:2px 8px; border-radius:999px; margin-left:8px; flex-shrink:0; }
+    .chat-thread { background:#fff; border:1.5px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; }
+    .chat-thread-head { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--cream); }
+    .chat-thread-title { font-weight:800; color:var(--forest); }
+    .chat-thread-body { flex:1; padding:12px 14px; overflow-y:auto; background:#f1f2f6; }
+    .chat-empty { text-align:center; color:var(--muted); font-weight:600; padding:26px 10px; }
+    .chat-bubble { max-width:78%; padding:8px 10px; border-radius:14px; font-size:.84rem; margin-bottom:6px; word-break:break-word; }
+    .chat-bubble.me { margin-left:auto; background:#d1f7c4; border-bottom-right-radius:4px; }
+    .chat-bubble.them { margin-right:auto; background:#fff; border-bottom-left-radius:4px; }
+    .chat-meta { display:block; font-size:.7rem; color:#6b7280; margin-top:3px; text-align:right; }
+    .chat-thread-foot { padding:12px 14px; border-top:1px solid var(--border); background:#fff; }
+    .chat-input-row { display:flex; gap:10px; align-items:flex-end; }
+    .chat-input-row textarea { flex:1; resize:none; min-height:42px; max-height:110px; border-radius:10px; border:1.5px solid var(--border); padding:8px 10px; font-size:.85rem; font-family:'DM Sans', system-ui, sans-serif; background:var(--cream); outline:none; transition:all .2s; }
+    .chat-input-row textarea:focus { background:#fff; border-color:var(--leaf); box-shadow:0 0 0 3px rgba(64,145,108,.12); }
+    .chat-send-btn { padding:9px 14px; border-radius:999px; border:none; background:#25D366; color:#fff; font-size:.82rem; font-weight:800; cursor:pointer; white-space:nowrap; box-shadow:0 3px 8px rgba(37,211,102,.35); }
+    .chat-send-btn:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
+    .chat-note { font-size:.72rem; color:var(--muted); margin-top:8px; }
+    .messages-nav-dot{display:none;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-left:6px;}
+    .messages-nav-dot.show{display:inline-block;}
+
     /* ════════════════════════════════════
        FOOTER — identical to farmer.html
     ════════════════════════════════════ */
@@ -519,6 +555,7 @@ function exitSuperUser() {
       🛒 Cart <span id="cartNavBadge" style="display:none;margin-left:6px;min-width:18px;height:18px;padding:0 6px;border-radius:999px;background:var(--lime);color:#16302b;font-weight:800;font-size:.72rem;align-items:center;justify-content:center;"></span>
     </button>
     <button class="topbar-nav-link" onclick="showPage('orders',this)">🧾 Orders</button>
+    <button class="topbar-nav-link" onclick="showPage('messages',this)">💬 Messages <span id="buyerMessagesNavDot" class="messages-nav-dot"></span></button>
     <button class="topbar-nav-link" onclick="showPage('analytics',this)">📊 Analytics</button>
     <button class="topbar-nav-link" onclick="showPage('support',this)">💬 Support</button>
   </nav>
@@ -697,6 +734,42 @@ function exitSuperUser() {
         <div class="icon">📊</div>
         <h4>Upcoming feature</h4>
         <p style="font-size:.82rem;">We’re building insights for orders, tenders, and spending.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MESSAGES ── -->
+  <div id="messages" class="page-section">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Messages 💬</div>
+        <div class="section-subtitle">Chat with sellers and track replies in one inbox</div>
+      </div>
+    </div>
+    <div class="chat-shell">
+      <div class="chat-list">
+        <div class="chat-list-head">
+          <div class="chat-list-title">Inbox</div>
+          <button class="chat-refresh-btn" onclick="refreshBuyerInbox()">Refresh</button>
+        </div>
+        <div class="chat-items" id="buyerChatInbox">
+          <div class="chat-empty">Loading conversations…</div>
+        </div>
+      </div>
+      <div class="chat-thread">
+        <div class="chat-thread-head">
+          <div class="chat-thread-title" id="buyerChatThreadTitle">Select a conversation</div>
+        </div>
+        <div class="chat-thread-body" id="buyerChatThreadBody">
+          <div class="chat-empty">Choose a conversation from your inbox.</div>
+        </div>
+        <div class="chat-thread-foot">
+          <div class="chat-input-row">
+            <textarea id="buyerReplyInput" placeholder="Type your message…" disabled></textarea>
+            <button class="chat-send-btn" id="buyerReplySendBtn" onclick="sendBuyerReply()" disabled>Send</button>
+          </div>
+          <div class="chat-note">Replies are refreshed automatically while this tab is open.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -956,12 +1029,16 @@ function exitSuperUser() {
 
 <script src="js/support-center.js"></script>
 <script src="js/marketplace-sync.js"></script>
+<script src="js/ui-feedback.js"></script>
 <script>
   /* ── Init ── */
   document.getElementById('yr').textContent = new Date().getFullYear();
 
   const isProduction = !['localhost','127.0.0.1'].includes(window.location.hostname);
   const API_BASE_URL = isProduction ? '/api' : 'http://localhost:5000/api';
+  const uiAlert = (msg, title='Notice') => window.SokoUI ? window.SokoUI.alert(msg, title) : Promise.resolve(window.alert(msg));
+  const uiConfirm = (msg, title='Confirm', opts={}) => window.SokoUI ? window.SokoUI.confirm(msg, title, opts) : Promise.resolve(window.confirm(msg));
+  const uiPrompt = (cfg) => window.SokoUI ? window.SokoUI.prompt(cfg) : Promise.resolve(null);
 
   /* ── Auth helpers ── */
   function getFirebaseUid() {
@@ -1009,6 +1086,192 @@ function exitSuperUser() {
     ordersPollTimer = setInterval(() => loadBuyerOrders(true), 25000);
   }
 
+  /* ── Buyer chat inbox ── */
+  let buyerInboxPollTimer = null;
+  let buyerInboxLoading = false;
+  let buyerThreadLoading = false;
+  let buyerActiveConversationId = null;
+  let buyerInboxCache = [];
+
+  function _getUserId() {
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || 'null');
+      return u && u.id ? String(u.id) : null;
+    } catch { return null; }
+  }
+
+  function startBuyerInboxPolling() {
+    stopBuyerInboxPolling();
+    buyerInboxPollTimer = setInterval(() => {
+      if (buyerInboxLoading) return;
+      loadBuyerInbox(true);
+    }, 12000);
+  }
+
+  function stopBuyerInboxPolling() {
+    if (buyerInboxPollTimer) clearInterval(buyerInboxPollTimer);
+    buyerInboxPollTimer = null;
+  }
+
+  function refreshBuyerInbox() {
+    loadBuyerInbox(false);
+  }
+
+  function escapeHtml(s) {
+    return (s || '').toString().replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function loadBuyerInbox(silent = false) {
+    const uid = getFirebaseUid();
+    const inboxEl = document.getElementById('buyerChatInbox');
+    if (!uid) {
+      if (inboxEl) inboxEl.innerHTML = '<div class="chat-empty">Please sign in to view messages.</div>';
+      return;
+    }
+    if (buyerInboxLoading) return;
+    buyerInboxLoading = true;
+    try {
+      if (!silent && inboxEl) inboxEl.innerHTML = '<div class="chat-empty">Loading conversations…</div>';
+      const cached = sessionStorage.getItem('buyerInboxCache');
+      if (!silent && cached && !buyerInboxCache.length) {
+        buyerInboxCache = JSON.parse(cached);
+        renderBuyerInbox(buyerInboxCache);
+        updateBuyerUnreadDot(buyerInboxCache);
+      }
+      const res = await fetch(`${API_BASE_URL}/chat/conversations?firebase_uid=${encodeURIComponent(uid)}&role=buyer`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load inbox');
+      buyerInboxCache = data.conversations || [];
+      try { sessionStorage.setItem('buyerInboxCache', JSON.stringify(buyerInboxCache)); } catch {}
+      renderBuyerInbox(buyerInboxCache);
+      updateBuyerUnreadDot(buyerInboxCache);
+      if (buyerActiveConversationId) await loadBuyerThread(buyerActiveConversationId, true);
+    } catch (e) {
+      console.error(e);
+      if (inboxEl) inboxEl.innerHTML = '<div class="chat-empty">Could not load inbox.</div>';
+    } finally {
+      buyerInboxLoading = false;
+    }
+  }
+
+  function renderBuyerInbox(conversations) {
+    const inboxEl = document.getElementById('buyerChatInbox');
+    if (!inboxEl) return;
+    if (!conversations.length) {
+      inboxEl.innerHTML = '<div class="chat-empty">No conversations yet. Start from a product page by messaging a seller.</div>';
+      return;
+    }
+    inboxEl.innerHTML = conversations.map(c => {
+      const id = c.id;
+      const name = (c.farm_name || c.seller_name || 'Seller').toString();
+      const snippet = (c.last_message_body || '').toString();
+      const t = c.last_message_created_at || c.last_message_at || c.created_at;
+      const time = t ? new Date(t).toLocaleDateString('en-KE',{month:'short',day:'numeric'}) : '';
+      const unread = Number(c.unread_count || 0);
+      const initials = name.trim().charAt(0).toUpperCase() || 'S';
+      return `
+        <div class="chat-item ${buyerActiveConversationId===id?'active':''}" onclick="openBuyerConversation('${id}')">
+          <div class="chat-avatar">${initials}</div>
+          <div class="chat-item-main">
+            <div class="chat-item-top">
+              <div class="chat-item-name">${escapeHtml(name)}</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                ${unread>0 ? `<span class="chat-unread-pill">${unread}</span>` : ''}
+                <span class="chat-item-time">${escapeHtml(time)}</span>
+              </div>
+            </div>
+            <div class="chat-item-snippet">${escapeHtml(snippet || '—')}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function updateBuyerUnreadDot(conversations) {
+    const dot = document.getElementById('buyerMessagesNavDot');
+    if (!dot) return;
+    const unread = (conversations || []).reduce((sum, c) => sum + Number(c.unread_count || 0), 0);
+    dot.classList.toggle('show', unread > 0);
+  }
+
+  async function openBuyerConversation(conversationId) {
+    buyerActiveConversationId = conversationId;
+    renderBuyerInbox(buyerInboxCache);
+    await loadBuyerThread(conversationId, false);
+  }
+
+  async function loadBuyerThread(conversationId, silent = false) {
+    if (buyerThreadLoading) return;
+    buyerThreadLoading = true;
+    const uid = getFirebaseUid();
+    const bodyEl = document.getElementById('buyerChatThreadBody');
+    const titleEl = document.getElementById('buyerChatThreadTitle');
+    const input = document.getElementById('buyerReplyInput');
+    const sendBtn = document.getElementById('buyerReplySendBtn');
+    if (!uid) { buyerThreadLoading = false; return; }
+    if (!silent && bodyEl) bodyEl.innerHTML = '<div class="chat-empty">Loading messages…</div>';
+    try {
+      const res = await fetch(`${API_BASE_URL}/chat/conversations/${conversationId}/messages?firebase_uid=${encodeURIComponent(uid)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load messages');
+      const msgs = data.messages || [];
+      const convo = data.conversation || {};
+      if (titleEl) titleEl.textContent = convo.farm_name ? `Chat • ${convo.farm_name}` : 'Chat';
+      renderBuyerThread(msgs);
+      if (input) input.disabled = false;
+      if (sendBtn) sendBtn.disabled = false;
+      await loadBuyerInbox(true);
+    } catch (e) {
+      console.error(e);
+      if (bodyEl) bodyEl.innerHTML = '<div class="chat-empty">Could not load messages.</div>';
+    } finally {
+      buyerThreadLoading = false;
+    }
+  }
+
+  function renderBuyerThread(messages) {
+    const bodyEl = document.getElementById('buyerChatThreadBody');
+    if (!bodyEl) return;
+    if (!messages.length) {
+      bodyEl.innerHTML = '<div class="chat-empty">No messages yet.</div>';
+      return;
+    }
+    const myUserId = _getUserId();
+    bodyEl.innerHTML = messages.map(m => {
+      const mine = myUserId && String(m.sender_user_id) === myUserId;
+      const cls = mine ? 'chat-bubble me' : 'chat-bubble them';
+      const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : '';
+      return `<div class="${cls}"><div>${escapeHtml(m.body || '')}</div>${time?`<span class="chat-meta">${escapeHtml(time)}</span>`:''}</div>`;
+    }).join('');
+    bodyEl.scrollTop = bodyEl.scrollHeight;
+  }
+
+  async function sendBuyerReply() {
+    if (!buyerActiveConversationId) return;
+    const uid = getFirebaseUid();
+    const input = document.getElementById('buyerReplyInput');
+    const btn = document.getElementById('buyerReplySendBtn');
+    if (!uid || !input || !btn) return;
+    const text = (input.value || '').trim();
+    if (!text) return;
+    try {
+      btn.disabled = true;
+      const res = await fetch(`${API_BASE_URL}/chat/conversations/${buyerActiveConversationId}/messages`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ firebase_uid: uid, body: text })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.message) throw new Error(data.error || 'Failed to send');
+      input.value = '';
+      await loadBuyerThread(buyerActiveConversationId, true);
+    } catch (e) {
+      console.error(e);
+      await uiAlert(e.message || 'Could not send message.', 'Message error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
   /* ── Navigation ── */
   function showPage(pageName, el) {
     // Support deep links like buyer.html#cart
@@ -1027,6 +1290,7 @@ function exitSuperUser() {
     if (pageName === 'profile') loadBuyerProfile();
     stopProductPolling();
     stopCommercePolling();
+    stopBuyerInboxPolling();
     if (pageName === 'dashboard') {
       loadProducts();
       startProductPolling();
@@ -1043,6 +1307,9 @@ function exitSuperUser() {
     if (pageName === 'orders') {
       loadBuyerOrders();
       startOrdersPolling();
+    }
+    if (pageName === 'messages') {
+      loadBuyerInbox(false).then(() => startBuyerInboxPolling());
     }
   }
 
@@ -1206,8 +1473,8 @@ function exitSuperUser() {
       <div class="product-footer">
         <div class="star-rating">⭐⭐⭐⭐☆ <span style="color:var(--muted);font-size:.7rem;">(${p.orders||0} orders)</span></div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <button class="btn btn-outline btn-sm" onclick="addToCart('${p.id}', 1)">Add</button>
-          <button class="btn btn-primary btn-sm" onclick="viewProductDetails('${p.id}')">View →</button>
+          <button class="btn btn-outline btn-sm" onclick="addToCart('${p.id}', null, this)">Add</button>
+          <button class="btn btn-primary btn-sm" onclick="viewProductDetails('${p.id}', this)">View →</button>
         </div>
       </div>`;
     return card;
@@ -1317,12 +1584,16 @@ function exitSuperUser() {
   }
 
   /* ── Product detail ── */
-  function viewProductDetails(id) {
+  function viewProductDetails(id, btnEl=null) {
     var p = allProducts.find(x => x.id === id);
     try {
       if (p) sessionStorage.setItem('productCache_' + id, JSON.stringify(p));
       sessionStorage.setItem('productsCache', JSON.stringify(allProducts));
     } catch(e) {}
+    if (btnEl) {
+      btnEl.disabled = true;
+      btnEl.textContent = 'Opening…';
+    }
     location.href = 'product-detail.html?id=' + id;
   }
 
@@ -1348,15 +1619,28 @@ function exitSuperUser() {
     } catch {}
   }
 
-  async function addToCart(productId, quantity=1) {
+  async function addToCart(productId, quantity=null, btnEl=null) {
     const uid = getFirebaseUid();
     if (!uid) {
-      alert('Please sign in to add items to cart.');
+      await uiAlert('Please sign in to add items to cart.', 'Sign in required');
       location.href = 'auth.html';
       return;
     }
-    const q = Math.max(1, parseInt(quantity, 10) || 1);
+    let q = quantity;
+    if (q == null) {
+      const form = await uiPrompt({
+        title: 'Add to cart',
+        message: 'Specify quantity.',
+        confirmText: 'Add',
+        fields: [{ key: 'quantity', label: 'Quantity', type: 'number', required: true, value: '1', placeholder: '1' }],
+      });
+      if (!form) return;
+      q = form.quantity;
+    }
+    q = Math.max(1, parseInt(q, 10) || 1);
+    const previous = btnEl ? btnEl.textContent : '';
     try {
+      if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Adding…'; }
       const d = await apiJson(`${API_BASE_URL}/cart/items`, {
         method: 'POST',
         body: JSON.stringify({ firebase_uid: uid, product_id: productId, quantity: q }),
@@ -1372,7 +1656,9 @@ function exitSuperUser() {
         }
       } catch {}
     } catch (e) {
-      alert(e.message || 'Failed to add to cart');
+      await uiAlert(e.message || 'Failed to add to cart', 'Could not add item');
+    } finally {
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = previous || 'Add'; }
     }
   }
 
@@ -1383,7 +1669,7 @@ function exitSuperUser() {
       const d = await apiJson(`${API_BASE_URL}/cart?firebase_uid=${encodeURIComponent(uid)}`);
       renderBuyerCart(d);
     } catch (e) {
-      if (!silent) alert(e.message || 'Failed to load cart');
+      if (!silent) await uiAlert(e.message || 'Failed to load cart', 'Cart error');
     }
   }
 
@@ -1441,7 +1727,7 @@ function exitSuperUser() {
       });
       renderBuyerCart(d);
     } catch (e) {
-      alert(e.message || 'Failed to update quantity');
+      await uiAlert(e.message || 'Failed to update quantity', 'Could not update quantity');
       loadBuyerCart(true);
     }
   }
@@ -1449,7 +1735,7 @@ function exitSuperUser() {
   async function removeFromCart(itemId) {
     const uid = getFirebaseUid();
     if (!uid) return;
-    if (!confirm('Remove this item from cart?')) return;
+    if (!await uiConfirm('Remove this item from cart?', 'Confirm removal', { danger: true, confirmText: 'Remove' })) return;
     try {
       const d = await apiJson(`${API_BASE_URL}/cart/items/${encodeURIComponent(itemId)}`, {
         method: 'DELETE',
@@ -1457,7 +1743,7 @@ function exitSuperUser() {
       });
       renderBuyerCart(d);
     } catch (e) {
-      alert(e.message || 'Failed to remove item');
+      await uiAlert(e.message || 'Failed to remove item', 'Could not remove item');
     }
   }
 
@@ -1471,13 +1757,13 @@ function exitSuperUser() {
         body: JSON.stringify({ firebase_uid: uid }),
       });
       hideLoading();
-      alert(`✅ Order created (${(d.orders||[]).length} seller order${(d.orders||[]).length===1?'':'s'}).`);
+      window.SokoUI?.toast(`Order created (${(d.orders||[]).length} seller order${(d.orders||[]).length===1?'':'s'}).`, 'success');
       refreshCartBadge();
       loadBuyerOrders(true);
       showPage('orders');
     } catch (e) {
       hideLoading();
-      alert(e.message || 'Checkout failed');
+      await uiAlert(e.message || 'Checkout failed', 'Checkout error');
     }
   }
 
@@ -1488,7 +1774,7 @@ function exitSuperUser() {
       const d = await apiJson(`${API_BASE_URL}/tenders?firebase_uid=${encodeURIComponent(uid)}`);
       renderBuyerTenders(d?.tenders || []);
     } catch (e) {
-      if (!silent) alert(e.message || 'Failed to load tenders');
+      if (!silent) await uiAlert(e.message || 'Failed to load tenders', 'Tender error');
     }
   }
 
@@ -1527,15 +1813,29 @@ function exitSuperUser() {
   async function createTender() {
     const uid = getFirebaseUid();
     if (!uid) return;
-    const title = (prompt('Tender title (e.g., Fresh Vegetables Supply)') || '').trim();
+    const form = await uiPrompt({
+      title: 'Create tender',
+      message: 'Post your demand so sellers can bid.',
+      confirmText: 'Create',
+      fields: [
+        { key: 'title', label: 'Tender title', required: true, placeholder: 'Fresh Vegetables Supply' },
+        { key: 'product_category', label: 'Product required', placeholder: 'Sukuma Wiki, Cabbage' },
+        { key: 'quantity', label: 'Quantity (optional)', type: 'number', placeholder: '500' },
+        { key: 'unit', label: 'Unit (optional)', placeholder: 'kg, pcs, bags' },
+        { key: 'location', label: 'Delivery location (optional)', placeholder: 'Nairobi' },
+        { key: 'deadline', label: 'Deadline (optional)', type: 'date' },
+        { key: 'notes', label: 'Notes (optional)', type: 'textarea', placeholder: 'Quality or packaging notes' },
+      ],
+    });
+    if (!form) return;
+    const title = String(form.title || '').trim();
     if (!title) return;
-    const product_category = (prompt('Product required (e.g., Sukuma Wiki)') || '').trim() || null;
-    const quantityRaw = (prompt('Quantity (number, optional)') || '').trim();
-    const quantity = quantityRaw ? Number(quantityRaw) : null;
-    const unit = (prompt('Unit (e.g., kg, pcs, bags)') || '').trim() || null;
-    const location = (prompt('Delivery location (optional)') || '').trim() || null;
-    const deadline = (prompt('Deadline (YYYY-MM-DD, optional)') || '').trim();
-    const notes = (prompt('Notes (optional)') || '').trim() || null;
+    const product_category = String(form.product_category || '').trim() || null;
+    const quantity = String(form.quantity || '').trim() ? Number(form.quantity) : null;
+    const unit = String(form.unit || '').trim() || null;
+    const location = String(form.location || '').trim() || null;
+    const deadline = String(form.deadline || '').trim();
+    const notes = String(form.notes || '').trim() || null;
     try {
       showLoading('Creating tender…', 'Posting your demand to sellers');
       await apiJson(`${API_BASE_URL}/tenders`, {
@@ -1555,7 +1855,7 @@ function exitSuperUser() {
       loadBuyerTenders(true);
     } catch (e) {
       hideLoading();
-      alert(e.message || 'Failed to create tender');
+      await uiAlert(e.message || 'Failed to create tender', 'Could not create tender');
     }
   }
 
@@ -1565,18 +1865,18 @@ function exitSuperUser() {
     try {
       const d = await apiJson(`${API_BASE_URL}/tenders/${encodeURIComponent(tenderId)}/bids?firebase_uid=${encodeURIComponent(uid)}`);
       const bids = d?.bids || [];
-      if (!bids.length) return alert('No bids yet.');
+      if (!bids.length) return uiAlert('No bids yet.', 'Tender bids');
       const summary = bids.slice(0, 8).map(b => `• ${formatKsh(b.price)} — ${(b.farm_name || b.first_name || 'Seller')}`).join('\n');
-      alert(`Bids:\n${summary}${bids.length>8 ? `\n… +${bids.length-8} more` : ''}`);
+      await uiAlert(`Bids:\n${summary}${bids.length>8 ? `\n… +${bids.length-8} more` : ''}`, 'Tender bids');
     } catch (e) {
-      alert(e.message || 'Failed to load bids');
+      await uiAlert(e.message || 'Failed to load bids', 'Could not load bids');
     }
   }
 
   async function closeTender(tenderId) {
     const uid = getFirebaseUid();
     if (!uid) return;
-    if (!confirm('Close this tender?')) return;
+    if (!await uiConfirm('Close this tender?', 'Close tender', { danger: true, confirmText: 'Close tender' })) return;
     try {
       await apiJson(`${API_BASE_URL}/tenders/${encodeURIComponent(tenderId)}`, {
         method: 'PUT',
@@ -1584,7 +1884,7 @@ function exitSuperUser() {
       });
       loadBuyerTenders(true);
     } catch (e) {
-      alert(e.message || 'Failed to close tender');
+      await uiAlert(e.message || 'Failed to close tender', 'Could not close tender');
     }
   }
 
@@ -1595,7 +1895,7 @@ function exitSuperUser() {
       const d = await apiJson(`${API_BASE_URL}/orders/buyer?firebase_uid=${encodeURIComponent(uid)}`);
       renderBuyerOrders(d?.orders || []);
     } catch (e) {
-      if (!silent) alert(e.message || 'Failed to load orders');
+      if (!silent) await uiAlert(e.message || 'Failed to load orders', 'Order error');
     }
   }
 
@@ -1624,11 +1924,11 @@ function exitSuperUser() {
   }
 
   function reorderProduct(id) {
-    alert('Reorder is coming soon. For now, open the product and add it to cart.');
+    uiAlert('Reorder is coming soon. For now, open the product and add it to cart.', 'Coming soon');
   }
 
   /* ── Contact form ── */
-  function submitContact(e) { e.preventDefault(); alert('✅ Message sent! Our team will get back to you shortly.'); e.target.reset(); }
+  async function submitContact(e) { e.preventDefault(); await uiAlert('Message sent! Our team will get back to you shortly.', 'Success'); e.target.reset(); }
 
   /* ── Profile tabs ── */
   function switchTab(name, btn) {
@@ -1769,8 +2069,8 @@ function exitSuperUser() {
   });
 
   /* ── Logout ── */
-  function logout(skip=false) {
-    if (!skip && !confirm('Are you sure you want to logout?')) return;
+  async function logout(skip=false) {
+    if (!skip && !await uiConfirm('Are you sure you want to logout?', 'Sign out')) return;
     localStorage.removeItem('user');
     localStorage.removeItem('userRole');
     localStorage.removeItem('authToken');
@@ -1781,7 +2081,7 @@ function exitSuperUser() {
   let sessionTimer;
   function resetSession() {
     clearTimeout(sessionTimer);
-    sessionTimer = setTimeout(() => { alert('Session expired.'); logout(true); }, 30*60*1000);
+    sessionTimer = setTimeout(async () => { await uiAlert('Session expired.', 'Session timeout'); logout(true); }, 30*60*1000);
   }
   ['mousedown','keypress','scroll','touchstart'].forEach(ev => document.addEventListener(ev, resetSession, { passive: true }));
   resetSession();

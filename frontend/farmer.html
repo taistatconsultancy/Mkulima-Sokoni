@@ -1402,12 +1402,16 @@ function exitSuperUser() {
 
 <script src="js/support-center.js"></script>
 <script src="js/marketplace-sync.js"></script>
+<script src="js/ui-feedback.js"></script>
 <script>
   /* ── Init ── */
   document.getElementById('yr').textContent = new Date().getFullYear();
 
   const isProduction = !['localhost','127.0.0.1'].includes(window.location.hostname);
   const API_BASE_URL = isProduction ? '/api' : 'http://localhost:5000/api';
+  const uiAlert = (msg, title='Notice') => window.SokoUI ? window.SokoUI.alert(msg, title) : Promise.resolve(window.alert(msg));
+  const uiConfirm = (msg, title='Confirm', opts={}) => window.SokoUI ? window.SokoUI.confirm(msg, title, opts) : Promise.resolve(window.confirm(msg));
+  const uiPrompt = (cfg) => window.SokoUI ? window.SokoUI.prompt(cfg) : Promise.resolve(null);
 
   async function apiJson(url, opts = {}) {
     const res = await fetch(url, {
@@ -1477,6 +1481,8 @@ function exitSuperUser() {
   let inboxPollTimer = null;
   let activeConversationId = null;
   let inboxCache = [];
+  let inboxLoading = false;
+  let threadLoading = false;
 
   function _getAuthUid() {
     try {
@@ -1495,6 +1501,7 @@ function exitSuperUser() {
   function startInboxPolling() {
     stopInboxPolling();
     inboxPollTimer = setInterval(() => {
+      if (inboxLoading) return;
       loadInbox(true);
     }, 12000);
   }
@@ -1514,14 +1521,23 @@ function exitSuperUser() {
       if (inboxEl) inboxEl.innerHTML = '<div class="chat-empty">Please sign in to view messages.</div>';
       return;
     }
+    if (inboxLoading) return;
+    inboxLoading = true;
     if (!silent && inboxEl) {
       inboxEl.innerHTML = '<div class="chat-empty">Loading conversations…</div>';
     }
     try {
+      const cached = sessionStorage.getItem('farmerInboxCache');
+      if (!silent && cached && !inboxCache.length) {
+        inboxCache = JSON.parse(cached);
+        renderInbox(inboxCache);
+        updateUnreadDot(inboxCache);
+      }
       const res = await fetch(`${API_BASE_URL}/chat/conversations?firebase_uid=${encodeURIComponent(uid)}&role=farmer`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load inbox');
       inboxCache = data.conversations || [];
+      try { sessionStorage.setItem('farmerInboxCache', JSON.stringify(inboxCache)); } catch {}
       renderInbox(inboxCache);
       updateUnreadDot(inboxCache);
 
@@ -1532,6 +1548,8 @@ function exitSuperUser() {
     } catch (e) {
       console.error(e);
       if (inboxEl) inboxEl.innerHTML = '<div class="chat-empty">Could not load inbox.</div>';
+    } finally {
+      inboxLoading = false;
     }
   }
 
@@ -1587,6 +1605,8 @@ function exitSuperUser() {
   }
 
   async function loadThread(conversationId, silent = false) {
+    if (threadLoading) return;
+    threadLoading = true;
     const uid = _getAuthUid();
     const bodyEl = document.getElementById('chatThreadBody');
     const titleEl = document.getElementById('chatThreadTitle');
@@ -1610,6 +1630,8 @@ function exitSuperUser() {
     } catch (e) {
       console.error(e);
       if (bodyEl) bodyEl.innerHTML = '<div class="chat-empty">Could not load messages.</div>';
+    } finally {
+      threadLoading = false;
     }
   }
 
@@ -1652,7 +1674,7 @@ function exitSuperUser() {
       await loadThread(activeConversationId, true);
     } catch (e) {
       console.error(e);
-      alert(e.message || 'Could not send message.');
+      await uiAlert(e.message || 'Could not send message.', 'Message error');
     } finally {
       btn.disabled = false;
     }
@@ -1749,16 +1771,16 @@ function exitSuperUser() {
     if (!form.checkValidity()) { form.reportValidity(); return; }
 
     const userStr = localStorage.getItem('user');
-    if (!userStr) { alert('❌ Please log in to add products'); return; }
+    if (!userStr) { await uiAlert('Please log in to add products', 'Sign in required'); return; }
     const user = JSON.parse(userStr);
     const firebaseUid = user.firebase_uid || user.id;
-    if (!firebaseUid) { alert('❌ Authentication required'); return; }
+    if (!firebaseUid) { await uiAlert('Authentication required', 'Sign in required'); return; }
 
     setSaveLoading(true);
     showLoading('Uploading image…', 'Converting and uploading to Cloudinary');
 
     const imageFile = document.getElementById('product-image').files[0];
-    if (!imageFile) { setSaveLoading(false); hideLoading(); alert('Please upload a product image'); return; }
+    if (!imageFile) { setSaveLoading(false); hideLoading(); await uiAlert('Please upload a product image', 'Image required'); return; }
 
     const formData = new FormData(form);
     const productType = document.querySelector('.type-toggle-btn.active').textContent.includes('Livestock') ? 'livestock' : 'farm';
@@ -1802,13 +1824,13 @@ function exitSuperUser() {
         await loadMarketplaceListings();
         if (window.SokoMarketplaceSync) window.SokoMarketplaceSync.invalidate();
         setSaveLoading(false); hideLoading(); closeProductModal();
-        alert('✅ Product added successfully!');
+        window.SokoUI?.toast('Product added successfully!', 'success');
       } catch (err) {
         setSaveLoading(false); hideLoading();
-        alert('❌ Error: ' + err.message);
+        await uiAlert(err.message || 'Could not create product', 'Create product failed');
       }
     };
-    reader.onerror = () => { setSaveLoading(false); hideLoading(); alert('❌ Could not read image'); };
+    reader.onerror = async () => { setSaveLoading(false); hideLoading(); await uiAlert('Could not read image', 'Image error'); };
     reader.readAsDataURL(imageFile);
   }
 
@@ -1935,8 +1957,8 @@ function exitSuperUser() {
       await loadMarketplaceListings();
       if (window.SokoMarketplaceSync) window.SokoMarketplaceSync.invalidate();
       hideLoading();
-      alert('✅ Product published! Now visible to buyers.');
-    } catch(err) { hideLoading(); alert('❌ '+err.message); }
+      window.SokoUI?.toast('Product published! Now visible to buyers.', 'success');
+    } catch(err) { hideLoading(); await uiAlert(err.message || 'Failed to publish product', 'Publish failed'); }
   }
 
   async function updateProductStatus(id, status) {
@@ -1961,8 +1983,8 @@ function exitSuperUser() {
       await loadMarketplaceListings();
       if (window.SokoMarketplaceSync) window.SokoMarketplaceSync.invalidate();
       hideLoading();
-      alert(`✅ Status updated to ${status}!`);
-    } catch(err) { hideLoading(); alert('❌ '+err.message); }
+      window.SokoUI?.toast(`Status updated to ${status}!`, 'success');
+    } catch(err) { hideLoading(); await uiAlert(err.message || 'Failed to update status', 'Status update failed'); }
   }
 
   /* ── Edit product modal ── */
@@ -2012,7 +2034,7 @@ function exitSuperUser() {
 
   function editProduct(id) {
     const p = getMyProductById(id);
-    if (!p) { alert('Could not find product. Please refresh.'); return; }
+    if (!p) { uiAlert('Could not find product. Please refresh.', 'Product missing'); return; }
     document.getElementById('edit-product-id').value = p.id;
     document.getElementById('edit-product-name').value = p.name || '';
     document.getElementById('edit-product-category').value = p.category || '';
@@ -2063,13 +2085,13 @@ function exitSuperUser() {
     if (!form.checkValidity()) { form.reportValidity(); return; }
 
     const userStr = localStorage.getItem('user');
-    if (!userStr) { alert('❌ Please log in to edit products'); return; }
+    if (!userStr) { await uiAlert('Please log in to edit products', 'Sign in required'); return; }
     const user = JSON.parse(userStr);
     const firebaseUid = user.firebase_uid || user.id;
-    if (!firebaseUid) { alert('❌ Authentication required'); return; }
+    if (!firebaseUid) { await uiAlert('Authentication required', 'Sign in required'); return; }
 
     const id = document.getElementById('edit-product-id').value;
-    if (!id) { alert('Missing product id'); return; }
+    if (!id) { await uiAlert('Missing product id', 'Update failed'); return; }
 
     setEditSaveLoading(true);
     showLoading('Saving changes…', 'Updating product in database');
@@ -2116,7 +2138,7 @@ function exitSuperUser() {
       if (window.SokoMarketplaceSync) window.SokoMarketplaceSync.invalidate();
       hideLoading();
       closeEditProductModal();
-      alert('✅ Product updated successfully!');
+      window.SokoUI?.toast('Product updated successfully!', 'success');
     };
 
     try {
@@ -2124,10 +2146,10 @@ function exitSuperUser() {
         const reader = new FileReader();
         reader.onload = async ev => {
           try { await doSave(ev.target.result); }
-          catch (err) { hideLoading(); alert('❌ ' + (err.message || 'Failed')); }
+          catch (err) { hideLoading(); await uiAlert(err.message || 'Failed', 'Update failed'); }
           finally { setEditSaveLoading(false); }
         };
-        reader.onerror = () => { setEditSaveLoading(false); hideLoading(); alert('❌ Could not read image'); };
+        reader.onerror = async () => { setEditSaveLoading(false); hideLoading(); await uiAlert('Could not read image', 'Image error'); };
         reader.readAsDataURL(imageFile);
       } else {
         await doSave(null);
@@ -2136,7 +2158,7 @@ function exitSuperUser() {
     } catch (err) {
       setEditSaveLoading(false);
       hideLoading();
-      alert('❌ ' + (err.message || 'Failed'));
+      await uiAlert(err.message || 'Failed', 'Update failed');
     }
   }
 
@@ -2187,7 +2209,7 @@ function exitSuperUser() {
       const d = await apiJson(`${API_BASE_URL}/orders/seller?firebase_uid=${encodeURIComponent(uid)}`);
       renderSellerOrders(d?.orders || []);
     } catch (e) {
-      if (!silent) alert(e.message || 'Failed to load orders');
+      if (!silent) await uiAlert(e.message || 'Failed to load orders', 'Orders error');
       if (body) body.innerHTML = '<tr><td colspan="5"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load orders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
     }
   }
@@ -2236,12 +2258,12 @@ function exitSuperUser() {
       });
       loadSellerOrders(true);
     } catch (e) {
-      alert(e.message || 'Failed to update order');
+      await uiAlert(e.message || 'Failed to update order', 'Order update failed');
     }
   }
 
   function viewOrder(orderId) {
-    alert(`Order #${String(orderId).slice(0, 8)}\nOpen Messages to chat with the buyer.\n(Status updates are available in the Actions column.)`);
+    uiAlert(`Order #${String(orderId).slice(0, 8)}\nOpen Messages to chat with the buyer.\n(Status updates are available in the Actions column.)`, 'Order details');
   }
   function openMessagesFromOrder() {
     showPage('messages');
@@ -2262,7 +2284,7 @@ function exitSuperUser() {
       const d = await apiJson(`${API_BASE_URL}/tenders?firebase_uid=${encodeURIComponent(uid)}`);
       renderOpenTenders(d?.tenders || []);
     } catch (e) {
-      if (!silent) alert(e.message || 'Failed to load tenders');
+      if (!silent) await uiAlert(e.message || 'Failed to load tenders', 'Tenders error');
       if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load tenders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
     }
   }
@@ -2276,7 +2298,7 @@ function exitSuperUser() {
     }
     body.innerHTML = tenders.map(t => {
       const status = (t.status || 'open').toLowerCase();
-      const pill = status === 'closed' ? 'completed' : 'open';
+      const pill = status === 'open' ? 'open' : 'completed';
       const qty = (t.quantity ? `${t.quantity} ${t.unit||''}` : (t.unit||''));
       const deadline = t.deadline ? String(t.deadline).slice(0, 10) : '—';
       const myBid = t.my_bid_price ? `${formatKsh(t.my_bid_price)} (${(t.my_bid_status||'submitted')})` : '—';
@@ -2298,11 +2320,19 @@ function exitSuperUser() {
   async function bidOnTender(tenderId) {
     const uid = _getAuthUid();
     if (!uid) return;
-    const priceRaw = (prompt('Your bid price (KSh)') || '').trim();
-    if (!priceRaw) return;
-    const price = Number(priceRaw);
-    if (!Number.isFinite(price) || price <= 0) return alert('Please enter a valid price.');
-    const message = (prompt('Message to buyer (optional)') || '').trim();
+    const bidForm = await uiPrompt({
+      title: 'Submit bid',
+      message: 'Enter your bid details.',
+      confirmText: 'Submit bid',
+      fields: [
+        { key: 'price', label: 'Bid price (KSh)', type: 'number', required: true, placeholder: '12000' },
+        { key: 'message', label: 'Message (optional)', type: 'textarea', placeholder: 'Delivery timeline, quality details...' },
+      ],
+    });
+    if (!bidForm) return;
+    const price = Number(bidForm.price);
+    if (!Number.isFinite(price) || price <= 0) return uiAlert('Please enter a valid price.', 'Invalid bid');
+    const message = String(bidForm.message || '').trim();
     try {
       await apiJson(`${API_BASE_URL}/tenders/${encodeURIComponent(tenderId)}/bids`, {
         method: 'POST',
@@ -2310,7 +2340,7 @@ function exitSuperUser() {
       });
       loadOpenTenders(true);
     } catch (e) {
-      alert(e.message || 'Failed to submit bid');
+      await uiAlert(e.message || 'Failed to submit bid', 'Bid failed');
     }
   }
 
@@ -2320,11 +2350,11 @@ function exitSuperUser() {
     try {
       const d = await apiJson(`${API_BASE_URL}/tenders/${encodeURIComponent(tenderId)}/bids?firebase_uid=${encodeURIComponent(uid)}`);
       const bids = d?.bids || [];
-      if (!bids.length) return alert('No bid submitted yet.');
+      if (!bids.length) return uiAlert('No bid submitted yet.', 'Tender bid');
       const b = bids[0];
-      alert(`Your bid:\n${formatKsh(b.price)}\nStatus: ${(b.status||'submitted')}\nMessage: ${(b.message||'').toString()}`);
+      await uiAlert(`Your bid:\n${formatKsh(b.price)}\nStatus: ${(b.status||'submitted')}\nMessage: ${(b.message||'').toString()}`, 'Tender bid');
     } catch (e) {
-      alert(e.message || 'Failed to load tender details');
+      await uiAlert(e.message || 'Failed to load tender details', 'Tender details error');
     }
   }
 
@@ -2601,15 +2631,15 @@ function exitSuperUser() {
   }
 
   /* ── Contact form ── */
-  function submitContact(e) {
+  async function submitContact(e) {
     e.preventDefault();
-    alert('✅ Message sent! Our team will get back to you shortly.');
+    await uiAlert('Message sent! Our team will get back to you shortly.', 'Success');
     e.target.reset();
   }
 
   /* ── Logout ── */
-  function logout(skip=false) {
-    if (!skip && !confirm('Are you sure you want to logout?')) return;
+  async function logout(skip=false) {
+    if (!skip && !await uiConfirm('Are you sure you want to logout?', 'Sign out')) return;
     localStorage.removeItem('user');
     localStorage.removeItem('userRole');
     localStorage.removeItem('authToken');
@@ -2620,7 +2650,7 @@ function exitSuperUser() {
   let sessionTimer;
   function resetSession() {
     clearTimeout(sessionTimer);
-    sessionTimer = setTimeout(() => { alert('Session expired.'); logout(true); }, 30*60*1000);
+    sessionTimer = setTimeout(async () => { await uiAlert('Session expired.', 'Session timeout'); logout(true); }, 30*60*1000);
   }
   ['mousedown','keypress','scroll','touchstart'].forEach(ev => document.addEventListener(ev, resetSession, { passive: true }));
   resetSession();

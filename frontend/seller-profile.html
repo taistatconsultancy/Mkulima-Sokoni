@@ -240,12 +240,14 @@
   </div>
 </footer>
 
+<script src="js/ui-feedback.js"></script>
 <script>
 document.getElementById('yr').textContent = new Date().getFullYear();
 
 var isProduction = !['localhost','127.0.0.1'].includes(window.location.hostname);
 var API = isProduction ? '/api' : 'http://localhost:5000/api';
 var EMOJI = { Vegetables:'🥬', Fruits:'🍊', Cereals:'🌽', Livestock:'🐄', Dairy:'🥛', Tea:'🍵', Nuts:'🥜', Legumes:'🫘', Herbs:'🌿', Potatoes:'🥔', Other:'📦' };
+var uiAlert = function(msg, title){ return window.SokoUI ? window.SokoUI.alert(msg, title || 'Notice') : Promise.resolve(window.alert(msg)); };
 
 var profileData = {};
 
@@ -369,7 +371,7 @@ function shareProfile(platform) {
     case 'whatsapp': window.open('https://wa.me/?text=' + encodeURIComponent(text+' '+url),'_blank'); break;
     case 'facebook': window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url),'_blank'); break;
     case 'x': window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text)+'&url='+encodeURIComponent(url),'_blank'); break;
-    case 'copy': navigator.clipboard.writeText(url).then(function(){ alert('Profile link copied!'); }); break;
+    case 'copy': navigator.clipboard.writeText(url).then(function(){ window.SokoUI ? window.SokoUI.toast('Profile link copied!', 'success') : null; }); break;
   }
 }
 

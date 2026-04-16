@@ -369,12 +369,16 @@
   </div>
 </footer>
 
+<script src="js/ui-feedback.js"></script>
 <script>
 document.getElementById('yr').textContent = new Date().getFullYear();
 
 var isProduction = !['localhost','127.0.0.1'].includes(window.location.hostname);
 var API = isProduction ? '/api' : 'http://localhost:5000/api';
 var EMOJI = { Vegetables:'🥬', Fruits:'🍊', Cereals:'🌽', Livestock:'🐄', Dairy:'🥛', Tea:'🍵', Nuts:'🥜', Legumes:'🫘', Herbs:'🌿', Potatoes:'🥔', Other:'📦' };
+var uiAlert = function(msg, title){ return window.SokoUI ? window.SokoUI.alert(msg, title || 'Notice') : Promise.resolve(window.alert(msg)); };
+var uiConfirm = function(msg, title, opts){ return window.SokoUI ? window.SokoUI.confirm(msg, title || 'Confirm', opts || {}) : Promise.resolve(window.confirm(msg)); };
+var uiPrompt = function(cfg){ return window.SokoUI ? window.SokoUI.prompt(cfg) : Promise.resolve(null); };
 
 var currentProduct = null;
 var currentSeller = null;
@@ -419,20 +423,28 @@ function addToCartFromDetail() {
     if (!currentProduct || !currentProduct.id) return;
     var uid = getFirebaseUid();
     if (!uid) return openModal('loginModal');
-    var qtyRaw = prompt('Quantity', String(currentProduct.min_order || 1));
-    if (qtyRaw === null) return;
-    var qty = parseInt(qtyRaw, 10);
+    var form = await uiPrompt({
+      title: 'Add to cart',
+      message: 'Enter quantity for this product.',
+      confirmText: 'Add',
+      fields: [
+        { key: 'quantity', label: 'Quantity', type: 'number', required: true, value: String(currentProduct.min_order || 1), placeholder: String(currentProduct.min_order || 1) }
+      ]
+    });
+    if (!form) return;
+    var qty = parseInt(form.quantity, 10);
     if (!qty || qty < 1) qty = 1;
     try {
       await apiJson(API + '/cart/items', {
         method: 'POST',
         body: JSON.stringify({ firebase_uid: uid, product_id: currentProduct.id, quantity: qty })
       });
-      if (confirm('Added to cart. Open cart now?')) {
+      var openCart = await uiConfirm('Added to cart. Open cart now?', 'Added to cart', { confirmText: 'Open cart', cancelText: 'Stay here' });
+      if (openCart) {
         location.href = 'buyer.html#cart';
       }
     } catch(e) {
-      alert(e.message || 'Failed to add to cart');
+      await uiAlert(e.message || 'Failed to add to cart', 'Could not add item');
     }
   });
 }
@@ -650,7 +662,7 @@ var isLoadingChat = false;
 
 async function startChat() {
   if (!currentProduct || !currentProduct.id) {
-    alert('Product information is missing. Please refresh the page.');
+    await uiAlert('Product information is missing. Please refresh the page.', 'Missing data');
     return;
   }
   var thread = document.getElementById('chatThread');
@@ -664,7 +676,7 @@ async function startChat() {
     var user = JSON.parse(userStr);
     var firebaseUid = user && (user.firebase_uid || user.id);
     if (!firebaseUid) {
-      alert('We could not find your account details. Please sign in again.');
+      await uiAlert('We could not find your account details. Please sign in again.', 'Account issue');
       return;
     }
     var body = {
@@ -746,7 +758,7 @@ async function sendChatMessage() {
     var user = JSON.parse(userStr);
     var firebaseUid = user && (user.firebase_uid || user.id);
     if (!firebaseUid) {
-      alert('We could not find your account details. Please sign in again.');
+      await uiAlert('We could not find your account details. Please sign in again.', 'Account issue');
       btn.disabled = false;
       return;
     }
@@ -775,7 +787,7 @@ async function sendChatMessage() {
     input.value = '';
   } catch (e) {
     console.error(e);
-    alert(e.message || 'Could not send message. Please try again.');
+    await uiAlert(e.message || 'Could not send message. Please try again.', 'Message error');
   } finally {
     btn.disabled = false;
   }
@@ -793,7 +805,7 @@ function shareProduct(platform) {
     case 'whatsapp': window.open('https://wa.me/?text=' + encodeURIComponent(text+' '+url),'_blank'); break;
     case 'facebook': window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url),'_blank'); break;
     case 'x': window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(text)+'&url='+encodeURIComponent(url),'_blank'); break;
-    case 'copy': navigator.clipboard.writeText(url).then(function(){ alert('Link copied!'); }); break;
+    case 'copy': navigator.clipboard.writeText(url).then(function(){ window.SokoUI ? window.SokoUI.toast('Link copied!', 'success') : null; }); break;
   }
 }
 

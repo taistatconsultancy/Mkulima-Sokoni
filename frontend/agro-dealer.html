@@ -522,12 +522,16 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
 
 <script src="js/support-center.js"></script>
 <script src="js/marketplace-sync.js"></script>
+<script src="js/ui-feedback.js"></script>
 <script>
 document.getElementById('yr').textContent = new Date().getFullYear();
 
 const isProduction = !['localhost','127.0.0.1'].includes(window.location.hostname);
 const API = isProduction ? '/api' : 'http://localhost:5000/api';
 const EMOJI = {Seeds:'🌱',Fertilizers:'🧪',Pesticides:'💊',Equipment:'🔧','Animal Feed':'🐄',Veterinary:'💉',Irrigation:'💧',Vegetables:'🥬',Fruits:'🍊',Cereals:'🌾',Other:'📦'};
+const uiAlert = (msg, title='Notice') => window.SokoUI ? window.SokoUI.alert(msg, title) : Promise.resolve(window.alert(msg));
+const uiConfirm = (msg, title='Confirm', opts={}) => window.SokoUI ? window.SokoUI.confirm(msg, title, opts) : Promise.resolve(window.confirm(msg));
+const uiPrompt = (cfg) => window.SokoUI ? window.SokoUI.prompt(cfg) : Promise.resolve(null);
 
 let firebaseUid = null;
 let myProducts = [];
@@ -694,13 +698,13 @@ async function activateProduct(pid) {
       body:JSON.stringify({ firebase_uid: firebaseUid, status:'active' })
     });
     if (res.ok) {
-      alert('Product published!');
+      window.SokoUI?.toast('Product published!', 'success');
       loadMyProducts();
       loadMarketplace();
       if (window.SokoMarketplaceSync) window.SokoMarketplaceSync.invalidate();
     }
-    else alert('Failed to publish. Try again.');
-  } catch(e) { alert('Error: ' + e.message); }
+    else await uiAlert('Failed to publish. Try again.', 'Publish failed');
+  } catch(e) { await uiAlert(e.message || 'Publish failed', 'Error'); }
 }
 
 /* ── Add Product ── */
@@ -710,12 +714,12 @@ document.getElementById('addProductForm').addEventListener('submit', function(e)
 });
 
 async function submitProduct(status) {
-  if (!firebaseUid) { alert('Please sign in first.'); return; }
+  if (!firebaseUid) { await uiAlert('Please sign in first.', 'Sign in required'); return; }
   const form = document.getElementById('addProductForm');
   if (!form.checkValidity()) { form.reportValidity(); return; }
 
   const imageFile = document.getElementById('ap-image').files[0];
-  if (!imageFile && status === 'active') { alert('Please select a product image.'); return; }
+  if (!imageFile && status === 'active') { await uiAlert('Please select a product image.', 'Image required'); return; }
 
   const btn = document.getElementById('ap-submit-btn');
   btn.disabled = true;
@@ -755,7 +759,7 @@ async function submitProduct(status) {
     const result = await res.json();
     if (!res.ok) throw new Error(result.error || 'Failed to create product');
 
-    alert(status === 'active' ? '✅ Product published to marketplace!' : '✅ Product saved as draft!');
+    window.SokoUI?.toast(status === 'active' ? 'Product published to marketplace!' : 'Product saved as draft!', 'success');
     form.reset();
     document.getElementById('ap-preview').style.display = 'none';
     loadMyProducts();
@@ -763,7 +767,7 @@ async function submitProduct(status) {
     if (window.SokoMarketplaceSync) window.SokoMarketplaceSync.invalidate();
     showPage('inventory', document.querySelector('.topbar-nav-link:nth-child(2)'));
   } catch(e) {
-    alert('Error: ' + e.message);
+    await uiAlert(e.message || 'Save failed', 'Error');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Publish to Marketplace';
@@ -932,9 +936,9 @@ async function saveProfile(e) {
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(body)
     });
-    if (res.ok) { alert('✅ Profile saved successfully!'); loadProfile(); }
-    else { const d = await res.json(); alert('Error: ' + (d.error || 'Save failed')); }
-  } catch(e) { alert('Error: ' + e.message); }
+    if (res.ok) { window.SokoUI?.toast('Profile saved successfully!', 'success'); loadProfile(); }
+    else { const d = await res.json(); await uiAlert(d.error || 'Save failed', 'Profile save failed'); }
+  } catch(e) { await uiAlert(e.message || 'Save failed', 'Error'); }
   finally { btn.disabled = false; btn.textContent = 'Save Profile'; }
 }
 
@@ -954,7 +958,7 @@ async function loadDealerOrders(silent=false) {
     const d = await apiJson(`${API}/orders/seller?firebase_uid=${encodeURIComponent(firebaseUid)}`);
     renderDealerOrders(d?.orders || []);
   } catch (e) {
-    if (!silent) alert(e.message || 'Failed to load orders');
+    if (!silent) await uiAlert(e.message || 'Failed to load orders', 'Orders error');
     if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load orders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
   }
 }
@@ -998,7 +1002,7 @@ async function updateDealerOrderStatus(orderId, status) {
     });
     loadDealerOrders(true);
   } catch (e) {
-    alert(e.message || 'Failed to update order');
+    await uiAlert(e.message || 'Failed to update order', 'Order update failed');
   }
 }
 
@@ -1013,7 +1017,7 @@ async function loadDealerTenders(silent=false) {
     const d = await apiJson(`${API}/tenders?firebase_uid=${encodeURIComponent(firebaseUid)}`);
     renderDealerTenders(d?.tenders || []);
   } catch (e) {
-    if (!silent) alert(e.message || 'Failed to load tenders');
+    if (!silent) await uiAlert(e.message || 'Failed to load tenders', 'Tenders error');
     if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load tenders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
   }
 }
@@ -1048,11 +1052,19 @@ function renderDealerTenders(tenders) {
 
 async function bidDealerTender(tenderId) {
   if (!firebaseUid) return;
-  const priceRaw = (prompt('Your bid price (KSh)') || '').trim();
-  if (!priceRaw) return;
-  const price = Number(priceRaw);
-  if (!Number.isFinite(price) || price <= 0) return alert('Please enter a valid price.');
-  const message = (prompt('Message to buyer (optional)') || '').trim();
+  const bidForm = await uiPrompt({
+    title: 'Submit bid',
+    message: 'Enter your bid details.',
+    confirmText: 'Submit bid',
+    fields: [
+      { key: 'price', label: 'Bid price (KSh)', type: 'number', required: true, placeholder: '12000' },
+      { key: 'message', label: 'Message (optional)', type: 'textarea', placeholder: 'Delivery timeline, quality details...' },
+    ],
+  });
+  if (!bidForm) return;
+  const price = Number(bidForm.price);
+  if (!Number.isFinite(price) || price <= 0) return uiAlert('Please enter a valid price.', 'Invalid bid');
+  const message = String(bidForm.message || '').trim();
   try {
     await apiJson(`${API}/tenders/${encodeURIComponent(tenderId)}/bids`, {
       method: 'POST',
@@ -1060,7 +1072,7 @@ async function bidDealerTender(tenderId) {
     });
     loadDealerTenders(true);
   } catch (e) {
-    alert(e.message || 'Failed to submit bid');
+    await uiAlert(e.message || 'Failed to submit bid', 'Bid failed');
   }
 }
 
@@ -1069,16 +1081,16 @@ async function viewDealerTender(tenderId) {
   try {
     const d = await apiJson(`${API}/tenders/${encodeURIComponent(tenderId)}/bids?firebase_uid=${encodeURIComponent(firebaseUid)}`);
     const bids = d?.bids || [];
-    if (!bids.length) return alert('No bid submitted yet.');
+    if (!bids.length) return uiAlert('No bid submitted yet.', 'Tender bid');
     const b = bids[0];
-    alert(`Your bid:\n${formatKsh(b.price)}\nStatus: ${(b.status||'submitted')}\nMessage: ${(b.message||'').toString()}`);
+    await uiAlert(`Your bid:\n${formatKsh(b.price)}\nStatus: ${(b.status||'submitted')}\nMessage: ${(b.message||'').toString()}`, 'Tender bid');
   } catch (e) {
-    alert(e.message || 'Failed to load tender');
+    await uiAlert(e.message || 'Failed to load tender', 'Tender load error');
   }
 }
 
-function logout() {
-  if (!confirm('Are you sure you want to logout?')) return;
+async function logout() {
+  if (!await uiConfirm('Are you sure you want to logout?', 'Sign out')) return;
   localStorage.removeItem('user');
   localStorage.removeItem('userRole');
   localStorage.removeItem('authToken');
