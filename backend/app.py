@@ -10,7 +10,7 @@ backend_dir = os.path.dirname(os.path.abspath(__file__))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, request, g, has_request_context
 from flask_cors import CORS
 from config import Config
 from routes.auth import auth_bp
@@ -25,15 +25,41 @@ from routes.tenders import tenders_bp
 from asgiref.wsgi import WsgiToAsgi
 import logging
 import os
+import uuid
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - [req:%(request_id)s] - %(message)s'
 )
+
+
+class RequestIdFilter(logging.Filter):
+    def filter(self, record):
+        record.request_id = (
+            getattr(g, 'request_id', '-') if has_request_context() else '-'
+        )
+        return True
+
+
+for handler in logging.getLogger().handlers:
+    handler.addFilter(RequestIdFilter())
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+
+@app.before_request
+def inject_request_id():
+    incoming = request.headers.get('X-Request-ID')
+    g.request_id = incoming or uuid.uuid4().hex[:12]
+
+
+@app.after_request
+def expose_request_id(resp):
+    if hasattr(g, 'request_id'):
+        resp.headers['X-Request-ID'] = g.request_id
+    return resp
 
 # Enable CORS
 CORS(app, origins=Config.CORS_ORIGINS)

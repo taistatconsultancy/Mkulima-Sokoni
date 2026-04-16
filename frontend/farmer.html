@@ -1428,6 +1428,31 @@ function exitSuperUser() {
 
   let sellerOrdersPollTimer = null;
   let sellerTendersPollTimer = null;
+  let sellerOrdersLoading = false;
+  let sellerTendersLoading = false;
+
+  function activeFarmerPage() {
+    const active = document.querySelector('.page-section.active');
+    return active ? active.id : '';
+  }
+
+  function nextPollDelay(baseMs) {
+    return baseMs + Math.floor(Math.random() * 2000);
+  }
+
+  function stampLastUpdated(resourceKey) {
+    const id = `lastUpdated-${resourceKey}`;
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      el.style.cssText = 'font-size:.78rem;color:var(--muted);margin:8px 0 10px;';
+      const section = document.getElementById(resourceKey);
+      if (section) section.insertBefore(el, section.firstChild.nextSibling || section.firstChild);
+    }
+    const now = new Date();
+    el.textContent = `Last updated ${now.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+  }
 
   function stopSellerCommercePolling() {
     if (sellerOrdersPollTimer) clearInterval(sellerOrdersPollTimer);
@@ -1437,12 +1462,20 @@ function exitSuperUser() {
 
   function startSellerOrdersPolling() {
     if (sellerOrdersPollTimer) return;
-    sellerOrdersPollTimer = setInterval(() => loadSellerOrders(true), 20000);
+    const tick = async () => {
+      if (!document.hidden && activeFarmerPage() === 'orders') await loadSellerOrders(true);
+      sellerOrdersPollTimer = setTimeout(tick, nextPollDelay(22000));
+    };
+    sellerOrdersPollTimer = setTimeout(tick, nextPollDelay(22000));
   }
 
   function startSellerTendersPolling() {
     if (sellerTendersPollTimer) return;
-    sellerTendersPollTimer = setInterval(() => loadOpenTenders(true), 20000);
+    const tick = async () => {
+      if (!document.hidden && activeFarmerPage() === 'tenders') await loadOpenTenders(true);
+      sellerTendersPollTimer = setTimeout(tick, nextPollDelay(22000));
+    };
+    sellerTendersPollTimer = setTimeout(tick, nextPollDelay(22000));
   }
 
   /* ── Navigation ── */
@@ -1462,17 +1495,16 @@ function exitSuperUser() {
     if (pageName === 'profile') loadFarmerProfile();
     stopSellerCommercePolling();
     if (pageName === 'messages') {
-      loadInbox();
-      startInboxPolling();
+      setTimeout(() => loadInbox(false).then(() => startInboxPolling()), 260);
     } else {
       stopInboxPolling();
     }
     if (pageName === 'orders') {
-      loadSellerOrders(false);
+      setTimeout(() => loadSellerOrders(false), 240);
       startSellerOrdersPolling();
     }
     if (pageName === 'tenders') {
-      loadOpenTenders(false);
+      setTimeout(() => loadOpenTenders(false), 360);
       startSellerTendersPolling();
     }
   }
@@ -1500,10 +1532,11 @@ function exitSuperUser() {
 
   function startInboxPolling() {
     stopInboxPolling();
-    inboxPollTimer = setInterval(() => {
-      if (inboxLoading) return;
-      loadInbox(true);
-    }, 12000);
+    const tick = async () => {
+      if (!document.hidden && activeFarmerPage() === 'messages' && !inboxLoading) await loadInbox(true);
+      inboxPollTimer = setTimeout(tick, nextPollDelay(12000));
+    };
+    inboxPollTimer = setTimeout(tick, nextPollDelay(12000));
   }
   function stopInboxPolling() {
     if (inboxPollTimer) clearInterval(inboxPollTimer);
@@ -1523,7 +1556,7 @@ function exitSuperUser() {
     }
     if (inboxLoading) return;
     inboxLoading = true;
-    if (!silent && inboxEl) {
+    if (!silent && inboxEl && !inboxCache.length) {
       inboxEl.innerHTML = '<div class="chat-empty">Loading conversations…</div>';
     }
     try {
@@ -1535,11 +1568,12 @@ function exitSuperUser() {
       }
       const res = await fetch(`${API_BASE_URL}/chat/conversations?firebase_uid=${encodeURIComponent(uid)}&role=farmer`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to load inbox');
+      if (!res.ok) throw new Error(data.error || 'Failed to load messages inbox');
       inboxCache = data.conversations || [];
       try { sessionStorage.setItem('farmerInboxCache', JSON.stringify(inboxCache)); } catch {}
       renderInbox(inboxCache);
       updateUnreadDot(inboxCache);
+      stampLastUpdated('messages');
 
       // If a conversation is active, keep it refreshed too
       if (activeConversationId) {
@@ -1547,7 +1581,7 @@ function exitSuperUser() {
       }
     } catch (e) {
       console.error(e);
-      if (inboxEl) inboxEl.innerHTML = '<div class="chat-empty">Could not load inbox.</div>';
+      if (inboxEl) inboxEl.innerHTML = '<div class="chat-empty">Unable to load messages inbox.</div>';
     } finally {
       inboxLoading = false;
     }
@@ -1617,7 +1651,7 @@ function exitSuperUser() {
     try {
       const res = await fetch(`${API_BASE_URL}/chat/conversations/${conversationId}/messages?firebase_uid=${encodeURIComponent(uid)}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to load messages');
+      if (!res.ok) throw new Error(data.error || 'Failed to load conversation');
       const msgs = data.messages || [];
       const convo = data.conversation || {};
       if (titleEl) titleEl.textContent = convo.farm_name ? `Chat • ${convo.farm_name}` : 'Chat';
@@ -1629,7 +1663,7 @@ function exitSuperUser() {
       await loadInbox(true);
     } catch (e) {
       console.error(e);
-      if (bodyEl) bodyEl.innerHTML = '<div class="chat-empty">Could not load messages.</div>';
+      if (bodyEl) bodyEl.innerHTML = '<div class="chat-empty">Unable to load conversation.</div>';
     } finally {
       threadLoading = false;
     }
@@ -1668,13 +1702,13 @@ function exitSuperUser() {
         body: JSON.stringify({ firebase_uid: uid, body: text })
       });
       const data = await res.json();
-      if (!res.ok || !data.message) throw new Error(data.error || 'Failed to send');
+      if (!res.ok || !data.message) throw new Error(data.error || 'Failed to send message');
       input.value = '';
       // Reload thread to include server timestamp + keep consistent
       await loadThread(activeConversationId, true);
     } catch (e) {
       console.error(e);
-      await uiAlert(e.message || 'Could not send message.', 'Message error');
+      await uiAlert(e.message || 'Unable to send message.', 'Message error');
     } finally {
       btn.disabled = false;
     }
@@ -1762,7 +1796,7 @@ function exitSuperUser() {
     const spn = document.getElementById('saveProductBtnSpinner');
     const can = document.getElementById('cancelProductBtn');
     btn.disabled = on; can.disabled = on;
-    txt.textContent = on ? 'Saving…' : 'Save Product';
+    txt.textContent = on ? 'Saving product…' : 'Save Product';
     spn.style.display = on ? 'inline-flex' : 'none';
   }
 
@@ -2204,13 +2238,18 @@ function exitSuperUser() {
       if (body) body.innerHTML = '<tr><td colspan="5"><div class="empty-state" style="padding:26px 10px;"><div class="icon">🧾</div><h4>Please sign in</h4><p style="font-size:.82rem;">Sign in to view seller orders.</p></div></td></tr>';
       return;
     }
-    if (!silent && body) body.innerHTML = '<tr><td colspan="5"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading orders…</div></td></tr>';
+    if (sellerOrdersLoading) return;
+    sellerOrdersLoading = true;
+    if (!silent && body && !body.querySelector('tr')) body.innerHTML = '<tr><td colspan="5"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading orders…</div></td></tr>';
     try {
       const d = await apiJson(`${API_BASE_URL}/orders/seller?firebase_uid=${encodeURIComponent(uid)}`);
       renderSellerOrders(d?.orders || []);
+      stampLastUpdated('orders');
     } catch (e) {
-      if (!silent) await uiAlert(e.message || 'Failed to load orders', 'Orders error');
+      if (!silent) await uiAlert(e.message || 'Failed to load orders', 'Load orders failed');
       if (body) body.innerHTML = '<tr><td colspan="5"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load orders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
+    } finally {
+      sellerOrdersLoading = false;
     }
   }
 
@@ -2279,13 +2318,18 @@ function exitSuperUser() {
       if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">📋</div><h4>Please sign in</h4><p style="font-size:.82rem;">Sign in to view available tenders.</p></div></td></tr>';
       return;
     }
-    if (!silent && body) body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading tenders…</div></td></tr>';
+    if (sellerTendersLoading) return;
+    sellerTendersLoading = true;
+    if (!silent && body && !body.querySelector('tr')) body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading tenders…</div></td></tr>';
     try {
       const d = await apiJson(`${API_BASE_URL}/tenders?firebase_uid=${encodeURIComponent(uid)}`);
       renderOpenTenders(d?.tenders || []);
+      stampLastUpdated('tenders');
     } catch (e) {
-      if (!silent) await uiAlert(e.message || 'Failed to load tenders', 'Tenders error');
+      if (!silent) await uiAlert(e.message || 'Failed to load tenders', 'Load tenders failed');
       if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load tenders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
+    } finally {
+      sellerTendersLoading = false;
     }
   }
 
@@ -2340,7 +2384,7 @@ function exitSuperUser() {
       });
       loadOpenTenders(true);
     } catch (e) {
-      await uiAlert(e.message || 'Failed to submit bid', 'Bid failed');
+      await uiAlert(e.message || 'Failed to submit bid', 'Submit bid failed');
     }
   }
 

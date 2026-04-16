@@ -1065,6 +1065,32 @@ function exitSuperUser() {
   let cartPollTimer = null;
   let tendersPollTimer = null;
   let ordersPollTimer = null;
+  let cartLoading = false;
+  let tendersLoading = false;
+  let ordersLoading = false;
+
+  function activeBuyerPage() {
+    const active = document.querySelector('.page-section.active');
+    return active ? active.id : '';
+  }
+
+  function nextPollDelay(baseMs) {
+    return baseMs + Math.floor(Math.random() * 2000);
+  }
+
+  function stampLastUpdated(resourceKey) {
+    const id = `lastUpdated-${resourceKey}`;
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      el.style.cssText = 'font-size:.78rem;color:var(--muted);margin:8px 0 10px;';
+      const section = document.getElementById(resourceKey);
+      if (section) section.insertBefore(el, section.firstChild.nextSibling || section.firstChild);
+    }
+    const now = new Date();
+    el.textContent = `Last updated ${now.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+  }
 
   function stopCommercePolling() {
     if (cartPollTimer) clearInterval(cartPollTimer);
@@ -1075,15 +1101,27 @@ function exitSuperUser() {
 
   function startCartPolling() {
     if (cartPollTimer) return;
-    cartPollTimer = setInterval(() => loadBuyerCart(true), 12000);
+    const tick = async () => {
+      if (!document.hidden && activeBuyerPage() === 'cart') await loadBuyerCart(true);
+      cartPollTimer = setTimeout(tick, nextPollDelay(18000));
+    };
+    cartPollTimer = setTimeout(tick, nextPollDelay(18000));
   }
   function startTendersPolling() {
     if (tendersPollTimer) return;
-    tendersPollTimer = setInterval(() => loadBuyerTenders(true), 20000);
+    const tick = async () => {
+      if (!document.hidden && activeBuyerPage() === 'tenders') await loadBuyerTenders(true);
+      tendersPollTimer = setTimeout(tick, nextPollDelay(22000));
+    };
+    tendersPollTimer = setTimeout(tick, nextPollDelay(22000));
   }
   function startOrdersPolling() {
     if (ordersPollTimer) return;
-    ordersPollTimer = setInterval(() => loadBuyerOrders(true), 25000);
+    const tick = async () => {
+      if (!document.hidden && activeBuyerPage() === 'orders') await loadBuyerOrders(true);
+      ordersPollTimer = setTimeout(tick, nextPollDelay(25000));
+    };
+    ordersPollTimer = setTimeout(tick, nextPollDelay(25000));
   }
 
   /* ── Buyer chat inbox ── */
@@ -1102,10 +1140,13 @@ function exitSuperUser() {
 
   function startBuyerInboxPolling() {
     stopBuyerInboxPolling();
-    buyerInboxPollTimer = setInterval(() => {
-      if (buyerInboxLoading) return;
-      loadBuyerInbox(true);
-    }, 12000);
+    const tick = async () => {
+      if (!document.hidden && activeBuyerPage() === 'messages' && !buyerInboxLoading) {
+        await loadBuyerInbox(true);
+      }
+      buyerInboxPollTimer = setTimeout(tick, nextPollDelay(12000));
+    };
+    buyerInboxPollTimer = setTimeout(tick, nextPollDelay(12000));
   }
 
   function stopBuyerInboxPolling() {
@@ -1131,7 +1172,7 @@ function exitSuperUser() {
     if (buyerInboxLoading) return;
     buyerInboxLoading = true;
     try {
-      if (!silent && inboxEl) inboxEl.innerHTML = '<div class="chat-empty">Loading conversations…</div>';
+      if (!silent && inboxEl && !buyerInboxCache.length) inboxEl.innerHTML = '<div class="chat-empty">Loading conversations…</div>';
       const cached = sessionStorage.getItem('buyerInboxCache');
       if (!silent && cached && !buyerInboxCache.length) {
         buyerInboxCache = JSON.parse(cached);
@@ -1140,15 +1181,16 @@ function exitSuperUser() {
       }
       const res = await fetch(`${API_BASE_URL}/chat/conversations?firebase_uid=${encodeURIComponent(uid)}&role=buyer`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to load inbox');
+      if (!res.ok) throw new Error(data.error || 'Failed to load messages inbox');
       buyerInboxCache = data.conversations || [];
       try { sessionStorage.setItem('buyerInboxCache', JSON.stringify(buyerInboxCache)); } catch {}
       renderBuyerInbox(buyerInboxCache);
+      stampLastUpdated('messages');
       updateBuyerUnreadDot(buyerInboxCache);
       if (buyerActiveConversationId) await loadBuyerThread(buyerActiveConversationId, true);
     } catch (e) {
       console.error(e);
-      if (inboxEl) inboxEl.innerHTML = '<div class="chat-empty">Could not load inbox.</div>';
+      if (inboxEl) inboxEl.innerHTML = '<div class="chat-empty">Unable to load messages inbox.</div>';
     } finally {
       buyerInboxLoading = false;
     }
@@ -1212,7 +1254,7 @@ function exitSuperUser() {
     try {
       const res = await fetch(`${API_BASE_URL}/chat/conversations/${conversationId}/messages?firebase_uid=${encodeURIComponent(uid)}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to load messages');
+      if (!res.ok) throw new Error(data.error || 'Failed to load conversation');
       const msgs = data.messages || [];
       const convo = data.conversation || {};
       if (titleEl) titleEl.textContent = convo.farm_name ? `Chat • ${convo.farm_name}` : 'Chat';
@@ -1222,7 +1264,7 @@ function exitSuperUser() {
       await loadBuyerInbox(true);
     } catch (e) {
       console.error(e);
-      if (bodyEl) bodyEl.innerHTML = '<div class="chat-empty">Could not load messages.</div>';
+      if (bodyEl) bodyEl.innerHTML = '<div class="chat-empty">Unable to load conversation.</div>';
     } finally {
       buyerThreadLoading = false;
     }
@@ -1261,12 +1303,12 @@ function exitSuperUser() {
         body: JSON.stringify({ firebase_uid: uid, body: text })
       });
       const data = await res.json();
-      if (!res.ok || !data.message) throw new Error(data.error || 'Failed to send');
+      if (!res.ok || !data.message) throw new Error(data.error || 'Failed to send message');
       input.value = '';
       await loadBuyerThread(buyerActiveConversationId, true);
     } catch (e) {
       console.error(e);
-      await uiAlert(e.message || 'Could not send message.', 'Message error');
+      await uiAlert(e.message || 'Unable to send message.', 'Message error');
     } finally {
       btn.disabled = false;
     }
@@ -1297,19 +1339,19 @@ function exitSuperUser() {
       refreshCartBadge();
     }
     if (pageName === 'cart') {
-      loadBuyerCart();
+      setTimeout(() => loadBuyerCart(), 220);
       startCartPolling();
     }
     if (pageName === 'tenders') {
-      loadBuyerTenders();
+      setTimeout(() => loadBuyerTenders(), 320);
       startTendersPolling();
     }
     if (pageName === 'orders') {
-      loadBuyerOrders();
+      setTimeout(() => loadBuyerOrders(), 420);
       startOrdersPolling();
     }
     if (pageName === 'messages') {
-      loadBuyerInbox(false).then(() => startBuyerInboxPolling());
+      setTimeout(() => loadBuyerInbox(false).then(() => startBuyerInboxPolling()), 260);
     }
   }
 
@@ -1640,7 +1682,7 @@ function exitSuperUser() {
     q = Math.max(1, parseInt(q, 10) || 1);
     const previous = btnEl ? btnEl.textContent : '';
     try {
-      if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Adding…'; }
+      if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Adding to cart…'; }
       const d = await apiJson(`${API_BASE_URL}/cart/items`, {
         method: 'POST',
         body: JSON.stringify({ firebase_uid: uid, product_id: productId, quantity: q }),
@@ -1656,7 +1698,7 @@ function exitSuperUser() {
         }
       } catch {}
     } catch (e) {
-      await uiAlert(e.message || 'Failed to add to cart', 'Could not add item');
+      await uiAlert(e.message || 'Failed to add item to cart', 'Add to cart failed');
     } finally {
       if (btnEl) { btnEl.disabled = false; btnEl.textContent = previous || 'Add'; }
     }
@@ -1665,11 +1707,16 @@ function exitSuperUser() {
   async function loadBuyerCart(silent=false) {
     const uid = getFirebaseUid();
     if (!uid) return;
+    if (cartLoading) return;
+    cartLoading = true;
     try {
       const d = await apiJson(`${API_BASE_URL}/cart?firebase_uid=${encodeURIComponent(uid)}`);
       renderBuyerCart(d);
+      stampLastUpdated('cart');
     } catch (e) {
       if (!silent) await uiAlert(e.message || 'Failed to load cart', 'Cart error');
+    } finally {
+      cartLoading = false;
     }
   }
 
@@ -1727,7 +1774,7 @@ function exitSuperUser() {
       });
       renderBuyerCart(d);
     } catch (e) {
-      await uiAlert(e.message || 'Failed to update quantity', 'Could not update quantity');
+      await uiAlert(e.message || 'Failed to update quantity', 'Quantity update failed');
       loadBuyerCart(true);
     }
   }
@@ -1743,7 +1790,7 @@ function exitSuperUser() {
       });
       renderBuyerCart(d);
     } catch (e) {
-      await uiAlert(e.message || 'Failed to remove item', 'Could not remove item');
+      await uiAlert(e.message || 'Failed to remove item', 'Remove item failed');
     }
   }
 
@@ -1770,11 +1817,16 @@ function exitSuperUser() {
   async function loadBuyerTenders(silent=false) {
     const uid = getFirebaseUid();
     if (!uid) return;
+    if (tendersLoading) return;
+    tendersLoading = true;
     try {
       const d = await apiJson(`${API_BASE_URL}/tenders?firebase_uid=${encodeURIComponent(uid)}`);
       renderBuyerTenders(d?.tenders || []);
+      stampLastUpdated('tenders');
     } catch (e) {
       if (!silent) await uiAlert(e.message || 'Failed to load tenders', 'Tender error');
+    } finally {
+      tendersLoading = false;
     }
   }
 
@@ -1855,7 +1907,7 @@ function exitSuperUser() {
       loadBuyerTenders(true);
     } catch (e) {
       hideLoading();
-      await uiAlert(e.message || 'Failed to create tender', 'Could not create tender');
+      await uiAlert(e.message || 'Failed to create tender', 'Create tender failed');
     }
   }
 
@@ -1869,7 +1921,7 @@ function exitSuperUser() {
       const summary = bids.slice(0, 8).map(b => `• ${formatKsh(b.price)} — ${(b.farm_name || b.first_name || 'Seller')}`).join('\n');
       await uiAlert(`Bids:\n${summary}${bids.length>8 ? `\n… +${bids.length-8} more` : ''}`, 'Tender bids');
     } catch (e) {
-      await uiAlert(e.message || 'Failed to load bids', 'Could not load bids');
+      await uiAlert(e.message || 'Failed to load bids', 'Load bids failed');
     }
   }
 
@@ -1884,18 +1936,23 @@ function exitSuperUser() {
       });
       loadBuyerTenders(true);
     } catch (e) {
-      await uiAlert(e.message || 'Failed to close tender', 'Could not close tender');
+      await uiAlert(e.message || 'Failed to close tender', 'Close tender failed');
     }
   }
 
   async function loadBuyerOrders(silent=false) {
     const uid = getFirebaseUid();
     if (!uid) return;
+    if (ordersLoading) return;
+    ordersLoading = true;
     try {
       const d = await apiJson(`${API_BASE_URL}/orders/buyer?firebase_uid=${encodeURIComponent(uid)}`);
       renderBuyerOrders(d?.orders || []);
+      stampLastUpdated('orders');
     } catch (e) {
       if (!silent) await uiAlert(e.message || 'Failed to load orders', 'Order error');
+    } finally {
+      ordersLoading = false;
     }
   }
 

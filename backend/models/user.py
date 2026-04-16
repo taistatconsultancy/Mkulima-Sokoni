@@ -57,8 +57,8 @@ class User:
             result = execute_query(query, (firebase_uid,), fetch_one=True)
             if result:
                 user_id = result.get('user_id')
-                logger.info(f"Raw result from get_user_id_by_firebase_uid: {result}")
-                logger.info(f"Got user_id directly from users table: {user_id} (type: {type(user_id).__name__})")
+                logger.debug(f"Raw result from get_user_id_by_firebase_uid: {result}")
+                logger.debug(f"Got user_id directly from users table: {user_id} (type: {type(user_id).__name__})")
                 
                 # Validate it's a UUID (not a timestamp)
                 if isinstance(user_id, str) and 'T' in user_id:
@@ -71,7 +71,7 @@ class User:
                 if isinstance(user_id, str) and len(user_id) == 36 and user_id.count('-') == 4:
                     try:
                         uuid.UUID(user_id)
-                        logger.info(f"✅ Validated user_id: {user_id}")
+                        logger.debug(f"Validated user_id: {user_id}")
                         return user_id
                     except (ValueError, AttributeError) as e:
                         logger.error(f"user_id '{user_id}' is not a valid UUID: {e}")
@@ -116,14 +116,17 @@ class User:
                 # Use direct access, not .get() for required fields to catch errors early
                 try:
                     # Log all columns first to see what we're getting
-                    logger.info(f"User query result - all columns:")
+                    logger.debug("User query result - all columns")
                     if hasattr(result, 'keys'):
                         for key in result.keys():
                             val = result[key]
-                            logger.info(f"  {key}: {val} (type: {type(val).__name__})")
+                            if key in ('email', 'phone_number'):
+                                logger.debug(f"  {key}: [redacted]")
+                            else:
+                                logger.debug(f"  {key}: {val} (type: {type(val).__name__})")
                     
                     user_id_value = result['id']
-                    logger.info(f"Extracted user_id from result['id']: {user_id_value}, type: {type(user_id_value)}")
+                    logger.debug(f"Extracted user_id from result['id']: {user_id_value}, type: {type(user_id_value)}")
                     
                     # Validate that id is a UUID (not a timestamp)
                     if isinstance(user_id_value, str) and 'T' in user_id_value:
@@ -258,7 +261,7 @@ class User:
             """
             result = execute_query(query, (firebase_uid,), fetch_one=True)
             if result:
-                logger.info(f"Updated latest_sign_in for user {firebase_uid} to {result.get('latest_sign_in')}")
+                logger.debug(f"Updated latest_sign_in for user {firebase_uid} to {result.get('latest_sign_in')}")
             return result if result else None
         except Exception as e:
             logger.error(f"Error updating sign-in time: {str(e)}")

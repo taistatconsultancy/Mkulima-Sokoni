@@ -554,6 +554,28 @@ async function apiJson(url, opts = {}) {
 
 let dealerOrdersPollTimer = null;
 let dealerTendersPollTimer = null;
+let dealerOrdersLoading = false;
+let dealerTendersLoading = false;
+function activeDealerPage() {
+  const active = document.querySelector('.page-section.active');
+  return active ? active.id : '';
+}
+function nextPollDelay(baseMs) {
+  return baseMs + Math.floor(Math.random() * 2000);
+}
+function stampLastUpdated(resourceKey) {
+  const id = `lastUpdated-${resourceKey}`;
+  let el = document.getElementById(id);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = id;
+    el.style.cssText = 'font-size:.78rem;color:var(--muted);margin:8px 0 10px;';
+    const section = document.getElementById(resourceKey);
+    if (section) section.insertBefore(el, section.firstChild.nextSibling || section.firstChild);
+  }
+  const now = new Date();
+  el.textContent = `Last updated ${now.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+}
 function stopDealerCommercePolling() {
   if (dealerOrdersPollTimer) clearInterval(dealerOrdersPollTimer);
   if (dealerTendersPollTimer) clearInterval(dealerTendersPollTimer);
@@ -561,11 +583,19 @@ function stopDealerCommercePolling() {
 }
 function startDealerOrdersPolling() {
   if (dealerOrdersPollTimer) return;
-  dealerOrdersPollTimer = setInterval(() => loadDealerOrders(true), 20000);
+  const tick = async () => {
+    if (!document.hidden && activeDealerPage() === 'orders') await loadDealerOrders(true);
+    dealerOrdersPollTimer = setTimeout(tick, nextPollDelay(22000));
+  };
+  dealerOrdersPollTimer = setTimeout(tick, nextPollDelay(22000));
 }
 function startDealerTendersPolling() {
   if (dealerTendersPollTimer) return;
-  dealerTendersPollTimer = setInterval(() => loadDealerTenders(true), 20000);
+  const tick = async () => {
+    if (!document.hidden && activeDealerPage() === 'tenders') await loadDealerTenders(true);
+    dealerTendersPollTimer = setTimeout(tick, nextPollDelay(22000));
+  };
+  dealerTendersPollTimer = setTimeout(tick, nextPollDelay(22000));
 }
 
 function showPage(name, btn) {
@@ -577,8 +607,8 @@ function showPage(name, btn) {
   window.scrollTo({top:0,behavior:'smooth'});
   stopDealerCommercePolling();
   if (name === 'profile' && firebaseUid) loadProfile();
-  if (name === 'orders') { loadDealerOrders(false); startDealerOrdersPolling(); }
-  if (name === 'tenders') { loadDealerTenders(false); startDealerTendersPolling(); }
+  if (name === 'orders') { setTimeout(() => loadDealerOrders(false), 240); startDealerOrdersPolling(); }
+  if (name === 'tenders') { setTimeout(() => loadDealerTenders(false), 360); startDealerTendersPolling(); }
 }
 
 function previewImg(input) {
@@ -703,7 +733,7 @@ async function activateProduct(pid) {
       loadMarketplace();
       if (window.SokoMarketplaceSync) window.SokoMarketplaceSync.invalidate();
     }
-    else await uiAlert('Failed to publish. Try again.', 'Publish failed');
+    else await uiAlert('Failed to publish product. Try again.', 'Publish failed');
   } catch(e) { await uiAlert(e.message || 'Publish failed', 'Error'); }
 }
 
@@ -953,13 +983,18 @@ async function loadDealerOrders(silent=false) {
     if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">🧾</div><h4>Please sign in</h4><p style="font-size:.82rem;">Sign in to view seller orders.</p></div></td></tr>';
     return;
   }
-  if (!silent && body) body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading orders…</div></td></tr>';
+  if (dealerOrdersLoading) return;
+  dealerOrdersLoading = true;
+  if (!silent && body && !body.querySelector('tr')) body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading orders…</div></td></tr>';
   try {
     const d = await apiJson(`${API}/orders/seller?firebase_uid=${encodeURIComponent(firebaseUid)}`);
     renderDealerOrders(d?.orders || []);
+    stampLastUpdated('orders');
   } catch (e) {
-    if (!silent) await uiAlert(e.message || 'Failed to load orders', 'Orders error');
+    if (!silent) await uiAlert(e.message || 'Failed to load orders', 'Load orders failed');
     if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load orders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
+  } finally {
+    dealerOrdersLoading = false;
   }
 }
 
@@ -1012,13 +1047,18 @@ async function loadDealerTenders(silent=false) {
     if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">📋</div><h4>Please sign in</h4><p style="font-size:.82rem;">Sign in to view available tenders.</p></div></td></tr>';
     return;
   }
-  if (!silent && body) body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading tenders…</div></td></tr>';
+  if (dealerTendersLoading) return;
+  dealerTendersLoading = true;
+  if (!silent && body && !body.querySelector('tr')) body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading tenders…</div></td></tr>';
   try {
     const d = await apiJson(`${API}/tenders?firebase_uid=${encodeURIComponent(firebaseUid)}`);
     renderDealerTenders(d?.tenders || []);
+    stampLastUpdated('tenders');
   } catch (e) {
-    if (!silent) await uiAlert(e.message || 'Failed to load tenders', 'Tenders error');
+    if (!silent) await uiAlert(e.message || 'Failed to load tenders', 'Load tenders failed');
     if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load tenders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
+  } finally {
+    dealerTendersLoading = false;
   }
 }
 
@@ -1072,7 +1112,7 @@ async function bidDealerTender(tenderId) {
     });
     loadDealerTenders(true);
   } catch (e) {
-    await uiAlert(e.message || 'Failed to submit bid', 'Bid failed');
+    await uiAlert(e.message || 'Failed to submit bid', 'Submit bid failed');
   }
 }
 

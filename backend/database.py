@@ -4,17 +4,23 @@ Database connection and utility functions for Neon Database
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from psycopg2.pool import ThreadedConnectionPool
+from psycopg2.pool import PoolError
 from contextlib import contextmanager
 from config import Config
 import logging
 import os
 import threading
+import time
 
 logger = logging.getLogger(__name__)
 
 _pool = None
 _pool_lock = threading.Lock()
 _pool_enabled = True
+
+
+class DatabaseOverloadError(Exception):
+    """Raised when transient DB saturation persists after retries."""
 
 
 def _database_url_with_ssl(database_url):
@@ -30,7 +36,7 @@ def _database_url_with_ssl(database_url):
 
 def _get_connection_pool():
     """
-    Lazy ThreadedConnectionPool (min 1, max 5) for warm serverless / long-lived workers.
+    Lazy ThreadedConnectionPool for warm serverless / long-lived workers.
     Falls back to per-request connect if pool creation fails.
     """
     global _pool, _pool_enabled
@@ -46,10 +52,17 @@ def _get_connection_pool():
             return None
         database_url = _database_url_with_ssl(database_url)
         try:
+            min_conn = max(1, int(os.getenv('DB_POOL_MIN_CONN', '1')))
+            max_conn = max(min_conn, int(os.getenv('DB_POOL_MAX_CONN', '20')))
+            connect_timeout = max(2, int(os.getenv('DB_CONNECT_TIMEOUT_SEC', '8')))
             _pool = ThreadedConnectionPool(
-                1, 5, database_url, connect_timeout=10
+                min_conn, max_conn, database_url, connect_timeout=connect_timeout
             )
-            logger.info('Database ThreadedConnectionPool ready (min=1, max=5)')
+            logger.info(
+                'Database ThreadedConnectionPool ready (min=%s, max=%s)',
+                min_conn,
+                max_conn,
+            )
             return _pool
         except Exception as e:
             logger.warning(
@@ -76,12 +89,23 @@ def get_db_connection():
     from_pool = False
     try:
         if pool:
-            conn = pool.getconn()
-            from_pool = True
+            try:
+                conn = pool.getconn()
+                from_pool = True
+            except PoolError as e:
+                # Do not fail hard under polling bursts; use one-shot connect as fallback.
+                logger.warning(
+                    'Connection pool exhausted, falling back to direct connection: %s',
+                    e,
+                )
+                conn = psycopg2.connect(
+                    _database_url_with_ssl(database_url),
+                    connect_timeout=max(2, int(os.getenv('DB_CONNECT_TIMEOUT_SEC', '8'))),
+                )
         else:
             conn = psycopg2.connect(
                 _database_url_with_ssl(database_url),
-                connect_timeout=10,
+                connect_timeout=max(2, int(os.getenv('DB_CONNECT_TIMEOUT_SEC', '8'))),
             )
         yield conn
         conn.commit()
@@ -122,23 +146,42 @@ def execute_query(query, params=None, fetch_one=False, fetch_all=False):
     Execute a database query and return results
     RealDictRow objects are dict-like and can be accessed by column name
     """
-    try:
-        with get_db_connection() as conn:
-            cursor = conn.cursor(cursor_factory=RealDictCursor)
-            cursor.execute(query, params)
+    retries = max(0, int(os.getenv('DB_RETRY_ATTEMPTS', '2')))
+    retry_delays = [0.1, 0.25, 0.4]
+    last_error = None
+    for attempt in range(retries + 1):
+        try:
+            with get_db_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                    cursor.execute(query, params)
 
-            if fetch_one:
-                result = cursor.fetchone()
-                return result
-            elif fetch_all:
-                results = cursor.fetchall()
-                return results if results else []
-            else:
-                return cursor.rowcount
-    except psycopg2.Error as e:
-        logger.error(f'Database query error: {str(e)}')
-        logger.error(f'Query: {query[:100]}...')
-        raise
-    except Exception as e:
-        logger.error(f'Unexpected error in execute_query: {str(e)}')
-        raise
+                    if fetch_one:
+                        result = cursor.fetchone()
+                        return result
+                    elif fetch_all:
+                        results = cursor.fetchall()
+                        return results if results else []
+                    else:
+                        return cursor.rowcount
+        except (PoolError, psycopg2.OperationalError) as e:
+            last_error = e
+            msg = str(e).lower()
+            overloaded = isinstance(e, PoolError) or 'connection pool exhausted' in msg
+            if overloaded and attempt < retries:
+                time.sleep(retry_delays[min(attempt, len(retry_delays) - 1)])
+                continue
+            if overloaded:
+                logger.error('Database saturation after retries: %s', e)
+                raise DatabaseOverloadError('Database is busy, please retry shortly.') from e
+            logger.error(f'Database query error: {str(e)}')
+            logger.error(f'Query: {query[:100]}...')
+            raise
+        except psycopg2.Error as e:
+            logger.error(f'Database query error: {str(e)}')
+            logger.error(f'Query: {query[:100]}...')
+            raise
+        except Exception as e:
+            logger.error(f'Unexpected error in execute_query: {str(e)}')
+            raise
+    if last_error:
+        raise last_error
