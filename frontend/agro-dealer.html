@@ -576,6 +576,20 @@ function stampLastUpdated(resourceKey) {
   const now = new Date();
   el.textContent = `Last updated ${now.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
 }
+function setRefreshing(resourceKey, isRefreshing) {
+  const id = `refreshing-${resourceKey}`;
+  let el = document.getElementById(id);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = id;
+    el.style.cssText = 'font-size:.78rem;color:var(--muted);margin:-4px 0 8px;display:none;';
+    const section = document.getElementById(resourceKey);
+    if (section) section.insertBefore(el, section.firstChild.nextSibling || section.firstChild);
+  }
+  if (!el) return;
+  el.textContent = 'Refreshing…';
+  el.style.display = isRefreshing ? 'block' : 'none';
+}
 function stopDealerCommercePolling() {
   if (dealerOrdersPollTimer) clearInterval(dealerOrdersPollTimer);
   if (dealerTendersPollTimer) clearInterval(dealerTendersPollTimer);
@@ -986,6 +1000,7 @@ async function loadDealerOrders(silent=false) {
   if (dealerOrdersLoading) return;
   dealerOrdersLoading = true;
   if (!silent && body && !body.querySelector('tr')) body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading orders…</div></td></tr>';
+  else setRefreshing('orders', true);
   try {
     const d = await apiJson(`${API}/orders/seller?firebase_uid=${encodeURIComponent(firebaseUid)}`);
     renderDealerOrders(d?.orders || []);
@@ -994,6 +1009,7 @@ async function loadDealerOrders(silent=false) {
     if (!silent) await uiAlert(e.message || 'Failed to load orders', 'Load orders failed');
     if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load orders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
   } finally {
+    setRefreshing('orders', false);
     dealerOrdersLoading = false;
   }
 }
@@ -1050,6 +1066,7 @@ async function loadDealerTenders(silent=false) {
   if (dealerTendersLoading) return;
   dealerTendersLoading = true;
   if (!silent && body && !body.querySelector('tr')) body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading tenders…</div></td></tr>';
+  else setRefreshing('tenders', true);
   try {
     const d = await apiJson(`${API}/tenders?firebase_uid=${encodeURIComponent(firebaseUid)}`);
     renderDealerTenders(d?.tenders || []);
@@ -1058,6 +1075,7 @@ async function loadDealerTenders(silent=false) {
     if (!silent) await uiAlert(e.message || 'Failed to load tenders', 'Load tenders failed');
     if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load tenders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
   } finally {
+    setRefreshing('tenders', false);
     dealerTendersLoading = false;
   }
 }

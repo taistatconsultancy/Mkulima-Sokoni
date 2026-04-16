@@ -1092,6 +1092,21 @@ function exitSuperUser() {
     el.textContent = `Last updated ${now.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
   }
 
+  function setRefreshing(resourceKey, isRefreshing) {
+    const id = `refreshing-${resourceKey}`;
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      el.style.cssText = 'font-size:.78rem;color:var(--muted);margin:-4px 0 8px;display:none;';
+      const section = document.getElementById(resourceKey);
+      if (section) section.insertBefore(el, section.firstChild.nextSibling || section.firstChild);
+    }
+    if (!el) return;
+    el.textContent = 'Refreshing…';
+    el.style.display = isRefreshing ? 'block' : 'none';
+  }
+
   function stopCommercePolling() {
     if (cartPollTimer) clearInterval(cartPollTimer);
     if (tendersPollTimer) clearInterval(tendersPollTimer);
@@ -1706,9 +1721,15 @@ function exitSuperUser() {
 
   async function loadBuyerCart(silent=false) {
     const uid = getFirebaseUid();
+    const body = document.getElementById('buyerCartBody');
     if (!uid) return;
     if (cartLoading) return;
     cartLoading = true;
+    if (!silent && body && !body.querySelector('tr')) {
+      body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading cart…</div></td></tr>';
+    } else {
+      setRefreshing('cart', true);
+    }
     try {
       const d = await apiJson(`${API_BASE_URL}/cart?firebase_uid=${encodeURIComponent(uid)}`);
       renderBuyerCart(d);
@@ -1716,6 +1737,7 @@ function exitSuperUser() {
     } catch (e) {
       if (!silent) await uiAlert(e.message || 'Failed to load cart', 'Cart error');
     } finally {
+      setRefreshing('cart', false);
       cartLoading = false;
     }
   }
@@ -1816,9 +1838,15 @@ function exitSuperUser() {
 
   async function loadBuyerTenders(silent=false) {
     const uid = getFirebaseUid();
+    const body = document.getElementById('buyerTendersBody');
     if (!uid) return;
     if (tendersLoading) return;
     tendersLoading = true;
+    if (!silent && body && !body.querySelector('tr')) {
+      body.innerHTML = '<tr><td colspan="7"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading tenders…</div></td></tr>';
+    } else {
+      setRefreshing('tenders', true);
+    }
     try {
       const d = await apiJson(`${API_BASE_URL}/tenders?firebase_uid=${encodeURIComponent(uid)}`);
       renderBuyerTenders(d?.tenders || []);
@@ -1826,6 +1854,7 @@ function exitSuperUser() {
     } catch (e) {
       if (!silent) await uiAlert(e.message || 'Failed to load tenders', 'Tender error');
     } finally {
+      setRefreshing('tenders', false);
       tendersLoading = false;
     }
   }
@@ -1942,9 +1971,15 @@ function exitSuperUser() {
 
   async function loadBuyerOrders(silent=false) {
     const uid = getFirebaseUid();
+    const body = document.getElementById('buyerOrdersBody');
     if (!uid) return;
     if (ordersLoading) return;
     ordersLoading = true;
+    if (!silent && body && !body.querySelector('tr')) {
+      body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading orders…</div></td></tr>';
+    } else {
+      setRefreshing('orders', true);
+    }
     try {
       const d = await apiJson(`${API_BASE_URL}/orders/buyer?firebase_uid=${encodeURIComponent(uid)}`);
       renderBuyerOrders(d?.orders || []);
@@ -1952,6 +1987,7 @@ function exitSuperUser() {
     } catch (e) {
       if (!silent) await uiAlert(e.message || 'Failed to load orders', 'Order error');
     } finally {
+      setRefreshing('orders', false);
       ordersLoading = false;
     }
   }

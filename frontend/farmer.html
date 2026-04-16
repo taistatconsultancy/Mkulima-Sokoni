@@ -1454,6 +1454,21 @@ function exitSuperUser() {
     el.textContent = `Last updated ${now.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
   }
 
+  function setRefreshing(resourceKey, isRefreshing) {
+    const id = `refreshing-${resourceKey}`;
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = id;
+      el.style.cssText = 'font-size:.78rem;color:var(--muted);margin:-4px 0 8px;display:none;';
+      const section = document.getElementById(resourceKey);
+      if (section) section.insertBefore(el, section.firstChild.nextSibling || section.firstChild);
+    }
+    if (!el) return;
+    el.textContent = 'Refreshing…';
+    el.style.display = isRefreshing ? 'block' : 'none';
+  }
+
   function stopSellerCommercePolling() {
     if (sellerOrdersPollTimer) clearInterval(sellerOrdersPollTimer);
     if (sellerTendersPollTimer) clearInterval(sellerTendersPollTimer);
@@ -2241,6 +2256,7 @@ function exitSuperUser() {
     if (sellerOrdersLoading) return;
     sellerOrdersLoading = true;
     if (!silent && body && !body.querySelector('tr')) body.innerHTML = '<tr><td colspan="5"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading orders…</div></td></tr>';
+    else setRefreshing('orders', true);
     try {
       const d = await apiJson(`${API_BASE_URL}/orders/seller?firebase_uid=${encodeURIComponent(uid)}`);
       renderSellerOrders(d?.orders || []);
@@ -2249,6 +2265,7 @@ function exitSuperUser() {
       if (!silent) await uiAlert(e.message || 'Failed to load orders', 'Load orders failed');
       if (body) body.innerHTML = '<tr><td colspan="5"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load orders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
     } finally {
+      setRefreshing('orders', false);
       sellerOrdersLoading = false;
     }
   }
@@ -2321,6 +2338,7 @@ function exitSuperUser() {
     if (sellerTendersLoading) return;
     sellerTendersLoading = true;
     if (!silent && body && !body.querySelector('tr')) body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading tenders…</div></td></tr>';
+    else setRefreshing('tenders', true);
     try {
       const d = await apiJson(`${API_BASE_URL}/tenders?firebase_uid=${encodeURIComponent(uid)}`);
       renderOpenTenders(d?.tenders || []);
@@ -2329,6 +2347,7 @@ function exitSuperUser() {
       if (!silent) await uiAlert(e.message || 'Failed to load tenders', 'Load tenders failed');
       if (body) body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="padding:26px 10px;"><div class="icon">⚠️</div><h4>Could not load tenders</h4><p style="font-size:.82rem;">Please try again.</p></div></td></tr>';
     } finally {
+      setRefreshing('tenders', false);
       sellerTendersLoading = false;
     }
   }
