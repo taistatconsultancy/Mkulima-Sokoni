@@ -20,11 +20,11 @@ def _get_current_user_from_anywhere():
         or request.headers.get("X-Firebase-Uid")
     )
     if not firebase_uid:
-        return None, "Missing firebase_uid", 401
+        return None, None, "Missing firebase_uid", 401
     user = User.get_user_by_firebase_uid(firebase_uid)
     if not user:
-        return None, "User not found", 404
-    return user, None, None
+        return None, None, "User not found", 404
+    return user, firebase_uid, None, None
 
 
 def _has_any_role(user_id: str, user_obj: dict, roles: list[str]) -> bool:
@@ -68,7 +68,7 @@ def _serialize_order_rows(order_rows):
 @orders_bp.route("/buyer", methods=["GET"])
 def buyer_orders():
     try:
-        user, err, code = _get_current_user_from_anywhere()
+        user, _firebase_uid, err, code = _get_current_user_from_anywhere()
         if err:
             return jsonify({"error": err}), code
         user_id = str(user["id"])
@@ -121,14 +121,13 @@ def buyer_orders():
 @orders_bp.route("/seller", methods=["GET"])
 def seller_orders():
     try:
-        user, err, code = _get_current_user_from_anywhere()
+        user, firebase_uid, err, code = _get_current_user_from_anywhere()
         if err:
             return jsonify({"error": err}), code
         user_id = str(user["id"])
         if not _has_any_role(user_id, user, ["farmer", "agro-dealer"]):
             return jsonify({"error": "Seller role required"}), 403
 
-        firebase_uid = request.args.get("firebase_uid") or request.headers.get("X-Firebase-Uid")
         seller_profile_id = _seller_profile_id_for(firebase_uid)
         if not seller_profile_id:
             return jsonify({"error": "Seller profile not found"}), 404

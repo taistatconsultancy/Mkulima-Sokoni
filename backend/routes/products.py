@@ -308,6 +308,8 @@ def get_product_detail(product_id):
                        fp.farming_experience_years,
                        u.first_name,
                        u.last_name,
+                       u.email,
+                       u.phone_number,
                        u.firebase_uid,
                        u.created_at AS member_since
                 FROM farmer_profiles fp

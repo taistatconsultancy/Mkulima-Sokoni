@@ -2276,7 +2276,7 @@ function exitSuperUser() {
     }
     body.innerHTML = tenders.map(t => {
       const status = (t.status || 'open').toLowerCase();
-      const pill = status === 'open' ? 'open' : 'completed';
+      const pill = status === 'closed' ? 'completed' : 'open';
       const qty = (t.quantity ? `${t.quantity} ${t.unit||''}` : (t.unit||''));
       const deadline = t.deadline ? String(t.deadline).slice(0, 10) : '—';
       const myBid = t.my_bid_price ? `${formatKsh(t.my_bid_price)} (${(t.my_bid_status||'submitted')})` : '—';
