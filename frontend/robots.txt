@@ -1,0 +1,9 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# App / internal — not useful in search results
+Disallow: /admin-support.html
+Disallow: /test-image-upload.html
+
+Sitemap: https://www.mkulimasokoni.com/sitemap.xml

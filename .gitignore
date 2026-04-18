@@ -98,3 +98,4 @@ node_modules/
 .upload_cache/
 
 .vercel
+.env*.local

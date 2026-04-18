@@ -10,7 +10,7 @@ backend_dir = os.path.dirname(os.path.abspath(__file__))
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-from flask import Flask, send_from_directory, request, g, has_request_context
+from flask import Flask, send_from_directory, request, g, has_request_context, abort
 from flask_cors import CORS
 from config import Config
 from routes.auth import auth_bp
@@ -105,6 +105,36 @@ def favicon():
         mimetype='image/jpeg',
     )
 
+
+def _frontend_dir():
+    project_root = os.path.dirname(backend_dir)
+    return os.path.join(project_root, 'frontend')
+
+
+@app.route('/robots.txt')
+def robots_txt():
+    """Expose robots.txt at site root for crawlers (must not be HTML)."""
+    fd = _frontend_dir()
+    fp = os.path.join(fd, 'robots.txt')
+    if not os.path.isfile(fp):
+        abort(404)
+    return send_from_directory(fd, 'robots.txt', mimetype='text/plain; charset=utf-8')
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    """Expose sitemap at site root for Search Console."""
+    fd = _frontend_dir()
+    fp = os.path.join(fd, 'sitemap.xml')
+    if not os.path.isfile(fp):
+        abort(404)
+    return send_from_directory(
+        fd,
+        'sitemap.xml',
+        mimetype='application/xml; charset=utf-8',
+    )
+
+
 # Serve frontend static files
 @app.route('/')
 def serve_index():
@@ -134,7 +164,13 @@ def serve_frontend(path):
         js_file = os.path.join(frontend_dir, 'js', path[3:])
         if os.path.isfile(js_file):
             return send_from_directory(os.path.join(frontend_dir, 'js'), path[3:])
-    
+
+    # Never serve index.html for non-HTML file requests (e.g. robots.txt was returning the homepage).
+    leaf = path.split('/')[-1]
+    ext = os.path.splitext(leaf)[1].lower()
+    if ext and ext != '.html':
+        abort(404)
+
     # For HTML files that don't exist, serve index.html
     if path.endswith('.html') or '/' not in path:
         return send_from_directory(frontend_dir, 'index.html')
