@@ -1517,6 +1517,26 @@ function exitSuperUser() {
 
   /* ── Navigation ── */
   let profileLocked = false;
+  const FARMER_GATE_STATUS_KEY = 'soko_gate_farmer_cert';
+
+  /** When admin verifies the account, send user to dashboard and unlock all tabs (gate is only incomplete mandatory fields). */
+  function applyFarmerVerificationTransition(prevStored, certificationStatus, hasRequired) {
+    const cs = String(certificationStatus || 'pending').toLowerCase();
+    const prev = String(prevStored || '').toLowerCase();
+    const nowVerified = cs === 'verified' || cs === 'approved';
+    const upgraded =
+      hasRequired &&
+      nowVerified &&
+      prev &&
+      (prev === 'pending' || prev === 'rejected');
+    sessionStorage.setItem(FARMER_GATE_STATUS_KEY, cs);
+    if (upgraded) {
+      profileLocked = false;
+      showPage('dashboard', document.querySelector('.topbar-nav-link[onclick*="dashboard"]'));
+      window.SokoUI?.toast('Your account is verified. You can use every section of your dashboard.', 'success');
+    }
+  }
+
   function showPage(pageName, el) {
     if (profileLocked && pageName !== 'profile') {
       pageName = 'profile';
@@ -2559,6 +2579,13 @@ function exitSuperUser() {
 
       if (data.success && data.profile) {
         const p = data.profile;
+        const prevGate = sessionStorage.getItem(FARMER_GATE_STATUS_KEY);
+        const hasReq = Boolean(
+          String(p.farm_name || '').trim() &&
+          String(p.location || '').trim() &&
+          String(p.county || '').trim() &&
+          String(p.national_id || '').trim()
+        );
         const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
         set('farm-name',''); set('location',''); set('county',''); set('national-id','');
         set('ward',''); set('farm-size',''); set('farming-experience',''); set('bio','');
@@ -2566,6 +2593,7 @@ function exitSuperUser() {
         set('national-id', p.national_id); set('ward', p.ward);
         set('farm-size', p.farm_size_acres); set('farming-experience', p.farming_experience_years);
         const csRaw = (p.certification_status || 'pending').toString();
+        applyFarmerVerificationTransition(prevGate, csRaw, hasReq);
         const csDisp = document.getElementById('certification-status-display');
         if (csDisp) csDisp.textContent = csRaw.charAt(0).toUpperCase() + csRaw.slice(1).toLowerCase();
         applyAccountStatusUi(csRaw);
@@ -3021,11 +3049,11 @@ function exitSuperUser() {
     }
     const action = new URLSearchParams(window.location.search).get('action');
     if (action === 'list-produce') addProduct();
-    enforceFarmerProfileCompletion();
+    enforceFarmerProfileCompletion(false);
     updateProfilePrimaryAction();
   });
 
-  async function enforceFarmerProfileCompletion() {
+  async function enforceFarmerProfileCompletion(silent) {
     try {
       const userStr = localStorage.getItem('user');
       if (!userStr) return;
@@ -3036,6 +3064,7 @@ function exitSuperUser() {
       if (!res.ok) { profileLocked = true; showPage('profile'); return; }
       const data = await res.json();
       const p = data.profile || {};
+      const prevStored = sessionStorage.getItem(FARMER_GATE_STATUS_KEY);
       const hasRequired = Boolean(
         String(p.farm_name || '').trim() &&
         String(p.location || '').trim() &&
@@ -3044,14 +3073,18 @@ function exitSuperUser() {
       );
       profileLocked = !hasRequired;
       if (profileLocked) {
+        sessionStorage.setItem(FARMER_GATE_STATUS_KEY, String(p.certification_status || 'pending').toLowerCase());
         showPage('profile');
-        showAlert('Complete your profile details to continue using the platform.', 'error');
+        if (!silent) showAlert('Complete your profile details to continue using the platform.', 'error');
+        return;
       }
+      applyFarmerVerificationTransition(prevStored, p.certification_status || 'pending', hasRequired);
     } catch (e) {}
   }
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) return;
+    enforceFarmerProfileCompletion(true);
     const prof = document.getElementById('profile');
     if (prof && prof.classList.contains('active')) loadFarmerProfile();
   });

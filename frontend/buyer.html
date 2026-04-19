@@ -1349,6 +1349,25 @@ function exitSuperUser() {
 
   /* ── Navigation ── */
   let profileLocked = false;
+  const BUYER_GATE_STATUS_KEY = 'soko_gate_buyer_verify';
+
+  function applyBuyerVerificationTransition(prevStored, verificationStatus, hasRequired) {
+    const vs = String(verificationStatus || 'pending').toLowerCase();
+    const prev = String(prevStored || '').toLowerCase();
+    const nowVerified = vs === 'verified' || vs === 'approved';
+    const upgraded =
+      hasRequired &&
+      nowVerified &&
+      prev &&
+      (prev === 'pending' || prev === 'rejected');
+    sessionStorage.setItem(BUYER_GATE_STATUS_KEY, vs);
+    if (upgraded) {
+      profileLocked = false;
+      showPage('dashboard', document.querySelector('.topbar-nav-link[onclick*="dashboard"]'));
+      window.SokoUI?.toast('Your account is verified. You can use every section of your dashboard.', 'success');
+    }
+  }
+
   function showPage(pageName, el) {
     if (profileLocked && pageName !== 'profile') {
       pageName = 'profile';
@@ -2130,6 +2149,13 @@ function exitSuperUser() {
 
       if (data.success && data.profile) {
         const p = data.profile;
+        const prevGate = sessionStorage.getItem(BUYER_GATE_STATUS_KEY);
+        const hasReq = Boolean(
+          String(p.company_name || '').trim() &&
+          String(p.location || '').trim() &&
+          String(p.county || '').trim() &&
+          String(p.national_id || '').trim()
+        );
         const set = (id, val) => { const el = document.getElementById(id); if(el) el.value = val||''; };
         set('company-name', p.company_name);
         set('location', p.location);
@@ -2138,6 +2164,7 @@ function exitSuperUser() {
         set('business-type', p.business_type);
         set('business-registration', p.business_registration_number);
         const vs = (p.verification_status || 'pending').toString();
+        applyBuyerVerificationTransition(prevGate, vs, hasReq);
         const vsEl = document.getElementById('verification-status-display');
         if (vsEl) vsEl.textContent = vs.charAt(0).toUpperCase() + vs.slice(1).toLowerCase();
         updateProfileCompletionWarning(p, vs);
@@ -2274,11 +2301,11 @@ function exitSuperUser() {
       sessionStorage.removeItem('showSupport');
       showPage('support');
     }
-    enforceBuyerProfileCompletion();
+    enforceBuyerProfileCompletion(false);
     updateProfilePrimaryAction();
   });
 
-  async function enforceBuyerProfileCompletion() {
+  async function enforceBuyerProfileCompletion(silent) {
     try {
       const userStr = localStorage.getItem('user');
       if (!userStr) return;
@@ -2289,6 +2316,7 @@ function exitSuperUser() {
       if (!res.ok) { profileLocked = true; showPage('profile'); return; }
       const data = await res.json();
       const p = data.profile || {};
+      const prevStored = sessionStorage.getItem(BUYER_GATE_STATUS_KEY);
       const hasRequired = Boolean(
         String(p.company_name || '').trim() &&
         String(p.location || '').trim() &&
@@ -2297,14 +2325,18 @@ function exitSuperUser() {
       );
       profileLocked = !hasRequired;
       if (profileLocked) {
+        sessionStorage.setItem(BUYER_GATE_STATUS_KEY, String(p.verification_status || 'pending').toLowerCase());
         showPage('profile');
-        showAlert('Complete your profile details to continue using the platform.', 'error');
+        if (!silent) showAlert('Complete your profile details to continue using the platform.', 'error');
+        return;
       }
+      applyBuyerVerificationTransition(prevStored, p.verification_status || 'pending', hasRequired);
     } catch (e) {}
   }
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) return;
+    enforceBuyerProfileCompletion(true);
     const prof = document.getElementById('profile');
     if (prof && prof.classList.contains('active')) loadBuyerProfile();
   });

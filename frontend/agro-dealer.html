@@ -529,6 +529,24 @@ let allMarketProducts = [];
 let mkPage = 0;
 const MK_PER_PAGE = 12;
 let profileLocked = false;
+const AGRO_GATE_STATUS_KEY = 'soko_gate_agro_cert';
+
+function applyAgroVerificationTransition(prevStored, certificationStatus, hasRequired) {
+  const cs = String(certificationStatus || 'pending').toLowerCase();
+  var prev = String(prevStored || '').toLowerCase();
+  var nowVerified = cs === 'verified' || cs === 'approved';
+  var upgraded =
+    hasRequired &&
+    nowVerified &&
+    prev &&
+    (prev === 'pending' || prev === 'rejected');
+  sessionStorage.setItem(AGRO_GATE_STATUS_KEY, cs);
+  if (upgraded) {
+    profileLocked = false;
+    showPage('dashboard', document.querySelector('.topbar-nav-link[onclick*="dashboard"]'));
+    window.SokoUI?.toast('Your account is verified. You can use every section of your dashboard.', 'success');
+  }
+}
 
 async function apiJson(url, opts = {}) {
   const res = await fetch(url, {
@@ -673,16 +691,17 @@ async function init() {
   }
   const action = new URLSearchParams(window.location.search).get('action');
   if (action === 'list-produce') showPage('add-product');
-  enforceAgroProfileCompletion();
+  enforceAgroProfileCompletion(false);
 }
 
-async function enforceAgroProfileCompletion() {
+async function enforceAgroProfileCompletion(silent) {
   try {
     if (!firebaseUid) return;
     const res = await fetch(`${API}/profiles/farmer/${firebaseUid}`);
     if (!res.ok) { profileLocked = true; showPage('profile'); return; }
     const data = await res.json();
     const p = data.profile || {};
+    var prevStored = sessionStorage.getItem(AGRO_GATE_STATUS_KEY);
     const hasRequired = Boolean(
       String(p.farm_name || '').trim() &&
       String(p.location || '').trim() &&
@@ -690,12 +709,18 @@ async function enforceAgroProfileCompletion() {
       String(p.national_id || '').trim()
     );
     profileLocked = !hasRequired;
-    if (profileLocked) showPage('profile');
+    if (profileLocked) {
+      sessionStorage.setItem(AGRO_GATE_STATUS_KEY, String(p.certification_status || 'pending').toLowerCase());
+      showPage('profile');
+      return;
+    }
+    applyAgroVerificationTransition(prevStored, p.certification_status || 'pending', hasRequired);
   } catch (e) {}
 }
 
 document.addEventListener('visibilitychange', function() {
   if (document.hidden) return;
+  enforceAgroProfileCompletion(true);
   var sec = document.getElementById('profile');
   if (sec && sec.classList.contains('active') && firebaseUid) loadProfile();
 });
@@ -967,12 +992,20 @@ async function loadProfile() {
     if (!res.ok) return;
     const data = await res.json();
     const prof = data.profile || data;
+    var prevGate = sessionStorage.getItem(AGRO_GATE_STATUS_KEY);
+    var hasReq = Boolean(
+      String(prof.farm_name || '').trim() &&
+      String(prof.location || '').trim() &&
+      String(prof.county || '').trim() &&
+      String(prof.national_id || '').trim()
+    );
     if (prof.farm_name) document.getElementById('profile-business').value = prof.farm_name;
     if (prof.location) document.getElementById('profile-location').value = prof.location;
     if (prof.county) document.getElementById('profile-county').value = prof.county;
     if (prof.national_id) document.getElementById('profile-national-id').value = prof.national_id;
     if (prof.bio) document.getElementById('profile-about').value = prof.bio;
     var st = (prof.certification_status || 'pending').toString();
+    applyAgroVerificationTransition(prevGate, st, hasReq);
     var stEl = document.getElementById('profile-verification-status');
     if (stEl) stEl.textContent = st.charAt(0).toUpperCase() + st.slice(1).toLowerCase();
     updateAgroProfileWarning(prof, st);
