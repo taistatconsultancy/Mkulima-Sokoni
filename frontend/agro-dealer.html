@@ -439,52 +439,48 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
     <div class="section-card">
       <h2>👤 Business Profile</h2>
       <p class="sub">Manage your agro-dealer business information</p>
+      <div id="profileCompletionWarning" style="display:none;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;padding:10px 12px;border-radius:10px;margin-bottom:12px;font-size:.85rem;font-weight:600;">
+        Complete mandatory fields (Farm Name, Location, County, National ID). Your account remains pending until verified.
+      </div>
       <form id="profileForm" onsubmit="saveProfile(event)">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Business / Farm Name</label>
-            <input type="text" id="profile-business" placeholder="Your business name" />
+        <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px;overflow-x:auto;">
+          <button type="button" class="profile-tab-btn active" onclick="switchProfileTab('basic',this)" style="padding:10px 14px;border:none;border-bottom:2px solid var(--leaf);background:transparent;color:var(--leaf);font-weight:700;cursor:pointer;">Basic</button>
+          <button type="button" class="profile-tab-btn" onclick="switchProfileTab('business',this)" style="padding:10px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--muted);font-weight:700;cursor:pointer;">Business</button>
+          <button type="button" class="profile-tab-btn" onclick="switchProfileTab('additional',this)" style="padding:10px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--muted);font-weight:700;cursor:pointer;">Additional</button>
+        </div>
+        <div id="profile-tab-basic" class="profile-tab-pane" style="display:block;">
+          <div class="form-grid">
+            <div class="form-group"><label>Business / Farm Name *</label><input type="text" id="profile-business" placeholder="Your business name" required /></div>
+            <div class="form-group"><label>Owner Name</label><input type="text" id="profile-owner" placeholder="Full name" readonly /></div>
+            <div class="form-group"><label>Email</label><input type="email" id="profile-email" readonly /></div>
+            <div class="form-group"><label>Phone Number</label><input type="tel" id="profile-phone" placeholder="+254 700 000 000" /></div>
+            <div class="form-group"><label>Location *</label><input type="text" id="profile-location" placeholder="e.g. Nakuru" required /></div>
+            <div class="form-group"><label>County *</label><input type="text" id="profile-county" placeholder="e.g. Nakuru" required /></div>
+            <div class="form-group"><label>National ID *</label><input type="text" id="profile-national-id" placeholder="e.g. 12345678" required /></div>
+            <div class="form-group"><label>Verification status</label><p id="profile-verification-status" style="font-weight:600;color:var(--forest);margin:0;">—</p></div>
           </div>
-          <div class="form-group">
-            <label>Owner Name</label>
-            <input type="text" id="profile-owner" placeholder="Full name" readonly />
+        </div>
+        <div id="profile-tab-business" class="profile-tab-pane" style="display:none;">
+          <div class="form-grid">
+            <div class="form-group"><label>Specialization</label>
+              <select id="profile-specialization">
+                <option value="">Select</option><option>Seeds & Seedlings</option><option>Fertilizers & Chemicals</option><option>Farm Equipment</option><option>Animal Health & Feed</option><option>Irrigation</option><option>General Agro-dealer</option>
+              </select>
+            </div>
+            <div class="form-group form-full"><label>About Your Business</label><textarea id="profile-about" placeholder="Tell farmers about what you offer…"></textarea></div>
           </div>
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="profile-email" readonly />
+        </div>
+        <div id="profile-tab-additional" class="profile-tab-pane" style="display:none;">
+          <div class="form-grid">
+            <div class="form-group form-full">
+              <p style="font-size:.78rem;color:var(--muted);margin:0;">Set by Mkulima sokoni admins. Refreshes when you return to this page.</p>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Phone Number</label>
-            <input type="tel" id="profile-phone" placeholder="+254 700 000 000" />
-          </div>
-          <div class="form-group">
-            <label>Location / County</label>
-            <input type="text" id="profile-location" placeholder="e.g. Nakuru" />
-          </div>
-          <div class="form-group">
-            <label>Specialization</label>
-            <select id="profile-specialization">
-              <option value="">Select</option>
-              <option>Seeds & Seedlings</option>
-              <option>Fertilizers & Chemicals</option>
-              <option>Farm Equipment</option>
-              <option>Animal Health & Feed</option>
-              <option>Irrigation</option>
-              <option>General Agro-dealer</option>
-            </select>
-          </div>
-          <div class="form-group form-full">
-            <label>About Your Business</label>
-            <textarea id="profile-about" placeholder="Tell farmers about what you offer…"></textarea>
-          </div>
-          <div class="form-group form-full">
-            <label>Verification status</label>
-            <p id="profile-verification-status" style="font-weight:600;color:var(--forest);margin:0;">—</p>
-            <p style="font-size:.78rem;color:var(--muted);margin-top:4px;">Set by Mkulima sokoni admins. Refreshes when you return to this page.</p>
-          </div>
-          <div class="form-full">
-            <button type="submit" class="form-submit" id="profile-save-btn">Save Profile</button>
-          </div>
+        </div>
+        <div class="form-full" style="margin-top:16px;display:flex;gap:10px;">
+          <button type="button" class="form-submit" style="background:#fff;color:var(--forest);border:1.5px solid var(--forest);" onclick="showPage('dashboard')">Cancel</button>
+          <button type="button" class="form-submit" id="profile-save-btn" onclick="handleAgroProfilePrimaryAction()">Next</button>
+          <button type="submit" id="profile-submit-hidden" style="display:none;"></button>
         </div>
       </form>
     </div>
@@ -973,12 +969,62 @@ async function loadProfile() {
     const prof = data.profile || data;
     if (prof.farm_name) document.getElementById('profile-business').value = prof.farm_name;
     if (prof.location) document.getElementById('profile-location').value = prof.location;
-    if (prof.county) document.getElementById('profile-location').value = prof.county;
+    if (prof.county) document.getElementById('profile-county').value = prof.county;
+    if (prof.national_id) document.getElementById('profile-national-id').value = prof.national_id;
     if (prof.bio) document.getElementById('profile-about').value = prof.bio;
     var st = (prof.certification_status || 'pending').toString();
     var stEl = document.getElementById('profile-verification-status');
     if (stEl) stEl.textContent = st.charAt(0).toUpperCase() + st.slice(1).toLowerCase();
+    updateAgroProfileWarning(prof, st);
   } catch(e) {}
+}
+
+function switchProfileTab(name, btn) {
+  document.querySelectorAll('#profile .profile-tab-btn').forEach(function(b){
+    b.classList.remove('active');
+    b.style.color = 'var(--muted)';
+    b.style.borderBottomColor = 'transparent';
+  });
+  document.querySelectorAll('#profile .profile-tab-pane').forEach(function(p){ p.style.display = 'none'; });
+  if (btn) {
+    btn.classList.add('active');
+    btn.style.color = 'var(--leaf)';
+    btn.style.borderBottomColor = 'var(--leaf)';
+  }
+  var pane = document.getElementById('profile-tab-' + name);
+  if (pane) pane.style.display = 'block';
+  var saveBtn = document.getElementById('profile-save-btn');
+  if (saveBtn) saveBtn.textContent = name === 'additional' ? 'Save Changes' : 'Next';
+}
+
+function handleAgroProfilePrimaryAction() {
+  var active = document.querySelector('#profile .profile-tab-btn.active');
+  var name = active ? (active.textContent || '').toLowerCase() : 'basic';
+  if (name.includes('additional')) {
+    document.getElementById('profile-submit-hidden').click();
+    return;
+  }
+  if (name.includes('basic')) {
+    var btn = Array.from(document.querySelectorAll('#profile .profile-tab-btn')).find(function(b){ return (b.textContent || '').toLowerCase().includes('business'); });
+    if (btn) switchProfileTab('business', btn);
+    return;
+  }
+  var btn2 = Array.from(document.querySelectorAll('#profile .profile-tab-btn')).find(function(b){ return (b.textContent || '').toLowerCase().includes('additional'); });
+  if (btn2) switchProfileTab('additional', btn2);
+}
+
+function updateAgroProfileWarning(profile, statusRaw) {
+  var el = document.getElementById('profileCompletionWarning');
+  if (!el) return;
+  var status = String(statusRaw || 'pending').toLowerCase();
+  var verified = status === 'verified' || status === 'approved';
+  var complete = Boolean(
+    String(profile?.farm_name || '').trim() &&
+    String(profile?.location || '').trim() &&
+    String(profile?.county || '').trim() &&
+    String(profile?.national_id || '').trim()
+  );
+  el.style.display = (!complete || !verified) ? 'block' : 'none';
 }
 
 async function saveProfile(e) {
@@ -992,7 +1038,8 @@ async function saveProfile(e) {
       firebase_uid: firebaseUid,
       farm_name: document.getElementById('profile-business').value.trim(),
       location: document.getElementById('profile-location').value.trim(),
-      county: document.getElementById('profile-location').value.trim(),
+      county: document.getElementById('profile-county').value.trim(),
+      national_id: document.getElementById('profile-national-id').value.trim(),
       bio: document.getElementById('profile-about').value.trim()
     };
     const res = await fetch(`${API}/profiles/farmer`, {
@@ -1000,10 +1047,15 @@ async function saveProfile(e) {
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(body)
     });
-    if (res.ok) { window.SokoUI?.toast('Profile saved successfully!', 'success'); loadProfile(); }
+    if (res.ok) { window.SokoUI?.toast('Profile saved successfully!', 'success'); loadProfile(); setTimeout(function(){ showPage('dashboard'); }, 500); }
     else { const d = await res.json(); await uiAlert(d.error || 'Save failed', 'Profile save failed'); }
   } catch(e) { await uiAlert(e.message || 'Save failed', 'Error'); }
-  finally { btn.disabled = false; btn.textContent = 'Save Profile'; }
+  finally {
+    btn.disabled = false;
+    var active = document.querySelector('#profile .profile-tab-btn.active');
+    var isAdditional = active && (active.textContent || '').toLowerCase().includes('additional');
+    btn.textContent = isAdditional ? 'Save Changes' : 'Next';
+  }
 }
 
 function formatKsh(n) {

@@ -823,6 +823,9 @@ function exitSuperUser() {
 
     <div class="panel">
       <div id="profileAlert" class="alert"></div>
+      <div id="profileCompletionWarning" class="alert error show" style="display:none;">
+        Complete mandatory fields (Company/Farm Name, Location, County, National ID). Your account remains pending until verified.
+      </div>
 
       <div class="profile-tabs">
         <button class="profile-tab-btn active" onclick="switchTab('basic',this)">Basic Info</button>
@@ -862,7 +865,7 @@ function exitSuperUser() {
               <input type="text" id="national-id" name="national_id" placeholder="e.g., 12345678" required />
             </div>
             <div class="form-group">
-              <label>Upload ID Front *</label>
+              <label>Upload ID Front</label>
               <label class="file-label" for="id-front">📎 Click to upload front side</label>
               <input type="file" id="id-front" name="id_front" accept="image/*" style="display:none;" />
               <div id="id-front-preview" style="display:none;">
@@ -870,7 +873,7 @@ function exitSuperUser() {
               </div>
             </div>
             <div class="form-group">
-              <label>Upload ID Back *</label>
+              <label>Upload ID Back</label>
               <label class="file-label" for="id-back">📎 Click to upload back side</label>
               <input type="file" id="id-back" name="id_back" accept="image/*" style="display:none;" />
               <div id="id-back-preview" style="display:none;">
@@ -955,8 +958,8 @@ function exitSuperUser() {
 
         <div style="display:flex; gap:10px; margin-top:28px; padding-top:20px; border-top:1.5px solid var(--border);">
           <button type="button" class="btn btn-outline" onclick="showPage('dashboard')">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="save-profile-btn" style="flex:1;">
-            <span id="save-btn-text">Save Changes</span>
+          <button type="button" class="btn btn-primary" id="save-profile-btn" style="flex:1;" onclick="handleProfilePrimaryAction()">
+            <span id="save-btn-text">Next</span>
             <span id="save-btn-spinner" style="display:none;"><div class="spinner-sm"></div></span>
           </button>
         </div>
@@ -2049,6 +2052,56 @@ function exitSuperUser() {
     document.querySelectorAll('.profile-tab-content').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + name).classList.add('active');
+    updateProfilePrimaryAction();
+  }
+
+  function getActiveProfileTab() {
+    const active = document.querySelector('.profile-tab-content.active');
+    return active && active.id ? active.id.replace('tab-', '') : 'basic';
+  }
+
+  function updateProfilePrimaryAction() {
+    const txt = document.getElementById('save-btn-text');
+    const btn = document.getElementById('save-profile-btn');
+    if (!txt || !btn) return;
+    const active = getActiveProfileTab();
+    if (active === 'additional') {
+      txt.textContent = 'Save Changes';
+      btn.dataset.action = 'save';
+    } else {
+      txt.textContent = 'Next';
+      btn.dataset.action = 'next';
+    }
+  }
+
+  function handleProfilePrimaryAction() {
+    const btn = document.getElementById('save-profile-btn');
+    if (!btn) return;
+    if (btn.dataset.action === 'save') {
+      document.getElementById('buyerProfileForm').requestSubmit();
+      return;
+    }
+    const order = ['basic', 'business', 'additional'];
+    const active = getActiveProfileTab();
+    const i = order.indexOf(active);
+    const next = i >= 0 ? order[i + 1] : null;
+    if (!next) return;
+    const nextBtn = document.querySelector('.profile-tab-btn[onclick*="' + next + '"]');
+    if (nextBtn) switchTab(next, nextBtn);
+  }
+
+  function updateProfileCompletionWarning(profile, statusRaw) {
+    const warning = document.getElementById('profileCompletionWarning');
+    if (!warning) return;
+    const status = String(statusRaw || 'pending').toLowerCase();
+    const verified = status === 'verified' || status === 'approved';
+    const complete = Boolean(
+      String(profile?.company_name || '').trim() &&
+      String(profile?.location || '').trim() &&
+      String(profile?.county || '').trim() &&
+      String(profile?.national_id || '').trim()
+    );
+    warning.style.display = (!complete || !verified) ? 'block' : 'none';
   }
 
   function toggleReferralOther() {
@@ -2087,6 +2140,7 @@ function exitSuperUser() {
         const vs = (p.verification_status || 'pending').toString();
         const vsEl = document.getElementById('verification-status-display');
         if (vsEl) vsEl.textContent = vs.charAt(0).toUpperCase() + vs.slice(1).toLowerCase();
+        updateProfileCompletionWarning(p, vs);
         set('bio', p.bio);
         if (p.referral_source) {
           set('referral-source', p.referral_source);
@@ -2104,7 +2158,8 @@ function exitSuperUser() {
       }
     } catch(err) { console.error(err); }
     finally {
-      saveBtn.disabled = false; saveTxt.textContent = 'Save Changes'; saveSpn.style.display = 'none';
+      saveBtn.disabled = false; saveSpn.style.display = 'none';
+      updateProfilePrimaryAction();
     }
   }
 
@@ -2149,10 +2204,12 @@ function exitSuperUser() {
       if (!res.ok) throw new Error(d.error || 'Failed');
       showAlert('✅ Profile saved successfully!','success');
       loadBuyerProfile();
+      setTimeout(() => showPage('dashboard'), 500);
     } catch(err) {
       showAlert(err.message || 'Failed to save profile','error');
     } finally {
-      saveBtn.disabled = false; saveTxt.textContent = 'Save Changes'; saveSpn.style.display = 'none';
+      saveBtn.disabled = false; saveSpn.style.display = 'none';
+      updateProfilePrimaryAction();
     }
   }
 
@@ -2218,6 +2275,7 @@ function exitSuperUser() {
       showPage('support');
     }
     enforceBuyerProfileCompletion();
+    updateProfilePrimaryAction();
   });
 
   async function enforceBuyerProfileCompletion() {

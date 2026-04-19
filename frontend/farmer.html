@@ -1031,6 +1031,9 @@ function exitSuperUser() {
 
     <div class="panel">
       <div id="profileAlert" class="alert"></div>
+      <div id="profileCompletionWarning" class="alert error show" style="display:none;">
+        Complete mandatory fields (Farm Name, Location, County, National ID). Your account remains pending until verified.
+      </div>
 
       <div class="profile-tabs">
         <button class="profile-tab-btn active" onclick="switchTab('basic',this)">Basic Info</button>
@@ -1051,21 +1054,21 @@ function exitSuperUser() {
             <div class="form-group"><label>Phone Number</label><input type="tel" id="phone" name="phone" readonly /><div class="form-hint">Linked from your account</div></div>
             <div class="form-group form-full"><label>National ID *</label><input type="text" id="national-id" name="national_id" placeholder="e.g., 12345678" required /></div>
             <div class="form-group">
-              <label>Upload ID Front *</label>
+              <label>Upload ID Front</label>
               <label class="file-label" for="id-front">📎 Click to upload front side</label>
-              <input type="file" id="id-front" name="id_front" accept="image/*" required style="display:none;" />
+              <input type="file" id="id-front" name="id_front" accept="image/*" style="display:none;" />
               <div id="id-front-preview" style="display:none;"><img id="id-front-img" src="" style="max-width:100%;max-height:130px;border-radius:8px;margin-top:6px;border:1.5px solid var(--border);" /></div>
             </div>
             <div class="form-group">
-              <label>Upload ID Back *</label>
+              <label>Upload ID Back</label>
               <label class="file-label" for="id-back">📎 Click to upload back side</label>
-              <input type="file" id="id-back" name="id_back" accept="image/*" required style="display:none;" />
+              <input type="file" id="id-back" name="id_back" accept="image/*" style="display:none;" />
               <div id="id-back-preview" style="display:none;"><img id="id-back-img" src="" style="max-width:100%;max-height:130px;border-radius:8px;margin-top:6px;border:1.5px solid var(--border);" /></div>
             </div>
             <div class="form-group form-full">
-              <label>Profile Selfie *</label>
+              <label>Profile Selfie</label>
               <label class="file-label" for="profile-selfie">🤳 Click to upload a clear selfie</label>
-              <input type="file" id="profile-selfie" name="profile_selfie" accept="image/*" required style="display:none;" />
+              <input type="file" id="profile-selfie" name="profile_selfie" accept="image/*" style="display:none;" />
               <div id="selfie-preview" style="display:none;"><img id="selfie-img" src="" style="max-width:180px;max-height:180px;border-radius:8px;margin-top:6px;border:1.5px solid var(--border);" /></div>
             </div>
           </div>
@@ -1078,9 +1081,11 @@ function exitSuperUser() {
             <div class="form-group"><label>Farm Size (Acres)</label><input type="number" id="farm-size" name="farm_size_acres" step="0.01" min="0" placeholder="e.g., 5.5" /></div>
             <div class="form-group form-full">
               <label>Crops (hold Ctrl/Cmd for multiple)</label>
-              <select id="crops-select" multiple style="min-height:110px;">
+              <div style="border:1.5px solid var(--border);border-radius:10px;padding:10px;background:var(--cream);">
+              <select id="crops-select" multiple style="min-height:125px;background:#fff;">
                 <option value="Maize">Maize</option><option value="Wheat">Wheat</option><option value="Rice">Rice</option><option value="Beans">Beans</option><option value="Potatoes">Potatoes</option><option value="Tomatoes">Tomatoes</option><option value="Onions">Onions</option><option value="Cabbage">Cabbage</option><option value="Carrots">Carrots</option><option value="Bananas">Bananas</option><option value="Coffee">Coffee</option><option value="Tea">Tea</option><option value="Sugarcane">Sugarcane</option><option value="Avocado">Avocado</option><option value="Mangoes">Mangoes</option>
               </select>
+              </div>
               <div style="display:flex;gap:8px;margin-top:8px;">
                 <input type="text" id="crop-custom" placeholder="Add custom crop…" style="flex:1;" />
                 <button type="button" class="btn btn-outline btn-sm" onclick="addCustomCrop()">Add</button>
@@ -1090,9 +1095,11 @@ function exitSuperUser() {
             </div>
             <div class="form-group form-full">
               <label>Livestock (hold Ctrl/Cmd for multiple)</label>
-              <select id="livestock-select" multiple style="min-height:110px;">
+              <div style="border:1.5px solid var(--border);border-radius:10px;padding:10px;background:var(--cream);">
+              <select id="livestock-select" multiple style="min-height:125px;background:#fff;">
                 <option value="Cattle">Cattle</option><option value="Goats">Goats</option><option value="Sheep">Sheep</option><option value="Pigs">Pigs</option><option value="Chickens">Chickens</option><option value="Ducks">Ducks</option><option value="Rabbits">Rabbits</option><option value="Fish">Fish</option><option value="Bees">Bees</option>
               </select>
+              </div>
               <div style="display:flex;gap:8px;margin-top:8px;">
                 <input type="text" id="livestock-custom" placeholder="Add custom livestock…" style="flex:1;" />
                 <button type="button" class="btn btn-outline btn-sm" onclick="addCustomLivestock()">Add</button>
@@ -1149,10 +1156,10 @@ function exitSuperUser() {
           </div>
         </div>
 
-        <div style="display:flex;gap:10px;margin-top:28px;padding-top:20px;border-top:1.5px solid var(--border);">
+        <div id="profile-nav-actions" style="display:flex;gap:10px;margin-top:28px;padding-top:20px;border-top:1.5px solid var(--border);">
           <button type="button" class="btn btn-outline" onclick="showPage('dashboard')">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="save-profile-btn" style="flex:1;">
-            <span id="save-btn-text">Save Changes</span>
+          <button type="button" class="btn btn-primary" id="save-profile-btn" style="flex:1;" onclick="handleProfilePrimaryAction()">
+            <span id="save-btn-text">Next</span>
             <span id="save-btn-spinner" style="display:none;"><div class="spinner-sm"></div></span>
           </button>
         </div>
@@ -2562,6 +2569,7 @@ function exitSuperUser() {
         const csDisp = document.getElementById('certification-status-display');
         if (csDisp) csDisp.textContent = csRaw.charAt(0).toUpperCase() + csRaw.slice(1).toLowerCase();
         applyAccountStatusUi(csRaw);
+        updateProfileCompletionWarning(p, csRaw);
         set('bio', p.bio);
         if (p.referral_source) {
           set('referral-source', p.referral_source);
@@ -2592,7 +2600,8 @@ function exitSuperUser() {
       }
     } catch(err) { console.error(err); }
     finally {
-      saveBtn.disabled = false; saveTxt.textContent = 'Save Changes'; saveSpn.style.display = 'none';
+      saveBtn.disabled = false; saveTxt.textContent = 'Next'; saveSpn.style.display = 'none';
+      updateProfilePrimaryAction();
     }
   }
 
@@ -2647,10 +2656,12 @@ function exitSuperUser() {
       if (!res.ok) throw new Error(d.error || 'Failed');
       showAlert('✅ Profile saved successfully!','success');
       loadFarmerProfile();
+      setTimeout(() => showPage('dashboard'), 500);
     } catch(err) {
       showAlert(err.message || 'Failed to save profile','error');
     } finally {
-      saveBtn.disabled = false; saveTxt.textContent = 'Save Changes'; saveSpn.style.display = 'none';
+      saveBtn.disabled = false; saveSpn.style.display = 'none';
+      updateProfilePrimaryAction();
     }
   }
 
@@ -2666,6 +2677,56 @@ function exitSuperUser() {
     document.querySelectorAll('.profile-tab-content').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + name).classList.add('active');
+    updateProfilePrimaryAction();
+  }
+
+  function getActiveProfileTab() {
+    const active = document.querySelector('.profile-tab-content.active');
+    return active && active.id ? active.id.replace('tab-', '') : 'basic';
+  }
+
+  function updateProfilePrimaryAction() {
+    const txt = document.getElementById('save-btn-text');
+    const btn = document.getElementById('save-profile-btn');
+    if (!txt || !btn) return;
+    const active = getActiveProfileTab();
+    if (active === 'additional') {
+      txt.textContent = 'Save Changes';
+      btn.dataset.action = 'save';
+    } else {
+      txt.textContent = 'Next';
+      btn.dataset.action = 'next';
+    }
+  }
+
+  function handleProfilePrimaryAction() {
+    const btn = document.getElementById('save-profile-btn');
+    if (!btn) return;
+    if (btn.dataset.action === 'save') {
+      document.getElementById('farmerProfileForm').requestSubmit();
+      return;
+    }
+    const order = ['basic', 'farm', 'experience', 'additional'];
+    const active = getActiveProfileTab();
+    const i = order.indexOf(active);
+    const next = i >= 0 ? order[i + 1] : null;
+    if (!next) return;
+    const nextBtn = document.querySelector('.profile-tab-btn[onclick*="' + next + '"]');
+    if (nextBtn) switchTab(next, nextBtn);
+  }
+
+  function updateProfileCompletionWarning(profile, statusRaw) {
+    const warning = document.getElementById('profileCompletionWarning');
+    if (!warning) return;
+    const status = String(statusRaw || 'pending').toLowerCase();
+    const verified = status === 'verified' || status === 'approved';
+    const complete = Boolean(
+      String(profile?.farm_name || '').trim() &&
+      String(profile?.location || '').trim() &&
+      String(profile?.county || '').trim() &&
+      String(profile?.national_id || '').trim()
+    );
+    warning.style.display = (!complete || !verified) ? 'block' : 'none';
   }
 
   function toggleReferralOther() {
@@ -2684,11 +2745,11 @@ function exitSuperUser() {
     div.innerHTML = '';
     all.forEach(c => {
       const span = document.createElement('span');
-      span.style.cssText = 'padding:4px 10px;background:var(--leaf);color:#fff;border-radius:100px;font-size:.75rem;display:inline-flex;align-items:center;gap:5px;';
+      span.style.cssText = 'padding:6px 12px;background:#e6f6ee;color:#1b5e3b;border:1px solid #9ad7b4;border-radius:999px;font-size:.78rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;';
       span.textContent = c;
       const x = document.createElement('button');
       x.textContent='×'; x.type='button';
-      x.style.cssText='background:rgba(255,255,255,.3);border:none;color:#fff;cursor:pointer;border-radius:50%;width:16px;height:16px;font-size:12px;line-height:1;padding:0;';
+      x.style.cssText='background:#1b5e3b;border:none;color:#fff;cursor:pointer;border-radius:50%;width:18px;height:18px;font-size:12px;line-height:1;padding:0;';
       x.onclick = () => removeCrop(c);
       span.appendChild(x); div.appendChild(span);
     });
@@ -2721,11 +2782,11 @@ function exitSuperUser() {
     div.innerHTML = '';
     all.forEach(l => {
       const span = document.createElement('span');
-      span.style.cssText = 'padding:4px 10px;background:var(--leaf);color:#fff;border-radius:100px;font-size:.75rem;display:inline-flex;align-items:center;gap:5px;';
+      span.style.cssText = 'padding:6px 12px;background:#eef3ff;color:#233876;border:1px solid #b6c4ff;border-radius:999px;font-size:.78rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;';
       span.textContent = l;
       const x = document.createElement('button');
       x.textContent='×'; x.type='button';
-      x.style.cssText='background:rgba(255,255,255,.3);border:none;color:#fff;cursor:pointer;border-radius:50%;width:16px;height:16px;font-size:12px;line-height:1;padding:0;';
+      x.style.cssText='background:#233876;border:none;color:#fff;cursor:pointer;border-radius:50%;width:18px;height:18px;font-size:12px;line-height:1;padding:0;';
       x.onclick = () => removeLivestock(l);
       span.appendChild(x); div.appendChild(span);
     });
@@ -2961,6 +3022,7 @@ function exitSuperUser() {
     const action = new URLSearchParams(window.location.search).get('action');
     if (action === 'list-produce') addProduct();
     enforceFarmerProfileCompletion();
+    updateProfilePrimaryAction();
   });
 
   async function enforceFarmerProfileCompletion() {
