@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify
 import logging
 
 from models.support_ticket import SupportTicket
+from database import execute_query
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +14,29 @@ support_bp = Blueprint('support', __name__, url_prefix='/api/support')
 
 def _require_json():
     return request.get_json() or {}
+
+
+def _is_rejected_user(firebase_uid):
+    """Return True if either farmer or buyer profile is currently rejected."""
+    row = execute_query(
+        """
+        SELECT
+            fp.certification_status,
+            bp.verification_status
+        FROM users u
+        LEFT JOIN farmer_profiles fp ON fp.user_id = u.id
+        LEFT JOIN buyer_profiles bp ON bp.user_id = u.id
+        WHERE u.firebase_uid = %s
+        LIMIT 1
+        """,
+        (firebase_uid,),
+        fetch_one=True
+    )
+    if not row:
+        return False
+    farmer_status = (row.get('certification_status') or '').lower()
+    buyer_status = (row.get('verification_status') or '').lower()
+    return farmer_status == 'rejected' or buyer_status == 'rejected'
 
 
 @support_bp.route('/info', methods=['GET'])
@@ -115,6 +139,8 @@ def add_ticket_message(ticket_id):
             return jsonify({'error': 'firebase_uid is required'}), 400
         if not message:
             return jsonify({'error': 'message is required'}), 400
+        if _is_rejected_user(firebase_uid):
+            return jsonify({'error': 'Your account is rejected. You can view support messages but cannot reply.'}), 403
 
         ticket = SupportTicket.add_message(
             ticket_id=ticket_id,

@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify
 from models.product import Product
 from models.farmer_profile import FarmerProfile
 from utils.cloudinary_service import upload_base64_image
+from auth.admin_auth import decode_token_if_admin
 import logging
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,21 @@ def get_farmer_profile_id(firebase_uid):
         logger.error(f"Error getting farmer_profile_id: {str(e)}")
         return None
 
+
+def _seller_certification_status(firebase_uid):
+    """Return seller certification status for farmer/agro-dealer profile."""
+    try:
+        user_id = FarmerProfile.get_user_id_by_firebase_uid(firebase_uid)
+        if not user_id:
+            return None
+        profile = FarmerProfile.get_profile_by_user_id(user_id)
+        if not profile:
+            return None
+        return (profile.get('certification_status') or '').lower() or None
+    except Exception as exc:
+        logger.warning("Could not fetch seller certification status: %s", exc)
+        return None
+
 @products_bp.route('', methods=['POST'])
 def create_product():
     """
@@ -42,6 +58,9 @@ def create_product():
         
         if not firebase_uid:
             return jsonify({'error': 'firebase_uid is required'}), 400
+        cert_status = _seller_certification_status(firebase_uid)
+        if cert_status == 'rejected':
+            return jsonify({'error': 'Your account is rejected. Contact support to restore access.'}), 403
         
         # Get farmer_profile_id (also auto-creates for agro-dealers)
         farmer_profile_id = get_farmer_profile_id(firebase_uid)
@@ -180,6 +199,9 @@ def update_product_status(product_id):
         firebase_uid = data.get('firebase_uid')
         if not firebase_uid:
             return jsonify({'error': 'firebase_uid is required'}), 400
+        cert_status = _seller_certification_status(firebase_uid)
+        if cert_status == 'rejected':
+            return jsonify({'error': 'Your account is rejected. Contact support to restore access.'}), 403
 
         new_status = _normalize_product_status(data.get('status'))
         if not new_status:
@@ -251,6 +273,54 @@ def get_products():
         if 'DATABASE_URL' in error_msg or 'connection' in error_msg.lower():
             error_msg = 'Database connection error. Please check configuration.'
         return jsonify({'error': error_msg}), 500
+
+
+@products_bp.route('/featured', methods=['GET'])
+def get_featured_products():
+    """Get featured products selected by admin-support."""
+    try:
+        limit = int(request.args.get('limit', 20))
+        limit = max(1, min(limit, 100))
+        products = Product.get_featured_products(limit=limit)
+
+        products_list = []
+        for product in products:
+            product_dict = dict(product)
+            product_dict['id'] = str(product_dict['id'])
+            product_dict['farmer_profile_id'] = str(product_dict['farmer_profile_id'])
+            if 'seller_role' not in product_dict:
+                product_dict['seller_role'] = 'farmer'
+            products_list.append(product_dict)
+
+        return jsonify(products_list), 200
+    except Exception as e:
+        logger.error(f"Error getting featured products: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@products_bp.route('/<product_id>/featured', methods=['PATCH'])
+def set_featured_product(product_id):
+    """Admin-only endpoint to toggle featured product status."""
+    try:
+        _decoded, err = decode_token_if_admin()
+        if err:
+            resp, code = err
+            return resp, code
+
+        data = request.get_json() or {}
+        is_featured = bool(data.get('is_featured'))
+        updated = Product.update_product(product_id, is_featured=is_featured)
+        if not updated:
+            return jsonify({'error': 'Product not found'}), 404
+
+        return jsonify({
+            'success': True,
+            'id': str(updated['id']),
+            'is_featured': bool(updated.get('is_featured'))
+        }), 200
+    except Exception as e:
+        logger.error(f"Error setting featured status: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @products_bp.route('/<product_id>', methods=['GET'])
 def get_product(product_id):
@@ -393,6 +463,9 @@ def update_product(product_id):
         
         if not firebase_uid:
             return jsonify({'error': 'firebase_uid is required'}), 400
+        cert_status = _seller_certification_status(firebase_uid)
+        if cert_status == 'rejected':
+            return jsonify({'error': 'Your account is rejected. Contact support to restore access.'}), 403
         
         # Verify ownership
         farmer_profile_id = get_farmer_profile_id(firebase_uid)
@@ -446,6 +519,9 @@ def delete_product(product_id):
         
         if not firebase_uid:
             return jsonify({'error': 'firebase_uid is required'}), 400
+        cert_status = _seller_certification_status(firebase_uid)
+        if cert_status == 'rejected':
+            return jsonify({'error': 'Your account is rejected. Contact support to restore access.'}), 403
         
         # Verify ownership
         farmer_profile_id = get_farmer_profile_id(firebase_uid)
@@ -484,6 +560,9 @@ def publish_product(product_id):
         
         if not firebase_uid:
             return jsonify({'error': 'firebase_uid is required'}), 400
+        cert_status = _seller_certification_status(firebase_uid)
+        if cert_status == 'rejected':
+            return jsonify({'error': 'Your account is rejected. Contact support to restore access.'}), 403
         
         # Verify ownership
         farmer_profile_id = get_farmer_profile_id(firebase_uid)

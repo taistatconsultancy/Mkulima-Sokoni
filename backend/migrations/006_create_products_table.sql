@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS products (
     
     -- Status & Analytics
     status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'sold_out', 'archived')),
+    is_featured BOOLEAN NOT NULL DEFAULT FALSE,
     views INTEGER DEFAULT 0,
     orders INTEGER DEFAULT 0,
     
@@ -44,11 +45,16 @@ CREATE TABLE IF NOT EXISTS products (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Backfill for existing deployments that created products before is_featured existed.
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS is_featured BOOLEAN NOT NULL DEFAULT FALSE;
+
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_products_farmer_profile_id ON products(farmer_profile_id);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_products_product_type ON products(product_type);
 CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
+CREATE INDEX IF NOT EXISTS idx_products_is_featured ON products(is_featured);
 CREATE INDEX IF NOT EXISTS idx_products_county ON products(county);
 CREATE INDEX IF NOT EXISTS idx_products_location ON products(location);
 CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at DESC);

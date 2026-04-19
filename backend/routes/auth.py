@@ -90,6 +90,8 @@ def register():
         
         if not firebase_uid or not email:
             return jsonify({'error': 'firebase_uid and email are required'}), 400
+        if not phone_number or not str(phone_number).strip():
+            return jsonify({'error': 'phone_number is required'}), 400
         
         # Check if user already exists
         if User.user_exists(firebase_uid):
@@ -298,6 +300,8 @@ def complete_registration():
         
         if not firebase_uid or not email or not role:
             return jsonify({'error': 'firebase_uid, email, and role are required'}), 400
+        if not phone_number or not str(phone_number).strip():
+            return jsonify({'error': 'phone_number is required'}), 400
         
         # Check if user already exists
         if User.user_exists(firebase_uid):

@@ -4,6 +4,7 @@ Cart routes (buyer commerce).
 from flask import Blueprint, request, jsonify
 from models.user import User
 from database import execute_query
+from utils.account_access import is_rejected_user
 import logging
 
 logger = logging.getLogger(__name__)
@@ -162,6 +163,8 @@ def add_item():
     if err:
         return jsonify({"error": err}), code
     user_id = str(user["id"])
+    if is_rejected_user(user.get("firebase_uid")):
+        return jsonify({"error": "Your account is rejected. You cannot perform cart actions."}), 403
     if not _has_role(user_id, user, "buyer"):
         return jsonify({"error": "Buyer role required"}), 403
 
@@ -214,6 +217,8 @@ def update_item(item_id):
     if err:
         return jsonify({"error": err}), code
     user_id = str(user["id"])
+    if is_rejected_user(user.get("firebase_uid")):
+        return jsonify({"error": "Your account is rejected. You cannot perform cart actions."}), 403
     if not _has_role(user_id, user, "buyer"):
         return jsonify({"error": "Buyer role required"}), 403
 
@@ -256,6 +261,8 @@ def delete_item(item_id):
     if err:
         return jsonify({"error": err}), code
     user_id = str(user["id"])
+    if is_rejected_user(user.get("firebase_uid")):
+        return jsonify({"error": "Your account is rejected. You cannot perform cart actions."}), 403
     if not _has_role(user_id, user, "buyer"):
         return jsonify({"error": "Buyer role required"}), 403
 
@@ -287,6 +294,8 @@ def checkout():
     if err:
         return jsonify({"error": err}), code
     user_id = str(user["id"])
+    if is_rejected_user(user.get("firebase_uid")):
+        return jsonify({"error": "Your account is rejected. You cannot perform checkout."}), 403
     if not _has_role(user_id, user, "buyer"):
         return jsonify({"error": "Buyer role required"}), 403
 

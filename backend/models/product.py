@@ -146,16 +146,19 @@ class Product:
             list: List of product records
         """
         try:
-            conditions = ["status = %s"]
+            conditions = ["p.status = %s"]
             params = [status]
             
             if category:
-                conditions.append("category = %s")
+                conditions.append("p.category = %s")
                 params.append(category)
             
             if product_type:
-                conditions.append("product_type = %s")
+                conditions.append("p.product_type = %s")
                 params.append(product_type)
+
+            # Marketplace policy: only verified/approved sellers are visible in listings.
+            conditions.append("COALESCE(fp.certification_status, 'pending') IN ('verified', 'approved')")
             
             where_clause = " AND ".join(conditions)
             params.extend([limit, offset])
@@ -170,6 +173,7 @@ class Product:
                          'farmer'
                        ) AS seller_role
                 FROM products p
+                INNER JOIN farmer_profiles fp ON fp.id = p.farmer_profile_id
                 WHERE {where_clause}
                 ORDER BY p.created_at DESC
                 LIMIT %s OFFSET %s
@@ -187,18 +191,19 @@ class Product:
         Filters mirror get_all_products (same WHERE, no pagination).
         """
         try:
-            conditions = ['status = %s']
+            conditions = ['p.status = %s', "COALESCE(fp.certification_status, 'pending') IN ('verified', 'approved')"]
             params = [status]
             if category:
-                conditions.append('category = %s')
+                conditions.append('p.category = %s')
                 params.append(category)
             if product_type:
-                conditions.append('product_type = %s')
+                conditions.append('p.product_type = %s')
                 params.append(product_type)
             where_clause = ' AND '.join(conditions)
             query = f"""
-                SELECT COUNT(*)::int AS count, MAX(updated_at) AS latest_updated_at
-                FROM products
+                SELECT COUNT(*)::int AS count, MAX(p.updated_at) AS latest_updated_at
+                FROM products p
+                INNER JOIN farmer_profiles fp ON fp.id = p.farmer_profile_id
                 WHERE {where_clause}
             """
             row = execute_query(query, tuple(params), fetch_one=True)
@@ -230,7 +235,8 @@ class Product:
             allowed_fields = [
                 'name', 'category', 'product_type', 'description', 'location', 'county',
                 'price', 'price_min', 'price_max', 'measurement_metric', 'quantity', 'min_order',
-                'planting_time', 'fertilizer_used', 'harvest_time', 'image_url', 'status'
+                'planting_time', 'fertilizer_used', 'harvest_time', 'image_url', 'status',
+                'is_featured'
             ]
             
             updates = []
@@ -322,5 +328,32 @@ class Product:
             return result is not None
         except Exception as e:
             logger.error(f"Error incrementing orders: {str(e)}")
+            raise
+
+    @staticmethod
+    def get_featured_products(limit=20):
+        """Get featured active products (admin-curated ticker items)."""
+        try:
+            query = """
+                SELECT p.*,
+                       COALESCE(
+                         (SELECT ur.role FROM user_roles ur
+                          JOIN farmer_profiles fp2 ON fp2.user_id = ur.user_id
+                          WHERE fp2.id = p.farmer_profile_id
+                          LIMIT 1),
+                         'farmer'
+                       ) AS seller_role
+                FROM products p
+                INNER JOIN farmer_profiles fp ON fp.id = p.farmer_profile_id
+                WHERE p.status = 'active'
+                  AND p.is_featured = TRUE
+                  AND COALESCE(fp.certification_status, 'pending') IN ('verified', 'approved')
+                ORDER BY p.updated_at DESC, p.created_at DESC
+                LIMIT %s
+            """
+            result = execute_query(query, (limit,), fetch_all=True)
+            return result if result else []
+        except Exception as e:
+            logger.error(f"Error getting featured products: {str(e)}")
             raise
 

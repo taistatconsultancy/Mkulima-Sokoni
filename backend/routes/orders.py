@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify
 from models.user import User
 from models.farmer_profile import FarmerProfile
 from database import execute_query, DatabaseOverloadError
+from utils.account_access import is_rejected_user
 import logging
 import time
 
@@ -216,6 +217,8 @@ def update_order_status(order_id):
         user = User.get_user_by_firebase_uid(firebase_uid)
         if not user:
             return jsonify({"error": "User not found"}), 404
+        if is_rejected_user(firebase_uid):
+            return jsonify({"error": "Your account is rejected. You cannot update orders."}), 403
         user_id = str(user["id"])
         if not _has_any_role(user_id, user, ["farmer", "agro-dealer"]):
             return jsonify({"error": "Seller role required"}), 403

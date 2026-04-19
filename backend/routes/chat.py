@@ -6,6 +6,7 @@ from models.chat import Conversation, Message
 from models.product import Product
 from models.user import User
 from models.farmer_profile import FarmerProfile
+from utils.account_access import is_rejected_user
 import logging
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,8 @@ def create_conversation():
     user, err, status = _get_current_user()
     if err:
         return jsonify({"error": err}), status
+    if is_rejected_user(user.get("firebase_uid")):
+        return jsonify({"error": "Your account is rejected. Chat is read-only."}), 403
 
     data = request.get_json() or {}
     product_id = data.get("product_id")
@@ -138,6 +141,8 @@ def send_message(conversation_id):
     user, err, status = _get_current_user()
     if err:
         return jsonify({"error": err}), status
+    if is_rejected_user(user.get("firebase_uid")):
+        return jsonify({"error": "Your account is rejected. You can view messages but cannot send."}), 403
 
     data = request.get_json() or {}
     body = (data.get("body") or "").strip()

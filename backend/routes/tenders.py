@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify
 from models.user import User
 from models.farmer_profile import FarmerProfile
 from database import execute_query
+from utils.account_access import is_rejected_user
 import logging
 
 logger = logging.getLogger(__name__)
@@ -124,6 +125,8 @@ def create_tender():
         if err:
             return jsonify({"error": err}), code
         user_id = str(user["id"])
+        if is_rejected_user(user.get("firebase_uid")):
+            return jsonify({"error": "Your account is rejected. You cannot create tenders."}), 403
         if not _has_any_role(user_id, user, ["buyer"]):
             return jsonify({"error": "Buyer role required"}), 403
 
@@ -169,6 +172,8 @@ def submit_bid(tender_id):
         if err:
             return jsonify({"error": err}), code
         user_id = str(user["id"])
+        if is_rejected_user(user.get("firebase_uid")):
+            return jsonify({"error": "Your account is rejected. You cannot submit bids."}), 403
         if not _has_any_role(user_id, user, ["farmer", "agro-dealer"]):
             return jsonify({"error": "Seller role required"}), 403
 
@@ -289,6 +294,8 @@ def close_tender(tender_id):
         if err:
             return jsonify({"error": err}), code
         user_id = str(user["id"])
+        if is_rejected_user(user.get("firebase_uid")):
+            return jsonify({"error": "Your account is rejected. You cannot close tenders."}), 403
         if not _has_any_role(user_id, user, ["buyer"]):
             return jsonify({"error": "Buyer role required"}), 403
 
