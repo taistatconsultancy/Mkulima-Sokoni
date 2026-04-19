@@ -251,8 +251,8 @@
             <input type="password" id="register-password" placeholder="Min 6 characters" required minlength="6" />
           </div>
           <div class="form-group">
-            <label for="register-phone">Phone Number (Optional)</label>
-            <input type="tel" id="register-phone" placeholder="+254 700 000 000" />
+            <label for="register-phone">Phone Number *</label>
+            <input type="tel" id="register-phone" placeholder="+254 700 000 000" required />
           </div>
           <button type="submit" class="btn btn-primary">Create Account</button>
         </form>
@@ -435,6 +435,10 @@
       const password = document.getElementById('register-password').value;
       const phone = document.getElementById('register-phone').value.trim();
       const role = document.querySelector('#role-selector input[name="role"]:checked')?.value || 'farmer';
+      if (!phone) {
+        showError('Phone number is required.');
+        return;
+      }
 
       setLoading(btn, true, 'Creating account...');
       try {
@@ -544,8 +548,8 @@
             </label>
           </div>
           <div style="margin-bottom:16px;">
-            <label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:4px;">Phone Number (Optional)</label>
-            <input type="tel" id="rs-phone" placeholder="+254 700 000 000"
+            <label style="display:block;font-size:.82rem;font-weight:600;margin-bottom:4px;">Phone Number *</label>
+            <input type="tel" id="rs-phone" placeholder="+254 700 000 000" required
               style="width:100%;padding:10px 12px;border:1.5px solid #DDD8CE;border-radius:10px;font-size:.88rem;font-family:'DM Sans',sans-serif;background:#FAF6EF;outline:none;">
           </div>
           <button type="submit" id="rs-submit"
@@ -568,6 +572,11 @@
         const role = modal.querySelector('input[name="role"]:checked')?.value;
         if (!role) return;
         const phone = modal.querySelector('#rs-phone').value.trim();
+        if (!phone) {
+          errEl.textContent = 'Phone number is required.';
+          errEl.style.display = 'block';
+          return;
+        }
         const fName = modal.querySelector('#rs-first-name')?.value.trim() || firstName || '';
         const lName = modal.querySelector('#rs-last-name')?.value.trim() || lastName || '';
         const btn = modal.querySelector('#rs-submit');

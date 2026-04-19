@@ -189,6 +189,12 @@
       var map = {farmer:'farmer.html',buyer:'buyer.html','agro-dealer':'agro-dealer.html',admin:'admin-support.html'};
       var btn = document.getElementById('navHomeBtn');
       if(btn){ btn.textContent='Dashboard'; btn.onclick=function(){ location.href=map[role]||'index.html'; }; }
+      var listBtn = document.getElementById('listProduceBtn');
+      if (listBtn) {
+        if (role === 'farmer') listBtn.href = 'farmer.html?action=list-produce';
+        else if (role === 'agro-dealer') listBtn.href = 'agro-dealer.html?action=list-produce';
+        else listBtn.href = map[role] || 'auth.html';
+      }
     }
   }catch(e){}
 })();
@@ -208,7 +214,7 @@
       </div>
     </div>
     <div class="market-page-header-right">
-      <a href="auth.html" class="list-produce-btn">
+      <a href="auth.html" class="list-produce-btn" id="listProduceBtn">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
         List Your Produce
       </a>
@@ -315,6 +321,7 @@
   const isProduction = !['localhost', '127.0.0.1'].includes(window.location.hostname);
   const API = isProduction ? '/api' : 'http://localhost:5000/api';
   let allProducts = [];
+  let featuredProducts = [];
 
   const EMOJI = { Vegetables:'🥬', Fruits:'🍊', Cereals:'🌽', Livestock:'🐄', Dairy:'🥛', Tea:'🍵', Nuts:'🥜', Legumes:'🫘', Herbs:'🌿', Potatoes:'🥔', Other:'📦' };
 
@@ -327,19 +334,20 @@
       if (cached && cached.length) {
         allProducts = cached;
         renderProducts(cached);
-        renderProductTicker(cached);
+        renderProductTicker(featuredProducts.length ? featuredProducts : cached);
       }
     } catch(e) {}
 
     // Fetch fresh data in background
     try {
+      await loadFeaturedProducts();
       const res = await fetch(`${API}/products?status=active`);
       if (!res.ok) throw new Error();
       const products = await res.json();
       allProducts = products;
       try { sessionStorage.setItem('productsCache', JSON.stringify(products)); } catch(e) {}
       renderProducts(products);
-      renderProductTicker(products);
+      renderProductTicker(featuredProducts.length ? featuredProducts : products);
     } catch {
       if (!allProducts.length) {
         container.innerHTML = `
@@ -351,6 +359,17 @@
         document.getElementById('product-count').textContent = '';
         document.getElementById('productTicker').style.display = 'none';
       }
+    }
+  }
+
+  async function loadFeaturedProducts() {
+    try {
+      const res = await fetch(`${API}/products/featured?limit=30`);
+      if (!res.ok) throw new Error();
+      const products = await res.json();
+      featuredProducts = Array.isArray(products) ? products : [];
+    } catch (e) {
+      featuredProducts = [];
     }
   }
 
@@ -486,12 +505,26 @@
           sessionStorage.setItem('productsCache', JSON.stringify(products));
         } catch (e) {}
         applyFilters();
-        renderProductTicker(products);
+        loadFeaturedProducts()
+          .then(function() {
+            renderProductTicker(featuredProducts.length ? featuredProducts : products);
+          })
+          .catch(function() {
+            renderProductTicker(products);
+          });
       },
     });
   }
 
   window.addEventListener('DOMContentLoaded', () => {
+    try {
+      var role = localStorage.getItem('userRole') || '';
+      var listBtn = document.getElementById('listProduceBtn');
+      if (listBtn && role) {
+        if (role === 'farmer') listBtn.href = 'farmer.html?action=list-produce';
+        else if (role === 'agro-dealer') listBtn.href = 'agro-dealer.html?action=list-produce';
+      }
+    } catch (e) {}
     loadProducts();
     startMarketplacePolling();
   });

@@ -58,6 +58,8 @@
       color: #fff;
       box-shadow: 0 0 0 1px rgba(255,255,255,.6);
     }
+    .verify-badge.pending { background: #F4A261; }
+    .verify-badge.rejected { background: #ef4444; }
     .verify-badge-icon {
       width: 14px;
       height: 14px;
@@ -306,10 +308,14 @@ function renderBanner(p, u) {
     av.innerHTML = '<span class="initials">' + initials.toUpperCase() + '</span>';
   }
 
-  var isVerified = p.certification_status && p.certification_status.toLowerCase() !== 'pending';
   var badges = '<span class="role-badge">🌾 Farmer</span>';
-  if (isVerified) {
-    badges += '<span class="verify-badge"><span class="verify-badge-icon">✔</span>Verified</span>';
+  var status = (p.certification_status || 'pending').toLowerCase();
+  if (status === 'verified' || status === 'approved') {
+    badges += '<span class="verify-badge verified"><span class="verify-badge-icon">✔</span>Verified</span>';
+  } else if (status === 'rejected') {
+    badges += '<span class="verify-badge rejected"><span class="verify-badge-icon">!</span>Rejected</span>';
+  } else {
+    badges += '<span class="verify-badge pending"><span class="verify-badge-icon">⏳</span>Pending</span>';
   }
   document.getElementById('profileBadges').innerHTML = badges;
 }

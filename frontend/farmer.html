@@ -90,6 +90,19 @@
 
     /* Right side of topbar */
     .topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .mobile-account-btn {
+      display: none;
+      height: 33px;
+      padding: 0 12px;
+      border-radius: 100px;
+      border: 1.5px solid rgba(255,255,255,.25);
+      background: transparent;
+      color: #fff;
+      font-size: .76rem;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+    }
     .verified-badge {
       display: inline-flex;
       align-items: center;
@@ -738,6 +751,7 @@
       main { padding: 20px 14px; }
       .topbar { padding: 0 14px; }
       .topbar-nav { display: none; }
+      .mobile-account-btn { display: inline-flex; align-items: center; }
       .form-grid { grid-template-columns: 1fr; }
       .form-full { grid-column: 1; }
       .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -806,7 +820,8 @@ function exitSuperUser() {
   </nav>
 
   <div class="topbar-right">
-    <div class="verified-badge"><span class="verified-badge-icon">✔</span>Verified</div>
+    <div class="verified-badge" id="accountStatusBadge"><span class="verified-badge-icon" id="accountStatusBadgeIcon">⏳</span><span id="accountStatusBadgeLabel">Pending</span></div>
+    <button class="mobile-account-btn" type="button" onclick="toggleDropdown()">Account</button>
     <div class="user-menu" id="userMenu">
       <div class="user-menu-btn" onclick="toggleDropdown()">
         <div class="user-avatar" id="userAvatar">?</div>
@@ -1494,7 +1509,12 @@ function exitSuperUser() {
   }
 
   /* ── Navigation ── */
+  let profileLocked = false;
   function showPage(pageName, el) {
+    if (profileLocked && pageName !== 'profile') {
+      pageName = 'profile';
+      window.SokoUI?.toast('Complete your profile first to continue.', 'warning');
+    }
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     const t = document.getElementById(pageName);
     if (t) t.classList.add('active');
@@ -1782,6 +1802,7 @@ function exitSuperUser() {
       document.getElementById('product-price').required = true;
       document.getElementById('price-min').required = false;
       document.getElementById('price-max').required = false;
+      applyProductTypeOptions('product');
     } else {
       btns[1].classList.add('active');
       document.getElementById('farming-methods').classList.remove('show');
@@ -1790,7 +1811,33 @@ function exitSuperUser() {
       document.getElementById('product-price').required = false;
       document.getElementById('price-min').required = true;
       document.getElementById('price-max').required = true;
+      applyProductTypeOptions('product');
     }
+  }
+
+  const FARM_CATEGORY_OPTIONS = ['Vegetables', 'Fruits', 'Cereals', 'Legumes', 'Nuts', 'Herbs', 'Potatoes', 'Other'];
+  const LIVESTOCK_CATEGORY_OPTIONS = ['Cattle', 'Goats', 'Sheep', 'Poultry', 'Pigs', 'Rabbits', 'Fish', 'Other'];
+  const FARM_UNIT_OPTIONS = [['kg', 'Kilograms (kg)'], ['g', 'Grams (g)'], ['crate', 'Crate'], ['sack', 'Sack'], ['bag', 'Bag'], ['piece', 'Piece'], ['bunch', 'Bunch'], ['litre', 'Litre'], ['tonne', 'Tonne']];
+  const LIVESTOCK_UNIT_OPTIONS = [['head', 'Head'], ['animal', 'Animal'], ['bird', 'Bird'], ['herd', 'Herd'], ['flock', 'Flock'], ['pair', 'Pair']];
+
+  function setSelectOptions(selectEl, options, selectedValue) {
+    if (!selectEl) return;
+    const current = selectedValue || selectEl.value;
+    selectEl.innerHTML = '<option value="">Select option</option>' + options.map(opt => {
+      if (Array.isArray(opt)) return `<option value="${opt[0]}">${opt[1]}</option>`;
+      return `<option value="${opt}">${opt}</option>`;
+    }).join('');
+    if (current) selectEl.value = current;
+  }
+
+  function applyProductTypeOptions(scope) {
+    const isEdit = scope === 'edit';
+    const typeBtnSelector = isEdit ? '#editProductModal .type-toggle-btn.active' : '.type-toggle-btn.active';
+    const type = document.querySelector(typeBtnSelector)?.textContent.includes('Livestock') ? 'livestock' : 'farm';
+    const categorySelect = document.getElementById(isEdit ? 'edit-product-category' : 'product-category');
+    const unitSelect = document.getElementById(isEdit ? 'edit-measurement-metric' : 'measurement-metric');
+    setSelectOptions(categorySelect, type === 'livestock' ? LIVESTOCK_CATEGORY_OPTIONS : FARM_CATEGORY_OPTIONS, categorySelect?.value);
+    setSelectOptions(unitSelect, type === 'livestock' ? LIVESTOCK_UNIT_OPTIONS : FARM_UNIT_OPTIONS, unitSelect?.value);
   }
 
   document.getElementById('product-image').addEventListener('change', e => {
@@ -1816,6 +1863,7 @@ function exitSuperUser() {
   }
 
   async function submitProductForm() {
+    if (accountRejected) { await uiAlert('Your account is rejected. Contact support to resolve this before listing products.', 'Account rejected'); return; }
     const form = document.getElementById('addProductForm');
     if (!form.checkValidity()) { form.reportValidity(); return; }
 
@@ -2070,6 +2118,7 @@ function exitSuperUser() {
       document.getElementById('edit-product-price').required = true;
       document.getElementById('edit-price-min').required = false;
       document.getElementById('edit-price-max').required = false;
+      applyProductTypeOptions('edit');
     } else {
       btns[1].classList.add('active');
       document.getElementById('edit-farming-methods').classList.remove('show');
@@ -2078,6 +2127,7 @@ function exitSuperUser() {
       document.getElementById('edit-product-price').required = false;
       document.getElementById('edit-price-min').required = true;
       document.getElementById('edit-price-max').required = true;
+      applyProductTypeOptions('edit');
     }
   }
 
@@ -2130,6 +2180,7 @@ function exitSuperUser() {
   });
 
   async function submitEditProductForm() {
+    if (accountRejected) { await uiAlert('Your account is rejected. Contact support to resolve this before editing products.', 'Account rejected'); return; }
     const form = document.getElementById('editProductForm');
     if (!form.checkValidity()) { form.reportValidity(); return; }
 
@@ -2455,6 +2506,33 @@ function exitSuperUser() {
 
   /* ── Farmer profile form ── */
   let currentImageUrl = '';
+  let accountRejected = false;
+
+  function applyAccountStatusUi(rawStatus) {
+    const status = String(rawStatus || 'pending').toLowerCase();
+    const badge = document.getElementById('accountStatusBadge');
+    const icon = document.getElementById('accountStatusBadgeIcon');
+    const label = document.getElementById('accountStatusBadgeLabel');
+    if (!badge || !icon || !label) return;
+    accountRejected = status === 'rejected';
+    if (status === 'verified' || status === 'approved') {
+      badge.style.background = '#1DA1F2';
+      icon.textContent = '✔';
+      icon.style.color = '#1DA1F2';
+      label.textContent = 'Verified';
+    } else if (status === 'rejected') {
+      badge.style.background = '#ef4444';
+      icon.textContent = '!';
+      icon.style.color = '#ef4444';
+      label.textContent = 'Rejected';
+      showAlert('Your account is rejected. You can view support, but listing and product updates are disabled.', 'error');
+    } else {
+      badge.style.background = '#F4A261';
+      icon.textContent = '⏳';
+      icon.style.color = '#F4A261';
+      label.textContent = 'Pending';
+    }
+  }
 
   async function loadFarmerProfile() {
     const saveBtn = document.getElementById('save-profile-btn');
@@ -2483,6 +2561,7 @@ function exitSuperUser() {
         const csRaw = (p.certification_status || 'pending').toString();
         const csDisp = document.getElementById('certification-status-display');
         if (csDisp) csDisp.textContent = csRaw.charAt(0).toUpperCase() + csRaw.slice(1).toLowerCase();
+        applyAccountStatusUi(csRaw);
         set('bio', p.bio);
         if (p.referral_source) {
           set('referral-source', p.referral_source);
@@ -2867,6 +2946,8 @@ function exitSuperUser() {
 
   window.addEventListener('DOMContentLoaded', () => {
     showPage('dashboard');
+    applyProductTypeOptions('product');
+    applyProductTypeOptions('edit');
     loadUserProfile();
     loadProducts();
     loadMarketplaceListings();
@@ -2877,7 +2958,35 @@ function exitSuperUser() {
         roleLabel: 'Farmer'
       });
     }
+    const action = new URLSearchParams(window.location.search).get('action');
+    if (action === 'list-produce') addProduct();
+    enforceFarmerProfileCompletion();
   });
+
+  async function enforceFarmerProfileCompletion() {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) return;
+      const user = JSON.parse(userStr);
+      const uid = user.firebase_uid || user.id;
+      if (!uid) return;
+      const res = await fetch(`${API_BASE_URL}/profiles/farmer/${uid}`);
+      if (!res.ok) { profileLocked = true; showPage('profile'); return; }
+      const data = await res.json();
+      const p = data.profile || {};
+      const hasRequired = Boolean(
+        String(p.farm_name || '').trim() &&
+        String(p.location || '').trim() &&
+        String(p.county || '').trim() &&
+        String(p.national_id || '').trim()
+      );
+      profileLocked = !hasRequired;
+      if (profileLocked) {
+        showPage('profile');
+        showAlert('Complete your profile details to continue using the platform.', 'error');
+      }
+    } catch (e) {}
+  }
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) return;

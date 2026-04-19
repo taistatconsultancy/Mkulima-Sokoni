@@ -268,7 +268,7 @@
         <div class="form-row">
           <div class="form-group">
             <label for="id-front">Upload ID Front *</label>
-            <input type="file" id="id-front" name="id_front" accept="image/*" required>
+            <input type="file" id="id-front" name="id_front" accept="image/*">
             <p class="help-text">Upload front side of your ID</p>
             <div id="id-front-preview" style="margin-top: 8px; display: none;">
               <img id="id-front-img" src="" alt="ID Front Preview" style="max-width: 100%; max-height: 150px; border-radius: 8px; border: 2px solid #e5e7eb;">
@@ -276,7 +276,7 @@
           </div>
           <div class="form-group">
             <label for="id-back">Upload ID Back *</label>
-            <input type="file" id="id-back" name="id_back" accept="image/*" required>
+            <input type="file" id="id-back" name="id_back" accept="image/*">
             <p class="help-text">Upload back side of your ID</p>
             <div id="id-back-preview" style="margin-top: 8px; display: none;">
               <img id="id-back-img" src="" alt="ID Back Preview" style="max-width: 100%; max-height: 150px; border-radius: 8px; border: 2px solid #e5e7eb;">
@@ -312,12 +312,12 @@
         
         <div class="form-group">
           <label for="verification-status">Verification Status</label>
-          <select id="verification-status" name="verification_status">
+          <select id="verification-status" name="verification_status" disabled style="background:#f3f4f6;">
             <option value="pending">Pending</option>
             <option value="verified">Verified</option>
             <option value="rejected">Rejected</option>
           </select>
-          <p class="help-text">Your verification status will be reviewed by our team</p>
+          <p class="help-text">Managed by support. When you save your profile, your details are submitted for review.</p>
         </div>
         
         <div class="form-group">
@@ -358,13 +358,13 @@
         
         <div class="form-group">
           <label>Account Status</label>
-          <div style="padding: 1rem; background: #f0fdf4; border-radius: 8px; border: 2px solid #27AE60;">
-            <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:#1DA1F2;color:#fff;font-weight:600;font-size:.8rem;">
-              <span style="width:14px;height:14px;border-radius:50%;background:#fff;display:inline-flex;align-items:center;justify-content:center;color:#1DA1F2;font-size:10px;">✔</span>
-              Verified
+          <div id="account-status-card" style="padding: 1rem; border-radius: 8px; border: 2px solid #e5e7eb; background: #f9fafb; display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span id="account-status-badge" style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:#F4A261;color:#fff;font-weight:700;font-size:.8rem;">
+              <span id="account-status-icon" style="width:14px;height:14px;border-radius:50%;background:#fff;display:inline-flex;align-items:center;justify-content:center;color:#F4A261;font-size:10px;">⏳</span>
+              Pending
             </span>
-            <p style="margin-top: 0.5rem; color: #6b7280; font-size: 0.9rem;">
-              Your account has been verified. Business documents approved.
+            <p id="account-status-text" style="margin:0; color:#1f2937; font-size:0.88rem;">
+              Complete your profile and submit for review. Support will verify your account.
             </p>
           </div>
         </div>
@@ -423,6 +423,7 @@
           document.getElementById('verification-status').value = profile.verification_status || 'pending';
           document.getElementById('bio').value = profile.bio || '';
           document.getElementById('profile-image').value = profile.profile_image_url || '';
+          updateAccountStatus(profile.verification_status || 'pending');
           
           // Populate referral source
           if (profile.referral_source) {
@@ -458,6 +459,44 @@
         }
       } catch (error) {
         console.error('Error loading profile:', error);
+      }
+    }
+
+    function updateAccountStatus(rawStatus) {
+      const status = String(rawStatus || 'pending').toLowerCase();
+      const badge = document.getElementById('account-status-badge');
+      const icon = document.getElementById('account-status-icon');
+      const text = document.getElementById('account-status-text');
+      const card = document.getElementById('account-status-card');
+      if (!badge || !icon || !text || !card) return;
+
+      if (status === 'verified' || status === 'approved') {
+        badge.style.background = '#1DA1F2';
+        badge.style.color = '#fff';
+        icon.textContent = '✔';
+        icon.style.color = '#1DA1F2';
+        badge.lastChild.textContent = 'Verified';
+        text.textContent = 'Your account has been verified. Business documents approved.';
+        card.style.borderColor = '#1D4ED8';
+        card.style.background = '#eff6ff';
+      } else if (status === 'rejected') {
+        badge.style.background = '#ef4444';
+        badge.style.color = '#fff';
+        icon.textContent = '!';
+        icon.style.color = '#ef4444';
+        badge.lastChild.textContent = 'Rejected';
+        text.textContent = 'Your account was rejected. Please contact support and make the requested changes, then submit again.';
+        card.style.borderColor = '#ef4444';
+        card.style.background = '#fef2f2';
+      } else {
+        badge.style.background = '#F4A261';
+        badge.style.color = '#fff';
+        icon.textContent = '⏳';
+        icon.style.color = '#F4A261';
+        badge.lastChild.textContent = 'Pending';
+        text.textContent = 'Complete your profile and submit for review. Support will verify your account.';
+        card.style.borderColor = '#e5e7eb';
+        card.style.background = '#f9fafb';
       }
     }
     

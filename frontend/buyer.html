@@ -80,6 +80,19 @@
 
     /* Right side */
     .topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .mobile-account-btn {
+      display: none;
+      height: 33px;
+      padding: 0 12px;
+      border-radius: 100px;
+      border: 1.5px solid rgba(255,255,255,.25);
+      background: transparent;
+      color: #fff;
+      font-size: .76rem;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+    }
     .verified-badge {
       display: inline-flex;
       align-items: center;
@@ -494,6 +507,7 @@
       main { padding: 20px 14px; }
       .topbar { padding: 0 14px; }
       .topbar-nav { display: none; }
+      .mobile-account-btn { display: inline-flex; align-items: center; }
       .form-grid { grid-template-columns: 1fr; }
       .form-full { grid-column: 1; }
       footer { padding: 36px 16px 0; }
@@ -562,6 +576,7 @@ function exitSuperUser() {
 
   <div class="topbar-right">
     <div class="verified-badge"><span class="verified-badge-icon">✔</span>Verified</div>
+    <button class="mobile-account-btn" type="button" onclick="toggleDropdown()">Account</button>
     <div class="user-menu" id="userMenu">
       <div class="user-menu-btn" onclick="toggleDropdown()">
         <div class="user-avatar" id="userAvatar">?</div>
@@ -1330,7 +1345,12 @@ function exitSuperUser() {
   }
 
   /* ── Navigation ── */
+  let profileLocked = false;
   function showPage(pageName, el) {
+    if (profileLocked && pageName !== 'profile') {
+      pageName = 'profile';
+      window.SokoUI?.toast('Complete your profile first to continue.', 'warning');
+    }
     // Support deep links like buyer.html#cart
     if (!pageName && location.hash) pageName = location.hash.replace('#', '');
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
@@ -2197,7 +2217,33 @@ function exitSuperUser() {
       sessionStorage.removeItem('showSupport');
       showPage('support');
     }
+    enforceBuyerProfileCompletion();
   });
+
+  async function enforceBuyerProfileCompletion() {
+    try {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) return;
+      const user = JSON.parse(userStr);
+      const uid = user.firebase_uid || user.id;
+      if (!uid) return;
+      const res = await fetch(`${API_BASE_URL}/profiles/buyer/${uid}`);
+      if (!res.ok) { profileLocked = true; showPage('profile'); return; }
+      const data = await res.json();
+      const p = data.profile || {};
+      const hasRequired = Boolean(
+        String(p.company_name || '').trim() &&
+        String(p.location || '').trim() &&
+        String(p.county || '').trim() &&
+        String(p.national_id || '').trim()
+      );
+      profileLocked = !hasRequired;
+      if (profileLocked) {
+        showPage('profile');
+        showAlert('Complete your profile details to continue using the platform.', 'error');
+      }
+    } catch (e) {}
+  }
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) return;

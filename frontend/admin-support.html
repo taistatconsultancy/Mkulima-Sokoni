@@ -242,6 +242,7 @@
         <div class="tabs">
           <button type="button" class="tab active" onclick="switchTab(event, 'users')">👥 User Management</button>
           <button type="button" class="tab" onclick="switchTab(event, 'verification')">✅ Verification</button>
+          <button type="button" class="tab" onclick="switchTab(event, 'featured-items')">⭐ Featured Items</button>
           <button type="button" class="tab" onclick="switchTab(event, 'tickets')">🎫 Support Tickets</button>
           <button type="button" class="tab" onclick="switchTab(event, 'client-access')">🔑 Client Access</button>
           <button type="button" class="tab" onclick="switchTab(event, 'analytics')">📊 Analytics</button>
@@ -252,13 +253,32 @@
           <div class="section-card">
             <h2 class="section-title">All Users 👥</h2>
             <p style="color:var(--muted);margin-bottom:18px;">Manage all registered users - farmers, buyers, and agro-dealers</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
+              <div>
+                <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Month</label>
+                <select id="users-filter-month" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;">
+                  <option value="">All</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Year</label>
+                <select id="users-filter-year" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;">
+                  <option value="">All</option>
+                </select>
+              </div>
+            </div>
             <div style="overflow-x:auto;">
               <table>
-                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+                <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
                 <tbody id="users-table-body">
-                  <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px;">Loading users…</td></tr>
+                  <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px;">Loading users…</td></tr>
                 </tbody>
               </table>
+            </div>
+            <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:12px;">
+              <button class="btn btn-outline btn-sm" type="button" id="users-prev-btn">Previous</button>
+              <span id="users-page-label" style="font-size:.8rem;color:var(--muted);">Page 1</span>
+              <button class="btn btn-outline btn-sm" type="button" id="users-next-btn">Next</button>
             </div>
           </div>
         </div>
@@ -266,13 +286,29 @@
         <!-- Verification Tab -->
         <div id="verification" class="tab-content">
           <div class="section-card">
-            <h2 class="section-title">Pending Verifications ⏳</h2>
-            <p style="color:var(--muted);margin-bottom:18px;">Review and verify new user accounts</p>
+            <h2 class="section-title">Verification Queue ⏳</h2>
+            <p style="color:var(--muted);margin-bottom:18px;">Review pending accounts and re-approve rejected accounts</p>
             <div style="overflow-x:auto;">
               <table>
                 <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Submitted</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody id="verification-table-body">
                   <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px;">Loading verifications…</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Featured Items Tab -->
+        <div id="featured-items" class="tab-content">
+          <div class="section-card">
+            <h2 class="section-title">Featured / Top Moving Items ⭐</h2>
+            <p style="color:var(--muted);margin-bottom:18px;">Select products that appear in the moving top ticker on the marketplace.</p>
+            <div style="overflow-x:auto;">
+              <table>
+                <thead><tr><th>Product</th><th>Category</th><th>Seller</th><th>Price</th><th>Created</th><th>Show in Top Items</th></tr></thead>
+                <tbody id="featured-products-table-body">
+                  <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px;">Loading products…</td></tr>
                 </tbody>
               </table>
             </div>
@@ -400,6 +436,7 @@
     window.__bootstrapAdminDashboard = function () {
       loadAdminStats();
       loadAdminUsers();
+      loadFeaturedProducts();
       loadImpersonationLogs();
       if (window.SokoSupportCenter && !window.__adminSupportCenterInitialized) {
         window.SokoSupportCenter.initAdminSupport({
@@ -442,11 +479,13 @@
 
     /* ── Live Users & Verification Tables ── */
     var allAdminUsers = [];
+    var usersPage = 0;
+    var USERS_PER_PAGE = 10;
 
-    function isPendingVerification(u) {
+    function isVerificationActionable(u) {
       var a = (u.certification_status || '').toLowerCase();
       var b = (u.buyer_verification_status || '').toLowerCase();
-      return a === 'pending' || b === 'pending';
+      return a === 'pending' || b === 'pending' || a === 'rejected' || b === 'rejected';
     }
 
     async function loadAdminUsers() {
@@ -454,11 +493,12 @@
         var res = await authFetch(API_BASE + '/auth/admin/users');
         if (!res.ok) throw new Error();
         allAdminUsers = await res.json();
+        buildUserFilters(allAdminUsers);
         renderUsersTable(allAdminUsers);
-        renderVerificationTable(allAdminUsers.filter(isPendingVerification));
+        renderVerificationTable(allAdminUsers.filter(isVerificationActionable));
       } catch (e) {
         document.getElementById('users-table-body').innerHTML =
-          '<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:28px;">Failed to load users</td></tr>';
+          '<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:28px;">Failed to load users</td></tr>';
         document.getElementById('verification-table-body').innerHTML =
           '<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:28px;">Failed to load verifications</td></tr>';
       }
@@ -490,15 +530,39 @@
       return u.is_active !== false ? '<span class="badge verified">Active</span>' : '<span class="badge rejected">Inactive</span>';
     }
 
+    function filteredUsers(users) {
+      var monthVal = document.getElementById('users-filter-month')?.value || '';
+      var yearVal = document.getElementById('users-filter-year')?.value || '';
+      return (users || []).filter(function(u) {
+        if (!monthVal && !yearVal) return true;
+        if (!u.created_at) return false;
+        var d = new Date(u.created_at);
+        if (isNaN(d.getTime())) return false;
+        if (monthVal && String(d.getMonth() + 1) !== monthVal) return false;
+        if (yearVal && String(d.getFullYear()) !== yearVal) return false;
+        return true;
+      });
+    }
+
     function renderUsersTable(users) {
       var tbody = document.getElementById('users-table-body');
+      users = filteredUsers(users);
       if (!users.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px;">No users found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px;">No users found</td></tr>';
+        document.getElementById('users-page-label').textContent = 'Page 1';
+        document.getElementById('users-prev-btn').disabled = true;
+        document.getElementById('users-next-btn').disabled = true;
         return;
       }
-      tbody.innerHTML = users.map(function(u) {
+      var totalPages = Math.max(1, Math.ceil(users.length / USERS_PER_PAGE));
+      if (usersPage >= totalPages) usersPage = totalPages - 1;
+      if (usersPage < 0) usersPage = 0;
+      var start = usersPage * USERS_PER_PAGE;
+      var pageUsers = users.slice(start, start + USERS_PER_PAGE);
+      tbody.innerHTML = pageUsers.map(function(u, idx) {
         var name = esc((u.first_name || '') + ' ' + (u.last_name || '')).trim() || esc(u.email);
         return '<tr>' +
+          '<td>' + (start + idx + 1) + '</td>' +
           '<td><strong>' + name + '</strong></td>' +
           '<td>' + esc(u.email) + '</td>' +
           '<td>' + roleBadge(u.role) + '</td>' +
@@ -507,24 +571,92 @@
           '<td><div class="action-buttons"><button class="btn btn-outline btn-sm" onclick="viewUser(\'' + esc(u.email) + '\')">View</button></div></td>' +
           '</tr>';
       }).join('');
+      document.getElementById('users-page-label').textContent = 'Page ' + (usersPage + 1) + ' of ' + totalPages;
+      document.getElementById('users-prev-btn').disabled = usersPage === 0;
+      document.getElementById('users-next-btn').disabled = usersPage >= totalPages - 1;
+    }
+
+    function buildUserFilters(users) {
+      var monthSelect = document.getElementById('users-filter-month');
+      var yearSelect = document.getElementById('users-filter-year');
+      if (!monthSelect || !yearSelect) return;
+      var monthMap = {};
+      var yearMap = {};
+      (users || []).forEach(function(u) {
+        if (!u.created_at) return;
+        var d = new Date(u.created_at);
+        if (isNaN(d.getTime())) return;
+        monthMap[String(d.getMonth() + 1)] = d.toLocaleString('en-KE', { month: 'long' });
+        yearMap[String(d.getFullYear())] = true;
+      });
+      monthSelect.innerHTML = '<option value="">All</option>' + Object.keys(monthMap)
+        .sort(function(a,b){ return Number(a)-Number(b); })
+        .map(function(k){ return '<option value="' + k + '">' + monthMap[k] + '</option>'; })
+        .join('');
+      yearSelect.innerHTML = '<option value="">All</option>' + Object.keys(yearMap)
+        .sort().reverse()
+        .map(function(y){ return '<option value="' + y + '">' + y + '</option>'; })
+        .join('');
+    }
+
+    async function loadFeaturedProducts() {
+      var tbody = document.getElementById('featured-products-table-body');
+      if (!tbody) return;
+      try {
+        var res = await authFetch(API_BASE + '/products?status=active&limit=200');
+        if (!res.ok) throw new Error();
+        var products = await res.json();
+        if (!products || !products.length) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px;">No active products found</td></tr>';
+          return;
+        }
+        tbody.innerHTML = products.map(function(p) {
+          var name = esc(p.name || 'Unnamed product');
+          var category = esc(p.category || '—');
+          var seller = esc(p.farm_name || p.seller_name || 'Seller');
+          var created = fmtDate(p.created_at);
+          var price = (p.price !== null && p.price !== undefined && p.price !== '')
+            ? ('KSh ' + Number(p.price).toLocaleString())
+            : '—';
+          var checked = p.is_featured ? 'checked' : '';
+          return '<tr>' +
+            '<td><strong>' + name + '</strong></td>' +
+            '<td>' + category + '</td>' +
+            '<td>' + seller + '</td>' +
+            '<td>' + price + '</td>' +
+            '<td>' + created + '</td>' +
+            '<td><label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;">' +
+              '<input type="checkbox" data-featured-toggle="1" data-product-id="' + esc(p.id) + '" ' + checked + ' />' +
+              '<span style="font-size:.8rem;color:var(--muted);">Featured</span>' +
+            '</label></td>' +
+          '</tr>';
+        }).join('');
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:28px;">Failed to load products</td></tr>';
+      }
     }
 
     function renderVerificationTable(users) {
       var tbody = document.getElementById('verification-table-body');
       if (!users.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px;">No pending verifications</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px;">No pending or rejected verification items</td></tr>';
         return;
       }
       tbody.innerHTML = users.map(function(u) {
         var name = esc((u.first_name || '') + ' ' + (u.last_name || '')).trim() || esc(u.email);
+        var cs = (u.certification_status || '').toLowerCase();
+        var bs = (u.buyer_verification_status || '').toLowerCase();
+        var isRejected = cs === 'rejected' || bs === 'rejected';
+        var statusLabel = isRejected ? '<span class="badge rejected">Rejected</span>' : '<span class="badge pending">Pending Review</span>';
+        var approveLabel = isRejected ? 'Re-approve' : 'Approve';
         return '<tr>' +
           '<td><strong>' + name + '</strong></td>' +
           '<td>' + esc(u.email) + '</td>' +
           '<td>' + roleBadge(u.role) + '</td>' +
           '<td>' + fmtDate(u.created_at) + '</td>' +
-          '<td><span class="badge pending">Pending Review</span></td>' +
+          '<td>' + statusLabel + '</td>' +
           '<td><div class="action-buttons">' +
-            '<button type="button" class="btn btn-success btn-sm" data-verify-action="approve" data-user-id="' + esc(u.id) + '">Approve</button>' +
+            '<button type="button" class="btn btn-success btn-sm" data-verify-action="approve" data-user-id="' + esc(u.id) + '">' + approveLabel + '</button>' +
             '<button type="button" class="btn btn-danger btn-sm" data-verify-action="reject" data-user-id="' + esc(u.id) + '">Reject</button>' +
           '</div></td></tr>';
       }).join('');
@@ -619,6 +751,26 @@
           unlockVerificationRow(tr);
           alert(e.message || 'Failed to reject');
         }
+      }
+    });
+    document.getElementById('featured-products-table-body')?.addEventListener('change', async function(ev) {
+      var input = ev.target;
+      if (!input || !input.matches('[data-featured-toggle]')) return;
+      var productId = input.getAttribute('data-product-id');
+      if (!productId) return;
+      input.disabled = true;
+      try {
+        var res = await authFetch(API_BASE + '/products/' + encodeURIComponent(productId) + '/featured', {
+          method: 'PATCH',
+          body: JSON.stringify({ is_featured: !!input.checked })
+        });
+        var data = await res.json().catch(function(){ return {}; });
+        if (!res.ok) throw new Error(data.error || 'Failed to update featured status');
+      } catch (e) {
+        input.checked = !input.checked;
+        alert(e.message || 'Failed to update featured status');
+      } finally {
+        input.disabled = false;
       }
     });
     function viewTicket(ticketId) { alert('Viewing ticket ' + ticketId); }
@@ -782,6 +934,23 @@
         window.location.href = 'index.html';
       }
     }
+
+    document.getElementById('users-prev-btn').addEventListener('click', function() {
+      usersPage -= 1;
+      renderUsersTable(allAdminUsers);
+    });
+    document.getElementById('users-next-btn').addEventListener('click', function() {
+      usersPage += 1;
+      renderUsersTable(allAdminUsers);
+    });
+    document.getElementById('users-filter-month').addEventListener('change', function() {
+      usersPage = 0;
+      renderUsersTable(allAdminUsers);
+    });
+    document.getElementById('users-filter-year').addEventListener('change', function() {
+      usersPage = 0;
+      renderUsersTable(allAdminUsers);
+    });
   </script>
 </body>
 </html>

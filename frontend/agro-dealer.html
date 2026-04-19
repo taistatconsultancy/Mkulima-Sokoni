@@ -33,6 +33,7 @@
     .topbar-nav-link:hover{color:#fff;background:rgba(255,255,255,.08);}
     .topbar-nav-link.active{color:var(--lime);background:rgba(116,198,157,.12);font-weight:600;}
     .topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
+    .mobile-account-btn{display:none;height:33px;padding:0 12px;border-radius:100px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:#fff;font-size:.76rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;}
     .topbar-btn{height:33px;padding:0 15px;border-radius:100px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:#fff;font-size:.78rem;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
     .topbar-btn:hover{background:rgba(255,255,255,.1);}
     .topbar-btn.danger{border-color:rgba(239,68,68,.4);color:#fca5a5;}
@@ -169,7 +170,7 @@
     .footer-badge{font-size:.68rem;color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:3px 10px;}
 
     @media(max-width:1000px){.footer-grid{grid-template-columns:1fr 1fr 1fr;}.footer-brand-col{grid-column:1/-1;}}
-    @media(max-width:768px){.topbar-nav{display:none;}.wrap{padding:18px 14px;}.form-grid{grid-template-columns:1fr;}.form-full{grid-column:1;}.stats-grid{grid-template-columns:1fr 1fr;}.mk-grid{grid-template-columns:1fr 1fr;}.footer-grid{grid-template-columns:1fr 1fr;gap:24px;}.footer-grid>div:first-child{grid-column:1/-1;}}
+    @media(max-width:768px){.topbar-nav{display:none;}.mobile-account-btn{display:inline-flex;align-items:center;}.wrap{padding:18px 14px;}.form-grid{grid-template-columns:1fr;}.form-full{grid-column:1;}.stats-grid{grid-template-columns:1fr 1fr;}.mk-grid{grid-template-columns:1fr 1fr;}.footer-grid{grid-template-columns:1fr 1fr;gap:24px;}.footer-grid>div:first-child{grid-column:1/-1;}}
     @media(max-width:480px){.stats-grid{grid-template-columns:1fr;}.mk-grid{grid-template-columns:1fr;}.footer-grid{grid-template-columns:1fr;}}
   </style>
 </head>
@@ -212,6 +213,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
     <button class="topbar-nav-link" onclick="showPage('support',this)">💬 Support</button>
   </nav>
   <div class="topbar-right">
+    <button class="mobile-account-btn" type="button" onclick="toggleDropdown()">Account</button>
     <div class="user-menu" id="userMenu">
       <div class="user-menu-btn" onclick="toggleDropdown()">
         <div class="user-avatar" id="userAvatar">?</div>
@@ -302,17 +304,9 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
             <label>Category *</label>
             <select id="ap-category" required>
               <option value="">Select category</option>
+              <option value="Machinery">Machinery</option>
+              <option value="Fertilizer">Fertilizer</option>
               <option value="Seeds">Seeds</option>
-              <option value="Fertilizers">Fertilizers</option>
-              <option value="Pesticides">Pesticides</option>
-              <option value="Equipment">Equipment</option>
-              <option value="Animal Feed">Animal Feed</option>
-              <option value="Veterinary">Veterinary</option>
-              <option value="Irrigation">Irrigation</option>
-              <option value="Vegetables">Vegetables</option>
-              <option value="Fruits">Fruits</option>
-              <option value="Cereals">Cereals</option>
-              <option value="Other">Other</option>
             </select>
           </div>
           <div class="form-group">
@@ -538,6 +532,7 @@ let myProducts = [];
 let allMarketProducts = [];
 let mkPage = 0;
 const MK_PER_PAGE = 12;
+let profileLocked = false;
 
 async function apiJson(url, opts = {}) {
   const res = await fetch(url, {
@@ -613,6 +608,10 @@ function startDealerTendersPolling() {
 }
 
 function showPage(name, btn) {
+  if (profileLocked && name !== 'profile') {
+    name = 'profile';
+    window.SokoUI?.toast('Complete your profile first to continue.', 'warning');
+  }
   document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.topbar-nav-link').forEach(l => l.classList.remove('active'));
   const section = document.getElementById(name);
@@ -676,6 +675,27 @@ async function init() {
       roleLabel: 'Agro-Dealer'
     });
   }
+  const action = new URLSearchParams(window.location.search).get('action');
+  if (action === 'list-produce') showPage('add-product');
+  enforceAgroProfileCompletion();
+}
+
+async function enforceAgroProfileCompletion() {
+  try {
+    if (!firebaseUid) return;
+    const res = await fetch(`${API}/profiles/farmer/${firebaseUid}`);
+    if (!res.ok) { profileLocked = true; showPage('profile'); return; }
+    const data = await res.json();
+    const p = data.profile || {};
+    const hasRequired = Boolean(
+      String(p.farm_name || '').trim() &&
+      String(p.location || '').trim() &&
+      String(p.county || '').trim() &&
+      String(p.national_id || '').trim()
+    );
+    profileLocked = !hasRequired;
+    if (profileLocked) showPage('profile');
+  } catch (e) {}
 }
 
 document.addEventListener('visibilitychange', function() {
