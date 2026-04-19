@@ -26,6 +26,24 @@ def _user_submitted_verification_status(raw):
     return None
 
 
+def _farmer_profile_complete(data):
+    return bool(
+        str(data.get('farm_name') or '').strip() and
+        str(data.get('location') or '').strip() and
+        str(data.get('county') or '').strip() and
+        str(data.get('national_id') or '').strip()
+    )
+
+
+def _buyer_profile_complete(data):
+    return bool(
+        str(data.get('company_name') or '').strip() and
+        str(data.get('location') or '').strip() and
+        str(data.get('county') or '').strip() and
+        str(data.get('national_id') or '').strip()
+    )
+
+
 def extract_user_id(user):
     """
     Safely extract user_id from user object, ensuring it's a UUID not a timestamp
@@ -242,6 +260,8 @@ def create_farmer_profile():
                 logger.info(f"Uploaded profile selfie to Cloudinary: {profile_selfie_url}")
         
         cert_status = _user_submitted_verification_status(data.get('certification_status'))
+        if not _farmer_profile_complete(data):
+            cert_status = 'pending'
         if FarmerProfile.profile_exists(user_id):
             # Update existing profile (omit certification_status unless submitting pending)
             fp_kwargs = dict(
@@ -319,6 +339,8 @@ def get_farmer_profile(firebase_uid):
         # Remove email and phone_number from main profile (they're in user object)
         profile_dict.pop('email', None)
         profile_dict.pop('phone_number', None)
+        if not _farmer_profile_complete(profile_dict):
+            profile_dict['certification_status'] = 'pending'
         
         return jsonify({
             'success': True,
@@ -412,6 +434,8 @@ def create_buyer_profile():
                 logger.info(f"Uploaded ID back to Cloudinary: {id_back_url}")
         
         buyer_vstatus = _user_submitted_verification_status(data.get('verification_status'))
+        if not _buyer_profile_complete(data):
+            buyer_vstatus = 'pending'
         # Check if profile exists
         if BuyerProfile.profile_exists(user_id):
             # Update existing profile
@@ -482,6 +506,8 @@ def get_buyer_profile(firebase_uid):
         # Remove email and phone_number from main profile (they're in user object)
         profile_dict.pop('email', None)
         profile_dict.pop('phone_number', None)
+        if not _buyer_profile_complete(profile_dict):
+            profile_dict['verification_status'] = 'pending'
         
         return jsonify({
             'success': True,

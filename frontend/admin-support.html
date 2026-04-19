@@ -658,6 +658,7 @@
           '<td><div class="action-buttons">' +
             '<button type="button" class="btn btn-success btn-sm" data-verify-action="approve" data-user-id="' + esc(u.id) + '">' + approveLabel + '</button>' +
             '<button type="button" class="btn btn-danger btn-sm" data-verify-action="reject" data-user-id="' + esc(u.id) + '">Reject</button>' +
+            '<button type="button" class="btn btn-outline btn-sm" data-verify-action="message" data-user-id="' + esc(u.id) + '">Message User</button>' +
           '</div></td></tr>';
       }).join('');
     }
@@ -750,6 +751,31 @@
         } catch (e) {
           unlockVerificationRow(tr);
           alert(e.message || 'Failed to reject');
+        }
+      }
+      if (action === 'message') {
+        var msgSubject = prompt('Message user\n\nEnter subject:');
+        if (!msgSubject || !msgSubject.trim()) return;
+        var msgBody = prompt('Enter message to user:');
+        if (!msgBody || !msgBody.trim()) return;
+        lockVerificationRow(tr, btn, 'Sending…');
+        try {
+          var res3 = await authFetch(API_BASE + '/support/admin/message-user', {
+            method: 'POST',
+            body: JSON.stringify({
+              user_id: userId,
+              subject: msgSubject.trim(),
+              message: msgBody.trim(),
+              admin_email: window.__adminUserEmail || ''
+            })
+          });
+          var data3 = await res3.json().catch(function() { return {}; });
+          if (!res3.ok) throw new Error(data3.error || 'Request failed');
+          alert('Message sent to user support inbox.');
+          unlockVerificationRow(tr);
+        } catch (e) {
+          unlockVerificationRow(tr);
+          alert(e.message || 'Failed to send message');
         }
       }
     });

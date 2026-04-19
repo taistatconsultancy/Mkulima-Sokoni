@@ -159,6 +159,11 @@ class Product:
 
             # Marketplace policy: only verified/approved sellers are visible in listings.
             conditions.append("COALESCE(fp.certification_status, 'pending') IN ('verified', 'approved')")
+            # Incomplete profiles are always treated as pending (not market-visible).
+            conditions.append("NULLIF(TRIM(COALESCE(fp.farm_name, '')), '') IS NOT NULL")
+            conditions.append("NULLIF(TRIM(COALESCE(fp.location, '')), '') IS NOT NULL")
+            conditions.append("NULLIF(TRIM(COALESCE(fp.county, '')), '') IS NOT NULL")
+            conditions.append("NULLIF(TRIM(COALESCE(fp.national_id, '')), '') IS NOT NULL")
             
             where_clause = " AND ".join(conditions)
             params.extend([limit, offset])
@@ -191,7 +196,14 @@ class Product:
         Filters mirror get_all_products (same WHERE, no pagination).
         """
         try:
-            conditions = ['p.status = %s', "COALESCE(fp.certification_status, 'pending') IN ('verified', 'approved')"]
+            conditions = [
+                'p.status = %s',
+                "COALESCE(fp.certification_status, 'pending') IN ('verified', 'approved')",
+                "NULLIF(TRIM(COALESCE(fp.farm_name, '')), '') IS NOT NULL",
+                "NULLIF(TRIM(COALESCE(fp.location, '')), '') IS NOT NULL",
+                "NULLIF(TRIM(COALESCE(fp.county, '')), '') IS NOT NULL",
+                "NULLIF(TRIM(COALESCE(fp.national_id, '')), '') IS NOT NULL",
+            ]
             params = [status]
             if category:
                 conditions.append('p.category = %s')
@@ -348,6 +360,10 @@ class Product:
                 WHERE p.status = 'active'
                   AND p.is_featured = TRUE
                   AND COALESCE(fp.certification_status, 'pending') IN ('verified', 'approved')
+                  AND NULLIF(TRIM(COALESCE(fp.farm_name, '')), '') IS NOT NULL
+                  AND NULLIF(TRIM(COALESCE(fp.location, '')), '') IS NOT NULL
+                  AND NULLIF(TRIM(COALESCE(fp.county, '')), '') IS NOT NULL
+                  AND NULLIF(TRIM(COALESCE(fp.national_id, '')), '') IS NOT NULL
                 ORDER BY p.updated_at DESC, p.created_at DESC
                 LIMIT %s
             """

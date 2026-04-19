@@ -134,6 +134,28 @@
       padding-top: 2rem;
       border-top: 2px solid #e5e7eb;
     }
+    .tab-next-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e5e7eb;
+    }
+    .picker-card {
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      padding: 10px;
+      background: #f9fafb;
+    }
+    .picker-label {
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #1f2937;
+    }
+    .picker-select {
+      min-height: 125px;
+      background: #fff;
+    }
     
     .btn {
       padding: 0.75rem 1.5rem;
@@ -221,10 +243,10 @@
     <div class="alert" id="alert"></div>
     
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('basic')">Basic Information</button>
-      <button class="tab" onclick="switchTab('farm')">Farm Details</button>
-      <button class="tab" onclick="switchTab('experience')">Experience</button>
-      <button class="tab" onclick="switchTab('additional')">Additional Info</button>
+      <button class="tab active" onclick="switchTab('basic', this)">Basic Information</button>
+      <button class="tab" onclick="switchTab('farm', this)">Farm Details</button>
+      <button class="tab" onclick="switchTab('experience', this)">Experience</button>
+      <button class="tab" onclick="switchTab('additional', this)">Additional Info</button>
     </div>
     
     <form id="farmerProfileForm">
@@ -233,18 +255,18 @@
         <h2 style="margin-bottom: 1.5rem; color: #27AE60;">Basic Information</h2>
         
         <div class="form-group">
-          <label for="farm-name">Farm Name *</label>
+          <label for="farm-name">Farm Name</label>
           <input type="text" id="farm-name" name="farm_name" placeholder="e.g., Wanjiku K. Farm" required>
         </div>
         
         <div class="form-row">
           <div class="form-group">
-            <label for="location">Location *</label>
+            <label for="location">Location</label>
             <input type="text" id="location" name="location" placeholder="e.g., Kiambu County, Kenya" required>
           </div>
           
           <div class="form-group">
-            <label for="county">County *</label>
+            <label for="county">County</label>
             <input type="text" id="county" name="county" placeholder="e.g., Kiambu" required>
           </div>
         </div>
@@ -262,13 +284,13 @@
         </div>
         
         <div class="form-group">
-          <label for="national-id">National ID *</label>
+          <label for="national-id">National ID</label>
           <input type="text" id="national-id" name="national_id" placeholder="e.g., 12345678" required>
         </div>
         
         <div class="form-row">
           <div class="form-group">
-            <label for="id-front">Upload ID Front *</label>
+            <label for="id-front">Upload ID Front</label>
             <input type="file" id="id-front" name="id_front" accept="image/*">
             <p class="help-text">Upload front side of your ID</p>
             <div id="id-front-preview" style="margin-top: 8px; display: none;">
@@ -276,7 +298,7 @@
             </div>
           </div>
           <div class="form-group">
-            <label for="id-back">Upload ID Back *</label>
+            <label for="id-back">Upload ID Back</label>
             <input type="file" id="id-back" name="id_back" accept="image/*">
             <p class="help-text">Upload back side of your ID</p>
             <div id="id-back-preview" style="margin-top: 8px; display: none;">
@@ -286,12 +308,15 @@
         </div>
         
         <div class="form-group">
-          <label for="profile-selfie">Profile Selfie *</label>
+          <label for="profile-selfie">Profile Selfie</label>
           <input type="file" id="profile-selfie" name="profile_selfie" accept="image/*">
           <p class="help-text">Upload a clear selfie photo</p>
           <div id="selfie-preview" style="margin-top: 8px; display: none;">
             <img id="selfie-img" src="" alt="Selfie Preview" style="max-width: 200px; max-height: 200px; border-radius: 8px; border: 2px solid #e5e7eb;">
           </div>
+        </div>
+        <div class="tab-next-actions">
+          <button type="button" class="btn btn-primary" onclick="goToNextTab('basic')">Next</button>
         </div>
       </div>
       
@@ -312,8 +337,9 @@
         </div>
         
         <div class="form-group">
-          <label for="crops-select">Crops</label>
-          <select id="crops-select" multiple style="min-height: 120px;">
+          <div class="picker-card">
+            <div class="picker-label">Crops (hold Ctrl/Cmd for multiple)</div>
+            <select id="crops-select" class="picker-select" multiple>
             <option value="Maize">Maize</option>
             <option value="Wheat">Wheat</option>
             <option value="Rice">Rice</option>
@@ -329,8 +355,8 @@
             <option value="Sugarcane">Sugarcane</option>
             <option value="Avocado">Avocado</option>
             <option value="Mangoes">Mangoes</option>
-          </select>
-          <p class="help-text">Hold Ctrl/Cmd to select multiple crops</p>
+            </select>
+          </div>
           <div style="display: flex; gap: 8px; margin-top: 8px;">
             <input type="text" id="crop-custom" placeholder="Add custom crop (e.g., Kale)" style="flex: 1;">
             <button type="button" onclick="addCustomCrop()" style="padding: 0.75rem 1.5rem; background: #27AE60; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Add</button>
@@ -340,8 +366,9 @@
         </div>
         
         <div class="form-group">
-          <label for="livestock-select">Livestock</label>
-          <select id="livestock-select" multiple style="min-height: 120px;">
+          <div class="picker-card">
+            <div class="picker-label">Livestock (hold Ctrl/Cmd for multiple)</div>
+            <select id="livestock-select" class="picker-select" multiple>
             <option value="Cattle">Cattle</option>
             <option value="Goats">Goats</option>
             <option value="Sheep">Sheep</option>
@@ -352,8 +379,8 @@
             <option value="Rabbits">Rabbits</option>
             <option value="Fish">Fish</option>
             <option value="Bees">Bees</option>
-          </select>
-          <p class="help-text">Hold Ctrl/Cmd to select multiple livestock</p>
+            </select>
+          </div>
           <div style="display: flex; gap: 8px; margin-top: 8px;">
             <input type="text" id="livestock-custom" placeholder="Add custom livestock (e.g., Donkeys)" style="flex: 1;">
             <button type="button" onclick="addCustomLivestock()" style="padding: 0.75rem 1.5rem; background: #27AE60; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Add</button>
@@ -371,6 +398,9 @@
           </select>
           <p class="help-text">Managed by support. When you save your profile, your details are submitted for review.</p>
         </div>
+        <div class="tab-next-actions">
+          <button type="button" class="btn btn-primary" onclick="goToNextTab('farm')">Next</button>
+        </div>
       </div>
       
       <!-- Experience Tab -->
@@ -387,6 +417,9 @@
           <label for="bio">Biography</label>
           <textarea id="bio" name="bio" placeholder="Tell buyers about yourself, your farming practices, and what makes your produce special..."></textarea>
           <p class="help-text">Share your story and farming expertise</p>
+        </div>
+        <div class="tab-next-actions">
+          <button type="button" class="btn btn-primary" onclick="goToNextTab('experience')">Next</button>
         </div>
       </div>
       
@@ -435,7 +468,7 @@
       
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" onclick="window.location.href='farmer.html'">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save Profile</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
       </div>
     </form>
   </div>
@@ -591,14 +624,19 @@
     }
     
     // Tab switching
-    function switchTab(tabName) {
-      // Hide all tabs and content
+    function switchTab(tabName, tabButton) {
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      
-      // Show selected tab and content
-      event.target.classList.add('active');
+      if (tabButton) tabButton.classList.add('active');
       document.getElementById(tabName).classList.add('active');
+    }
+    function goToNextTab(currentTab) {
+      const tabOrder = ['basic', 'farm', 'experience', 'additional'];
+      const idx = tabOrder.indexOf(currentTab);
+      if (idx < 0 || idx >= tabOrder.length - 1) return;
+      const nextTab = tabOrder[idx + 1];
+      const nextTabBtn = document.querySelector('.tab[onclick*="' + nextTab + '"]');
+      switchTab(nextTab, nextTabBtn);
     }
     
     // Load profile data
@@ -821,11 +859,14 @@
         showAlert('Profile saved successfully!', 'success');
         
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Save Profile';
+        submitBtn.textContent = 'Save Changes';
+        setTimeout(() => {
+          window.location.href = 'farmer.html';
+        }, 500);
       } catch (error) {
         showAlert(error.message || 'Failed to save profile', 'error');
         e.target.querySelector('button[type="submit"]').disabled = false;
-        e.target.querySelector('button[type="submit"]').textContent = 'Save Profile';
+        e.target.querySelector('button[type="submit"]').textContent = 'Save Changes';
       }
     });
     

@@ -533,7 +533,9 @@ def admin_users():
             SELECT u.id, u.firebase_uid, u.email, u.first_name, u.last_name,
                    u.role, u.is_active, u.created_at,
                    fp.certification_status,
-                   bp.verification_status AS buyer_verification_status
+                   fp.farm_name, fp.location AS farmer_location, fp.county AS farmer_county, fp.national_id AS farmer_national_id,
+                   bp.verification_status AS buyer_verification_status,
+                   bp.company_name, bp.location AS buyer_location, bp.county AS buyer_county, bp.national_id AS buyer_national_id
             FROM users u
             LEFT JOIN farmer_profiles fp ON fp.user_id = u.id
             LEFT JOIN buyer_profiles bp ON bp.user_id = u.id
@@ -543,6 +545,30 @@ def admin_users():
         users = []
         for r in rows:
             d = dict(r)
+            farmer_complete = bool(
+                str(d.get('farm_name') or '').strip() and
+                str(d.get('farmer_location') or '').strip() and
+                str(d.get('farmer_county') or '').strip() and
+                str(d.get('farmer_national_id') or '').strip()
+            )
+            buyer_complete = bool(
+                str(d.get('company_name') or '').strip() and
+                str(d.get('buyer_location') or '').strip() and
+                str(d.get('buyer_county') or '').strip() and
+                str(d.get('buyer_national_id') or '').strip()
+            )
+            if d.get('certification_status') and not farmer_complete:
+                d['certification_status'] = 'pending'
+            if d.get('buyer_verification_status') and not buyer_complete:
+                d['buyer_verification_status'] = 'pending'
+            d.pop('farm_name', None)
+            d.pop('farmer_location', None)
+            d.pop('farmer_county', None)
+            d.pop('farmer_national_id', None)
+            d.pop('company_name', None)
+            d.pop('buyer_location', None)
+            d.pop('buyer_county', None)
+            d.pop('buyer_national_id', None)
             d['id'] = str(d['id'])
             users.append(d)
 

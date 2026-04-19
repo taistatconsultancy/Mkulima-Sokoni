@@ -6,6 +6,7 @@ import logging
 
 from models.support_ticket import SupportTicket
 from database import execute_query
+from auth.admin_auth import decode_token_if_admin
 
 logger = logging.getLogger(__name__)
 
@@ -264,4 +265,52 @@ def admin_assign(ticket_id):
         return jsonify({'error': str(exc)}), 400
     except Exception as exc:
         logger.error(f"Support admin assign error: {exc}")
+        return jsonify({'error': str(exc)}), 500
+
+
+@support_bp.route('/admin/message-user', methods=['POST'])
+def admin_message_user():
+    """Open an admin outreach ticket and send first message to a specific user."""
+    try:
+        decoded, err = decode_token_if_admin()
+        if err:
+            resp, code = err
+            return resp, code
+
+        data = _require_json()
+        user_id = (data.get('user_id') or '').strip()
+        subject = (data.get('subject') or '').strip()
+        message = (data.get('message') or '').strip()
+        admin_name = (
+            data.get('admin_name')
+            or data.get('admin_email')
+            or decoded.get('email')
+            or 'Admin Support'
+        )
+
+        if not user_id:
+            return jsonify({'error': 'user_id is required'}), 400
+        if not subject:
+            return jsonify({'error': 'subject is required'}), 400
+        if not message:
+            return jsonify({'error': 'message is required'}), 400
+
+        ticket = SupportTicket.create_admin_outreach_ticket(
+            user_id=user_id,
+            subject=subject,
+            message=message,
+            admin_name=admin_name,
+        )
+
+        try:
+            from utils.twilio_service import send_support_ticket_sms_to_user
+            send_support_ticket_sms_to_user(ticket, message, is_new_ticket=True)
+        except Exception as sms_exc:
+            logger.warning('Admin outreach SMS failed (non-fatal): %s', sms_exc)
+
+        return jsonify({'success': True, 'ticket': ticket}), 201
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+    except Exception as exc:
+        logger.error(f"Support admin message user error: {exc}")
         return jsonify({'error': str(exc)}), 500

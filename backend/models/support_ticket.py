@@ -35,6 +35,7 @@ import logging
 import random
 
 from database import execute_query
+from models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -512,3 +513,40 @@ class SupportTicket:
         """
         stats = execute_query(query, fetch_one=True) or {}
         return dict(stats)
+
+    @staticmethod
+    def create_admin_outreach_ticket(user_id, subject, message, admin_name='Admin Support'):
+        """Create a support ticket opened by admin and send first admin message."""
+        user = User.get_user_by_id(user_id)
+        if not user:
+            raise ValueError('User not found')
+
+        user_role = (user.get('role') or 'user').split(',')[0].strip() or 'user'
+        ticket_number = SupportTicket.generate_ticket_number()
+        ticket = execute_query(
+            """
+            INSERT INTO support_tickets (
+                ticket_number, user_id, user_role, category, priority, subject, description,
+                status, created_at, updated_at
+            )
+            VALUES (%s, %s::uuid, %s, 'verification', 'medium', %s, %s, 'in_progress', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            RETURNING id
+            """,
+            (ticket_number, user_id, user_role, subject.strip(), message.strip()),
+            fetch_one=True,
+        )
+        if not ticket:
+            raise ValueError('Failed to create support ticket')
+
+        execute_query(
+            """
+            INSERT INTO support_ticket_messages (
+                ticket_id, sender_type, sender_user_id, sender_name, message, is_internal_note, created_at
+            )
+            VALUES (%s::uuid, 'admin', NULL, %s, %s, FALSE, CURRENT_TIMESTAMP)
+            """,
+            (str(ticket['id']), (admin_name or 'Admin Support').strip(), message.strip()),
+        )
+
+        # Return full ticket with thread for API response/SMS helpers.
+        return SupportTicket.get_ticket_detail(str(ticket['id']), is_admin=True)
