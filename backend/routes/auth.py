@@ -9,6 +9,7 @@ from auth.firebase_auth import verify_firebase_token, get_firebase_user
 from auth.admin_auth import decode_token_if_admin
 from models.verification_audit import VerificationAudit, AdminImpersonationLog, AuthLoginAudit
 from services.admin_verification_service import apply_verification_change
+from utils.profile_verification_display import effective_verification_badge
 import logging
 import uuid
 
@@ -557,10 +558,13 @@ def admin_users():
                 str(d.get('buyer_county') or '').strip() and
                 str(d.get('buyer_national_id') or '').strip()
             )
-            if d.get('certification_status') and not farmer_complete:
-                d['certification_status'] = 'pending'
-            if d.get('buyer_verification_status') and not buyer_complete:
-                d['buyer_verification_status'] = 'pending'
+            farmer_db = str(d.get('certification_status') or 'pending').strip().lower()
+            d['certification_status_db'] = farmer_db
+            d['certification_status'] = effective_verification_badge(farmer_db, farmer_complete)
+
+            buyer_db = str(d.get('buyer_verification_status') or 'pending').strip().lower()
+            d['buyer_verification_status_db'] = buyer_db
+            d['buyer_verification_status'] = effective_verification_badge(buyer_db, buyer_complete)
             d.pop('farm_name', None)
             d.pop('farmer_location', None)
             d.pop('farmer_county', None)

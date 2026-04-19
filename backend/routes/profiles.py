@@ -7,6 +7,7 @@ from models.farmer_profile import FarmerProfile
 from models.buyer_profile import BuyerProfile
 from auth.firebase_auth import verify_firebase_token
 from utils.cloudinary_service import upload_image_from_url
+from utils.profile_verification_display import effective_verification_badge
 import logging
 import uuid
 
@@ -339,8 +340,11 @@ def get_farmer_profile(firebase_uid):
         # Remove email and phone_number from main profile (they're in user object)
         profile_dict.pop('email', None)
         profile_dict.pop('phone_number', None)
-        if not _farmer_profile_complete(profile_dict):
-            profile_dict['certification_status'] = 'pending'
+        db_cert = str(profile_dict.get('certification_status') or 'pending').strip().lower()
+        profile_dict['certification_status_db'] = db_cert
+        profile_dict['certification_status'] = effective_verification_badge(
+            db_cert, _farmer_profile_complete(profile_dict)
+        )
         
         return jsonify({
             'success': True,
@@ -506,8 +510,11 @@ def get_buyer_profile(firebase_uid):
         # Remove email and phone_number from main profile (they're in user object)
         profile_dict.pop('email', None)
         profile_dict.pop('phone_number', None)
-        if not _buyer_profile_complete(profile_dict):
-            profile_dict['verification_status'] = 'pending'
+        db_vs = str(profile_dict.get('verification_status') or 'pending').strip().lower()
+        profile_dict['verification_status_db'] = db_vs
+        profile_dict['verification_status'] = effective_verification_badge(
+            db_vs, _buyer_profile_complete(profile_dict)
+        )
         
         return jsonify({
             'success': True,

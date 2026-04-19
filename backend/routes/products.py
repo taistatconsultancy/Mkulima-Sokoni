@@ -6,6 +6,7 @@ from models.product import Product
 from models.farmer_profile import FarmerProfile
 from utils.cloudinary_service import upload_base64_image
 from auth.admin_auth import decode_token_if_admin
+from utils.profile_verification_display import effective_verification_badge
 import logging
 
 logger = logging.getLogger(__name__)
@@ -372,6 +373,7 @@ def get_product_detail(product_id):
                        fp.farm_name,
                        fp.location AS seller_location,
                        fp.county AS seller_county,
+                       fp.national_id AS seller_national_id,
                        fp.bio,
                        fp.profile_image_url,
                        fp.certification_status,
@@ -390,9 +392,17 @@ def get_product_detail(product_id):
             if result:
                 seller = dict(result)
                 seller['profile_id'] = str(seller['profile_id'])
-                # Standardized verification flag for frontend badge
                 cert = (seller.get('certification_status') or '').lower()
-                seller['is_verified'] = cert not in ('', 'pending', 'rejected')
+                profile_complete = bool(
+                    str(seller.get('farm_name') or '').strip()
+                    and str(seller.get('seller_location') or '').strip()
+                    and str(seller.get('seller_county') or '').strip()
+                    and str(seller.get('seller_national_id') or '').strip()
+                )
+                seller.pop('seller_national_id', None)
+                seller['certification_status_db'] = cert
+                seller['certification_status'] = effective_verification_badge(cert, profile_complete)
+                seller['is_verified'] = seller['certification_status'] == 'verified'
         except Exception as e:
             logger.warning(f"Could not fetch seller info: {e}")
 

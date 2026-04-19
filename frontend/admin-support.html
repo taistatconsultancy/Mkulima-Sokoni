@@ -483,8 +483,9 @@
     var USERS_PER_PAGE = 10;
 
     function isVerificationActionable(u) {
-      var a = (u.certification_status || '').toLowerCase();
-      var b = (u.buyer_verification_status || '').toLowerCase();
+      /* Use DB columns so verified-in-DB users with incomplete profiles do not re-queue */
+      var a = (u.certification_status_db || u.certification_status || '').toLowerCase();
+      var b = (u.buyer_verification_status_db || u.buyer_verification_status || '').toLowerCase();
       return a === 'pending' || b === 'pending' || a === 'rejected' || b === 'rejected';
     }
 
@@ -644,8 +645,8 @@
       }
       tbody.innerHTML = users.map(function(u) {
         var name = esc((u.first_name || '') + ' ' + (u.last_name || '')).trim() || esc(u.email);
-        var cs = (u.certification_status || '').toLowerCase();
-        var bs = (u.buyer_verification_status || '').toLowerCase();
+        var cs = (u.certification_status_db || u.certification_status || '').toLowerCase();
+        var bs = (u.buyer_verification_status_db || u.buyer_verification_status || '').toLowerCase();
         var isRejected = cs === 'rejected' || bs === 'rejected';
         var statusLabel = isRejected ? '<span class="badge rejected">Rejected</span>' : '<span class="badge pending">Pending Review</span>';
         var approveLabel = isRejected ? 'Re-approve' : 'Approve';

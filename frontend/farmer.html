@@ -2535,7 +2535,7 @@ function exitSuperUser() {
   let currentImageUrl = '';
   let accountRejected = false;
 
-  function applyAccountStatusUi(rawStatus) {
+  function applyAccountStatusUi(rawStatus, silentRejectedAlert) {
     const status = String(rawStatus || 'pending').toLowerCase();
     const badge = document.getElementById('accountStatusBadge');
     const icon = document.getElementById('accountStatusBadgeIcon');
@@ -2552,7 +2552,9 @@ function exitSuperUser() {
       icon.textContent = '!';
       icon.style.color = '#ef4444';
       label.textContent = 'Rejected';
-      showAlert('Your account is rejected. You can view support, but listing and product updates are disabled.', 'error');
+      if (!silentRejectedAlert) {
+        showAlert('Your account is rejected. You can view support, but listing and product updates are disabled.', 'error');
+      }
     } else {
       badge.style.background = '#F4A261';
       icon.textContent = '⏳';
@@ -2592,12 +2594,13 @@ function exitSuperUser() {
         set('farm-name', p.farm_name); set('location', p.location); set('county', p.county);
         set('national-id', p.national_id); set('ward', p.ward);
         set('farm-size', p.farm_size_acres); set('farming-experience', p.farming_experience_years);
-        const csRaw = (p.certification_status || 'pending').toString();
-        applyFarmerVerificationTransition(prevGate, csRaw, hasReq);
+        const csEffective = (p.certification_status || 'pending').toString();
+        const csDb = (p.certification_status_db || csEffective).toString();
+        applyFarmerVerificationTransition(prevGate, csDb, hasReq);
         const csDisp = document.getElementById('certification-status-display');
-        if (csDisp) csDisp.textContent = csRaw.charAt(0).toUpperCase() + csRaw.slice(1).toLowerCase();
-        applyAccountStatusUi(csRaw);
-        updateProfileCompletionWarning(p, csRaw);
+        if (csDisp) csDisp.textContent = csEffective.charAt(0).toUpperCase() + csEffective.slice(1).toLowerCase();
+        applyAccountStatusUi(csEffective, false);
+        updateProfileCompletionWarning(p, csEffective);
         set('bio', p.bio);
         if (p.referral_source) {
           set('referral-source', p.referral_source);
@@ -2747,6 +2750,10 @@ function exitSuperUser() {
     const warning = document.getElementById('profileCompletionWarning');
     if (!warning) return;
     const status = String(statusRaw || 'pending').toLowerCase();
+    if (status === 'rejected') {
+      warning.style.display = 'none';
+      return;
+    }
     const verified = status === 'verified' || status === 'approved';
     const complete = Boolean(
       String(profile?.farm_name || '').trim() &&
@@ -3073,12 +3080,13 @@ function exitSuperUser() {
       );
       profileLocked = !hasRequired;
       if (profileLocked) {
-        sessionStorage.setItem(FARMER_GATE_STATUS_KEY, String(p.certification_status || 'pending').toLowerCase());
+        sessionStorage.setItem(FARMER_GATE_STATUS_KEY, String(p.certification_status_db || p.certification_status || 'pending').toLowerCase());
         showPage('profile');
         if (!silent) showAlert('Complete your profile details to continue using the platform.', 'error');
         return;
       }
-      applyFarmerVerificationTransition(prevStored, p.certification_status || 'pending', hasRequired);
+      applyFarmerVerificationTransition(prevStored, p.certification_status_db || p.certification_status || 'pending', hasRequired);
+      applyAccountStatusUi(p.certification_status || 'pending', true);
     } catch (e) {}
   }
 

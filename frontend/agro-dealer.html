@@ -710,11 +710,11 @@ async function enforceAgroProfileCompletion(silent) {
     );
     profileLocked = !hasRequired;
     if (profileLocked) {
-      sessionStorage.setItem(AGRO_GATE_STATUS_KEY, String(p.certification_status || 'pending').toLowerCase());
+      sessionStorage.setItem(AGRO_GATE_STATUS_KEY, String(p.certification_status_db || p.certification_status || 'pending').toLowerCase());
       showPage('profile');
       return;
     }
-    applyAgroVerificationTransition(prevStored, p.certification_status || 'pending', hasRequired);
+    applyAgroVerificationTransition(prevStored, p.certification_status_db || p.certification_status || 'pending', hasRequired);
   } catch (e) {}
 }
 
@@ -1004,11 +1004,12 @@ async function loadProfile() {
     if (prof.county) document.getElementById('profile-county').value = prof.county;
     if (prof.national_id) document.getElementById('profile-national-id').value = prof.national_id;
     if (prof.bio) document.getElementById('profile-about').value = prof.bio;
-    var st = (prof.certification_status || 'pending').toString();
-    applyAgroVerificationTransition(prevGate, st, hasReq);
+    var stEffective = (prof.certification_status || 'pending').toString();
+    var stDb = (prof.certification_status_db || stEffective).toString();
+    applyAgroVerificationTransition(prevGate, stDb, hasReq);
     var stEl = document.getElementById('profile-verification-status');
-    if (stEl) stEl.textContent = st.charAt(0).toUpperCase() + st.slice(1).toLowerCase();
-    updateAgroProfileWarning(prof, st);
+    if (stEl) stEl.textContent = stEffective.charAt(0).toUpperCase() + stEffective.slice(1).toLowerCase();
+    updateAgroProfileWarning(prof, stEffective);
   } catch(e) {}
 }
 
@@ -1050,6 +1051,10 @@ function updateAgroProfileWarning(profile, statusRaw) {
   var el = document.getElementById('profileCompletionWarning');
   if (!el) return;
   var status = String(statusRaw || 'pending').toLowerCase();
+  if (status === 'rejected') {
+    el.style.display = 'none';
+    return;
+  }
   var verified = status === 'verified' || status === 'approved';
   var complete = Boolean(
     String(profile?.farm_name || '').trim() &&
