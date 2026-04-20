@@ -457,6 +457,7 @@
     .chat-send-btn { padding:9px 14px; border-radius:999px; border:none; background:#25D366; color:#fff; font-size:.82rem; font-weight:800; cursor:pointer; white-space:nowrap; box-shadow:0 3px 8px rgba(37,211,102,.35); }
     .chat-send-btn:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
     .chat-note { font-size:.72rem; color:var(--muted); margin-top:8px; }
+    .chat-mobile-btn { display:none; border:1.5px solid var(--leaf); background:#fff; color:var(--leaf); border-radius:999px; padding:6px 10px; font-size:.74rem; font-weight:700; cursor:pointer; }
     .messages-nav-dot{display:none;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-left:6px;}
     .messages-nav-dot.show{display:inline-block;}
 
@@ -523,13 +524,33 @@
       }
       .topbar-nav.mobile-open { display: flex; }
       .topbar-nav-link { justify-content: flex-start; }
+      .chat-mobile-btn { display: inline-flex; align-items: center; }
+      .chat-shell { grid-template-columns: 1fr; gap: 10px; min-height: auto; }
+      .chat-list { max-height: 72vh; }
+      .chat-thread { min-height: 56vh; display:none; }
+      .chat-shell.mobile-thread-open .chat-list { display:none; }
+      .chat-shell.mobile-thread-open .chat-thread { display:flex; }
+      .chat-thread-body { max-height: 42vh; }
+      .chat-bubble { max-width: 90%; }
+      .chat-input-row { flex-direction: column; align-items: stretch; }
+      .chat-send-btn { width: 100%; }
       .form-grid { grid-template-columns: 1fr; }
       .form-full { grid-column: 1; }
       footer { padding: 36px 16px 0; }
       .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
       .footer-bottom { flex-direction: column; align-items: flex-start; }
     }
-    @media (max-width: 480px) { .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 480px) {
+      .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .chat-list-head, .chat-thread-head, .chat-thread-foot { padding: 10px; }
+      .chat-thread-body { padding: 10px; }
+      .chat-item { padding: 10px; }
+      .chat-avatar { width: 30px; height: 30px; font-size: .75rem; }
+      .chat-item-name { font-size: .8rem; }
+      .chat-item-snippet { font-size: .74rem; }
+      .chat-bubble { font-size: .8rem; }
+      .chat-thread { min-height: 52vh; }
+    }
   </style>
 </head>
 <body>
@@ -778,7 +799,7 @@ function exitSuperUser() {
         <div class="section-subtitle">Chat with sellers and track replies in one inbox</div>
       </div>
     </div>
-    <div class="chat-shell">
+    <div class="chat-shell" id="buyerChatShell">
       <div class="chat-list">
         <div class="chat-list-head">
           <div class="chat-list-title">Inbox</div>
@@ -790,6 +811,7 @@ function exitSuperUser() {
       </div>
       <div class="chat-thread">
         <div class="chat-thread-head">
+          <button class="chat-mobile-btn" type="button" onclick="setBuyerMobileChatView('inbox')">← Inbox</button>
           <div class="chat-thread-title" id="buyerChatThreadTitle">Select a conversation</div>
         </div>
         <div class="chat-thread-body" id="buyerChatThreadBody">
@@ -1289,7 +1311,18 @@ function exitSuperUser() {
   async function openBuyerConversation(conversationId) {
     buyerActiveConversationId = conversationId;
     renderBuyerInbox(buyerInboxCache);
+    setBuyerMobileChatView('thread');
     await loadBuyerThread(conversationId, false);
+  }
+
+  function setBuyerMobileChatView(view) {
+    const shell = document.getElementById('buyerChatShell');
+    if (!shell) return;
+    if (!window.matchMedia('(max-width: 768px)').matches) {
+      shell.classList.remove('mobile-thread-open');
+      return;
+    }
+    shell.classList.toggle('mobile-thread-open', view === 'thread');
   }
 
   async function loadBuyerThread(conversationId, silent = false) {
@@ -1456,6 +1489,7 @@ function exitSuperUser() {
       startOrdersPolling();
     }
     if (pageName === 'messages') {
+      setBuyerMobileChatView('inbox');
       setTimeout(() => loadBuyerInbox(false).then(() => startBuyerInboxPolling()), 260);
     }
   }
@@ -1477,6 +1511,11 @@ function exitSuperUser() {
     if (m && !m.contains(e.target)) {
       m.classList.remove('open');
       document.getElementById('userDropdown').classList.remove('open');
+    }
+  });
+  window.addEventListener('resize', () => {
+    if (!window.matchMedia('(max-width: 768px)').matches) {
+      document.getElementById('buyerChatShell')?.classList.remove('mobile-thread-open');
     }
   });
 

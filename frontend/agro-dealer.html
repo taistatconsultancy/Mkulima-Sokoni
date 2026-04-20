@@ -200,6 +200,7 @@
     .chat-send-btn { padding:9px 14px; border-radius:999px; border:none; background:#25D366; color:#fff; font-size:.82rem; font-weight:800; cursor:pointer; white-space:nowrap; box-shadow:0 3px 8px rgba(37,211,102,.35); }
     .chat-send-btn:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
     .chat-note { font-size:.72rem; color:var(--muted); margin-top:8px; }
+    .chat-mobile-btn { display:none; border:1.5px solid var(--leaf); background:#fff; color:var(--leaf); border-radius:999px; padding:6px 10px; font-size:.74rem; font-weight:700; cursor:pointer; }
     .messages-nav-dot{display:none;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-left:6px;}
     .messages-nav-dot.show{display:inline-block;}
 
@@ -228,8 +229,8 @@
     .footer-badge{font-size:.68rem;color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:3px 10px;}
 
     @media(max-width:1000px){.footer-grid{grid-template-columns:1fr 1fr 1fr;}.footer-brand-col{grid-column:1/-1;}}
-    @media(max-width:768px){.mobile-nav-btn{display:inline-flex;}.topbar-nav{display:none;position:absolute;top:60px;left:0;right:0;background:var(--forest);flex-direction:column;align-items:stretch;gap:6px;padding:10px 14px 14px;border-top:1px solid rgba(255,255,255,.12);}.topbar-nav.mobile-open{display:flex;}.topbar-nav-link{justify-content:flex-start;}.wrap{padding:18px 14px;}.form-grid{grid-template-columns:1fr;}.form-full{grid-column:1;}.stats-grid{grid-template-columns:1fr 1fr;}.mk-grid{grid-template-columns:1fr 1fr;}.chat-shell{grid-template-columns:1fr;min-height:auto;}.chat-thread{min-height:460px;}.footer-grid{grid-template-columns:1fr 1fr;gap:24px;}.footer-grid>div:first-child{grid-column:1/-1;}}
-    @media(max-width:480px){.stats-grid{grid-template-columns:1fr;}.mk-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.footer-grid{grid-template-columns:1fr;}}
+    @media(max-width:768px){.mobile-nav-btn{display:inline-flex;}.topbar-nav{display:none;position:absolute;top:60px;left:0;right:0;background:var(--forest);flex-direction:column;align-items:stretch;gap:6px;padding:10px 14px 14px;border-top:1px solid rgba(255,255,255,.12);}.topbar-nav.mobile-open{display:flex;}.topbar-nav-link{justify-content:flex-start;}.wrap{padding:18px 14px;}.form-grid{grid-template-columns:1fr;}.form-full{grid-column:1;}.stats-grid{grid-template-columns:1fr 1fr;}.mk-grid{grid-template-columns:1fr 1fr;}.chat-mobile-btn{display:inline-flex;align-items:center;}.chat-shell{grid-template-columns:1fr;gap:10px;min-height:auto;}.chat-list{max-height:72vh;}.chat-thread{min-height:56vh;display:none;}.chat-shell.mobile-thread-open .chat-list{display:none;}.chat-shell.mobile-thread-open .chat-thread{display:flex;}.chat-thread-body{max-height:42vh;}.chat-bubble{max-width:90%;}.chat-input-row{flex-direction:column;align-items:stretch;}.chat-send-btn{width:100%;}.footer-grid{grid-template-columns:1fr 1fr;gap:24px;}.footer-grid>div:first-child{grid-column:1/-1;}}
+    @media(max-width:480px){.stats-grid{grid-template-columns:1fr;}.mk-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.chat-list-head,.chat-thread-head,.chat-thread-foot{padding:10px;}.chat-thread-body{padding:10px;}.chat-item{padding:10px;}.chat-avatar{width:30px;height:30px;font-size:.75rem;}.chat-item-name{font-size:.8rem;}.chat-item-snippet{font-size:.74rem;}.chat-bubble{font-size:.8rem;}.chat-thread{min-height:52vh;}.footer-grid{grid-template-columns:1fr;}}
   </style>
 </head>
 <body>
@@ -469,7 +470,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
     <div class="section-card">
       <h2>💬 Messages</h2>
       <p class="sub">Chat with buyers and follow updates in one inbox.</p>
-      <div class="chat-shell">
+      <div class="chat-shell" id="dealerChatShell">
         <div class="chat-list">
           <div class="chat-list-head">
             <div class="chat-list-title">Inbox</div>
@@ -481,6 +482,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
         </div>
         <div class="chat-thread">
           <div class="chat-thread-head">
+            <button class="chat-mobile-btn" type="button" onclick="setDealerMobileChatView('inbox')">← Inbox</button>
             <div class="chat-thread-title" id="dealerChatThreadTitle">Select a conversation</div>
           </div>
           <div class="chat-thread-body" id="dealerChatThreadBody">
@@ -794,7 +796,7 @@ function showPage(name, btn) {
   if (name === 'profile' && firebaseUid) loadProfile();
   if (name === 'orders') { setTimeout(() => loadDealerOrders(false), 240); startDealerOrdersPolling(); }
   if (name === 'tenders') { setTimeout(() => loadDealerTenders(false), 360); startDealerTendersPolling(); }
-  if (name === 'messages') { setTimeout(() => loadDealerInbox(false).then(() => startDealerInboxPolling()), 260); }
+  if (name === 'messages') { setDealerMobileChatView('inbox'); setTimeout(() => loadDealerInbox(false).then(() => startDealerInboxPolling()), 260); }
 }
 
 function previewImg(input) {
@@ -823,6 +825,11 @@ document.addEventListener('click', e => {
   if (m && !m.contains(e.target)) {
     m.classList.remove('open');
     document.getElementById('userDropdown').classList.remove('open');
+  }
+});
+window.addEventListener('resize', () => {
+  if (!window.matchMedia('(max-width: 768px)').matches) {
+    document.getElementById('dealerChatShell')?.classList.remove('mobile-thread-open');
   }
 });
 
@@ -1385,7 +1392,18 @@ function updateDealerUnreadDot(conversations) {
 async function openDealerConversation(conversationId) {
   dealerActiveConversationId = conversationId;
   renderDealerInbox(dealerInboxCache);
+  setDealerMobileChatView('thread');
   await loadDealerThread(conversationId, false);
+}
+
+function setDealerMobileChatView(view) {
+  const shell = document.getElementById('dealerChatShell');
+  if (!shell) return;
+  if (!window.matchMedia('(max-width: 768px)').matches) {
+    shell.classList.remove('mobile-thread-open');
+    return;
+  }
+  shell.classList.toggle('mobile-thread-open', view === 'thread');
 }
 
 async function loadDealerThread(conversationId, silent = false) {

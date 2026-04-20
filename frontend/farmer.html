@@ -683,6 +683,17 @@
     .chat-send-btn:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
     .chat-send-btn:hover { background: #1fb85a; }
     .chat-note { font-size:.72rem; color: var(--muted); margin-top: 8px; }
+    .chat-mobile-btn {
+      display: none;
+      border: 1.5px solid var(--leaf);
+      background: #fff;
+      color: var(--leaf);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: .74rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
 
     /* ════════════════════════════════════
        FOOTER  — identical to index.html
@@ -767,6 +778,16 @@
       }
       .topbar-nav.mobile-open { display: flex; }
       .topbar-nav-link { justify-content: flex-start; }
+      .chat-mobile-btn { display: inline-flex; align-items: center; }
+      .chat-shell { grid-template-columns: 1fr; gap: 10px; min-height: auto; }
+      .chat-list { max-height: 72vh; }
+      .chat-thread { min-height: 56vh; display: none; }
+      .chat-shell.mobile-thread-open .chat-list { display: none; }
+      .chat-shell.mobile-thread-open .chat-thread { display: flex; }
+      .chat-thread-body { max-height: 42vh; }
+      .chat-bubble { max-width: 90%; }
+      .chat-input-row { flex-direction: column; align-items: stretch; }
+      .chat-send-btn { width: 100%; }
       .form-grid { grid-template-columns: 1fr; }
       .form-full { grid-column: 1; }
       .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -777,6 +798,14 @@
     @media (max-width: 480px) {
       .stats-grid { grid-template-columns: 1fr; }
       .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .chat-list-head, .chat-thread-head, .chat-thread-foot { padding: 10px; }
+      .chat-thread-body { padding: 10px; }
+      .chat-item { padding: 10px; }
+      .chat-avatar { width: 30px; height: 30px; font-size: .75rem; }
+      .chat-item-name { font-size: .8rem; }
+      .chat-item-snippet { font-size: .74rem; }
+      .chat-bubble { font-size: .8rem; }
+      .chat-thread { min-height: 52vh; }
     }
   </style>
 </head>
@@ -948,7 +977,7 @@ function exitSuperUser() {
       </div>
     </div>
 
-    <div class="chat-shell">
+    <div class="chat-shell" id="farmerChatShell">
       <div class="chat-list">
         <div class="chat-list-head">
           <div class="chat-list-title">Inbox</div>
@@ -961,6 +990,7 @@ function exitSuperUser() {
 
       <div class="chat-thread">
         <div class="chat-thread-head">
+          <button class="chat-mobile-btn" type="button" onclick="setFarmerMobileChatView('inbox')">← Inbox</button>
           <div class="chat-thread-title" id="chatThreadTitle">Select a conversation</div>
         </div>
         <div class="chat-thread-body" id="chatThreadBody">
@@ -1574,6 +1604,7 @@ function exitSuperUser() {
     if (pageName === 'profile') loadFarmerProfile();
     stopSellerCommercePolling();
     if (pageName === 'messages') {
+      setFarmerMobileChatView('inbox');
       setTimeout(() => loadInbox(false).then(() => startInboxPolling()), 260);
     } else {
       stopInboxPolling();
@@ -1714,7 +1745,18 @@ function exitSuperUser() {
   async function openConversation(conversationId) {
     activeConversationId = conversationId;
     renderInbox(inboxCache);
+    setFarmerMobileChatView('thread');
     await loadThread(conversationId, false);
+  }
+
+  function setFarmerMobileChatView(view) {
+    const shell = document.getElementById('farmerChatShell');
+    if (!shell) return;
+    if (!window.matchMedia('(max-width: 768px)').matches) {
+      shell.classList.remove('mobile-thread-open');
+      return;
+    }
+    shell.classList.toggle('mobile-thread-open', view === 'thread');
   }
 
   async function loadThread(conversationId, silent = false) {
@@ -3103,6 +3145,11 @@ function exitSuperUser() {
     if (action === 'list-produce') addProduct();
     enforceFarmerProfileCompletion(false);
     updateProfilePrimaryAction();
+  });
+  window.addEventListener('resize', () => {
+    if (!window.matchMedia('(max-width: 768px)').matches) {
+      document.getElementById('farmerChatShell')?.classList.remove('mobile-thread-open');
+    }
   });
 
   async function enforceFarmerProfileCompletion(silent) {
