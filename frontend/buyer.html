@@ -53,6 +53,20 @@
       padding: 0 28px; height: 60px; gap: 20px;
       box-shadow: 0 2px 16px rgba(0,0,0,.25);
     }
+    .mobile-nav-btn {
+      display: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1.5px solid rgba(255,255,255,.25);
+      background: transparent;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
     .logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
     .logo-mark {
       width: 36px; height: 36px; border-radius: 9px;
@@ -80,19 +94,6 @@
 
     /* Right side */
     .topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-    .mobile-account-btn {
-      display: none;
-      height: 33px;
-      padding: 0 12px;
-      border-radius: 100px;
-      border: 1.5px solid rgba(255,255,255,.25);
-      background: transparent;
-      color: #fff;
-      font-size: .76rem;
-      font-weight: 600;
-      font-family: 'DM Sans', sans-serif;
-      cursor: pointer;
-    }
     .verified-badge {
       display: inline-flex;
       align-items: center;
@@ -506,15 +507,29 @@
     @media (max-width: 768px) {
       main { padding: 20px 14px; }
       .topbar { padding: 0 14px; }
-      .topbar-nav { display: none; }
-      .mobile-account-btn { display: inline-flex; align-items: center; }
+      .mobile-nav-btn { display: inline-flex; }
+      .topbar-nav {
+        display: none;
+        position: absolute;
+        top: 60px;
+        left: 0;
+        right: 0;
+        background: var(--forest);
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        padding: 10px 14px 14px;
+        border-top: 1px solid rgba(255,255,255,.12);
+      }
+      .topbar-nav.mobile-open { display: flex; }
+      .topbar-nav-link { justify-content: flex-start; }
       .form-grid { grid-template-columns: 1fr; }
       .form-full { grid-column: 1; }
       footer { padding: 36px 16px 0; }
       .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
       .footer-bottom { flex-direction: column; align-items: flex-start; }
     }
-    @media (max-width: 480px) { .products-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 480px) { .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   </style>
 </head>
 <body>
@@ -552,6 +567,7 @@ function exitSuperUser() {
      TOPBAR
 ════════════════════════════ -->
 <header class="topbar">
+  <button class="mobile-nav-btn" type="button" onclick="toggleTopbarNav()" aria-label="Open navigation menu">☰</button>
   <a href="index.html" class="logo">
     <div class="logo-mark">
       <img src="assets/img/logo.jpeg" alt="Mkulima sokoni" />
@@ -562,7 +578,7 @@ function exitSuperUser() {
     </div>
   </a>
 
-  <nav class="topbar-nav">
+  <nav class="topbar-nav" id="topbarNav">
     <button class="topbar-nav-link active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
     <button class="topbar-nav-link" onclick="showPage('tenders',this)">📋 Tenders</button>
     <button class="topbar-nav-link" onclick="showPage('cart',this)">
@@ -579,7 +595,6 @@ function exitSuperUser() {
       <span class="verified-badge-icon" id="buyerAccountStatusBadgeIcon" style="color:#F4A261;">⏳</span>
       <span id="buyerAccountStatusBadgeLabel">Pending</span>
     </div>
-    <button class="mobile-account-btn" type="button" onclick="toggleDropdown()">Account</button>
     <div class="user-menu" id="userMenu">
       <div class="user-menu-btn" onclick="toggleDropdown()">
         <div class="user-avatar" id="userAvatar">?</div>
@@ -1401,6 +1416,7 @@ function exitSuperUser() {
   }
 
   function showPage(pageName, el) {
+    document.getElementById('topbarNav')?.classList.remove('mobile-open');
     if (profileLocked && pageName !== 'profile') {
       pageName = 'profile';
       window.SokoUI?.toast('Complete your profile first to continue.', 'warning');
@@ -1449,7 +1465,14 @@ function exitSuperUser() {
     document.getElementById('userMenu').classList.toggle('open');
     document.getElementById('userDropdown').classList.toggle('open');
   }
+  function toggleTopbarNav() {
+    document.getElementById('topbarNav')?.classList.toggle('mobile-open');
+  }
   document.addEventListener('click', e => {
+    const nav = document.getElementById('topbarNav');
+    const navBtn = e.target.closest('.mobile-nav-btn');
+    const clickInsideNav = e.target.closest('#topbarNav');
+    if (nav && !navBtn && !clickInsideNav) nav.classList.remove('mobile-open');
     const m = document.getElementById('userMenu');
     if (m && !m.contains(e.target)) {
       m.classList.remove('open');

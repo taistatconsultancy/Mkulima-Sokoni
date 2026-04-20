@@ -23,6 +23,7 @@
     a{color:inherit;text-decoration:none;}
 
     .topbar{position:sticky;top:0;z-index:200;background:var(--forest);display:flex;align-items:center;padding:0 28px;height:60px;gap:20px;box-shadow:0 2px 16px rgba(0,0,0,.25);}
+    .mobile-nav-btn{display:none;width:36px;height:36px;border-radius:10px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:#fff;font-size:1rem;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;}
     .logo{display:flex;align-items:center;gap:10px;flex-shrink:0;}
     .logo-mark{width:36px;height:36px;border-radius:9px;overflow:hidden;display:grid;place-items:center;background:#fff;flex-shrink:0;box-shadow:0 3px 12px rgba(116,198,157,.4);}
     .logo-mark img{width:100%;height:100%;object-fit:contain;display:block;}
@@ -33,7 +34,6 @@
     .topbar-nav-link:hover{color:#fff;background:rgba(255,255,255,.08);}
     .topbar-nav-link.active{color:var(--lime);background:rgba(116,198,157,.12);font-weight:600;}
     .topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
-    .mobile-account-btn{display:none;height:33px;padding:0 12px;border-radius:100px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:#fff;font-size:.76rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;}
     .topbar-btn{height:33px;padding:0 15px;border-radius:100px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:#fff;font-size:.78rem;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
     .topbar-btn:hover{background:rgba(255,255,255,.1);}
     .topbar-btn.danger{border-color:rgba(239,68,68,.4);color:#fca5a5;}
@@ -228,8 +228,8 @@
     .footer-badge{font-size:.68rem;color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:3px 10px;}
 
     @media(max-width:1000px){.footer-grid{grid-template-columns:1fr 1fr 1fr;}.footer-brand-col{grid-column:1/-1;}}
-    @media(max-width:768px){.topbar-nav{display:none;}.mobile-account-btn{display:inline-flex;align-items:center;}.wrap{padding:18px 14px;}.form-grid{grid-template-columns:1fr;}.form-full{grid-column:1;}.stats-grid{grid-template-columns:1fr 1fr;}.mk-grid{grid-template-columns:1fr 1fr;}.chat-shell{grid-template-columns:1fr;min-height:auto;}.chat-thread{min-height:460px;}.footer-grid{grid-template-columns:1fr 1fr;gap:24px;}.footer-grid>div:first-child{grid-column:1/-1;}}
-    @media(max-width:480px){.stats-grid{grid-template-columns:1fr;}.mk-grid{grid-template-columns:1fr;}.footer-grid{grid-template-columns:1fr;}}
+    @media(max-width:768px){.mobile-nav-btn{display:inline-flex;}.topbar-nav{display:none;position:absolute;top:60px;left:0;right:0;background:var(--forest);flex-direction:column;align-items:stretch;gap:6px;padding:10px 14px 14px;border-top:1px solid rgba(255,255,255,.12);}.topbar-nav.mobile-open{display:flex;}.topbar-nav-link{justify-content:flex-start;}.wrap{padding:18px 14px;}.form-grid{grid-template-columns:1fr;}.form-full{grid-column:1;}.stats-grid{grid-template-columns:1fr 1fr;}.mk-grid{grid-template-columns:1fr 1fr;}.chat-shell{grid-template-columns:1fr;min-height:auto;}.chat-thread{min-height:460px;}.footer-grid{grid-template-columns:1fr 1fr;gap:24px;}.footer-grid>div:first-child{grid-column:1/-1;}}
+    @media(max-width:480px){.stats-grid{grid-template-columns:1fr;}.mk-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.footer-grid{grid-template-columns:1fr;}}
   </style>
 </head>
 <body>
@@ -257,11 +257,12 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
 </script>
 
 <header class="topbar">
+  <button class="mobile-nav-btn" type="button" onclick="toggleTopbarNav()" aria-label="Open navigation menu">☰</button>
   <a href="index.html" class="logo">
     <div class="logo-mark"><img src="assets/img/logo.jpeg" alt="Mkulima sokoni" /></div>
     <div class="logo-label"><strong>Mkulima sokoni</strong><span>Agro-Dealer</span></div>
   </a>
-  <nav class="topbar-nav">
+  <nav class="topbar-nav" id="topbarNav">
     <button class="topbar-nav-link active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
     <button class="topbar-nav-link" onclick="showPage('inventory',this)">📦 My Products</button>
     <button class="topbar-nav-link" onclick="showPage('add-product',this)">➕ Add Product</button>
@@ -272,7 +273,6 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
   </nav>
   <div class="topbar-right">
     <div class="verified-badge" id="agroAccountStatusBadge"><span class="verified-badge-icon" id="agroAccountStatusBadgeIcon">⏳</span><span id="agroAccountStatusBadgeLabel">Pending</span></div>
-    <button class="mobile-account-btn" type="button" onclick="toggleDropdown()">Account</button>
     <div class="user-menu" id="userMenu">
       <div class="user-menu-btn" onclick="toggleDropdown()">
         <div class="user-avatar" id="userAvatar">?</div>
@@ -778,6 +778,7 @@ function startDealerTendersPolling() {
 }
 
 function showPage(name, btn) {
+  document.getElementById('topbarNav')?.classList.remove('mobile-open');
   if (profileLocked && name !== 'profile') {
     name = 'profile';
     window.SokoUI?.toast('Complete your profile first to continue.', 'warning');
@@ -810,7 +811,14 @@ function toggleDropdown() {
   document.getElementById('userMenu').classList.toggle('open');
   document.getElementById('userDropdown').classList.toggle('open');
 }
+function toggleTopbarNav() {
+  document.getElementById('topbarNav')?.classList.toggle('mobile-open');
+}
 document.addEventListener('click', e => {
+  const nav = document.getElementById('topbarNav');
+  const navBtn = e.target.closest('.mobile-nav-btn');
+  const clickInsideNav = e.target.closest('#topbarNav');
+  if (nav && !navBtn && !clickInsideNav) nav.classList.remove('mobile-open');
   const m = document.getElementById('userMenu');
   if (m && !m.contains(e.target)) {
     m.classList.remove('open');
