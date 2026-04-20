@@ -312,6 +312,21 @@ def admin_product_catalog():
         return jsonify({'error': str(e)}), 500
 
 
+@products_bp.route('/admin/clear-featured', methods=['POST'])
+def admin_clear_all_featured():
+    """Admin-only: unselect every product from the marketplace ticker."""
+    try:
+        _decoded, err = decode_token_if_admin()
+        if err:
+            resp, code = err
+            return resp, code
+        Product.clear_all_featured_flags()
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        logger.error(f"Clear featured error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
 @products_bp.route('/featured', methods=['GET'])
 def get_featured_products():
     """Get featured products selected by admin-support."""

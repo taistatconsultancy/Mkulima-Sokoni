@@ -1050,6 +1050,7 @@ function exitSuperUser() {
 
 <script src="js/support-center.js"></script>
 <script src="js/marketplace-sync.js"></script>
+<script src="js/featured-ticker-sync.js"></script>
 <script src="js/ui-feedback.js"></script>
 <script>
   /* ── Init ── */
@@ -1506,8 +1507,20 @@ function exitSuperUser() {
 
   /* ── Products ── */
   let allProducts = [];
+  let featuredTickerProducts = [];
   let lastProductCount = 0;
   let lastProductUpdateTime = null;
+
+  async function loadFeaturedTickerRows() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/products/featured?limit=100`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      featuredTickerProducts = Array.isArray(data) ? data : [];
+    } catch (e) {
+      featuredTickerProducts = [];
+    }
+  }
 
   const categoryOrder = ['Vegetables','Fruits','Cereals','Livestock','Dairy','Tea','Nuts','Legumes','Herbs','Potatoes','Other'];
   const categoryEmoji = { Vegetables:'🥬', Fruits:'🍋', Cereals:'🌾', Livestock:'🐄', Dairy:'🥛', Tea:'🍵', Nuts:'🥜', Legumes:'🫘', Herbs:'🌿', Potatoes:'🥔', Other:'📦' };
@@ -1516,6 +1529,8 @@ function exitSuperUser() {
     const container = document.getElementById('products-container');
     if (!container) return;
 
+    await loadFeaturedTickerRows();
+
     // Instant render from cache
     try {
       const cached = JSON.parse(sessionStorage.getItem('productsCache'));
@@ -1523,7 +1538,7 @@ function exitSuperUser() {
         allProducts = cached;
         lastProductCount = cached.length;
         renderProducts(cached);
-        renderLiveTicker(cached);
+        renderLiveTicker(featuredTickerProducts);
       }
     } catch(e) {}
 
@@ -1540,7 +1555,8 @@ function exitSuperUser() {
       lastProductCount = products.length;
       try { sessionStorage.setItem('productsCache', JSON.stringify(products)); } catch(e) {}
       renderProducts(products);
-      renderLiveTicker(products);
+      await loadFeaturedTickerRows();
+      renderLiveTicker(featuredTickerProducts);
     } catch {
       if (!allProducts.length) {
         container.innerHTML = '<div class="empty-state"><div class="icon">🌱</div><h4>No products found</h4><p style="font-size:.82rem;">Check back soon as farmers add fresh produce.</p></div>';
@@ -1649,7 +1665,7 @@ function exitSuperUser() {
     window.SokoMarketplaceSync.stop();
     window.SokoMarketplaceSync.start(API_BASE_URL, {
       intervalMs: 12000,
-      onRefresh: function (products, meta) {
+      onRefresh: async function (products, meta) {
         const dash = document.getElementById('dashboard');
         if (!dash || !dash.classList.contains('active')) return;
         const ts = meta && meta.latest_updated_at ? meta.latest_updated_at : '';
@@ -1668,7 +1684,8 @@ function exitSuperUser() {
           activeTag.getAttribute('onclick').match(/filterCategory\(['"]([^'"]+)['"]/);
         const cat = match && match[1] ? match[1] : 'all';
         filterCategory(cat, activeTag);
-        renderLiveTicker(products);
+        await loadFeaturedTickerRows();
+        renderLiveTicker(featuredTickerProducts);
         if (metaChanged) {
           const n = document.getElementById('productUpdateNotification');
           if (n) {
@@ -2328,6 +2345,9 @@ function exitSuperUser() {
     loadUserProfile();
     loadProducts();
     startProductPolling();
+    if (typeof onFeaturedTickerChanged === 'function') {
+      onFeaturedTickerChanged(() => { loadFeaturedTickerRows().then(() => renderLiveTicker(featuredTickerProducts)); });
+    }
     refreshCartBadge();
     if (window.SokoSupportCenter) {
       window.SokoSupportCenter.initUserSupport({

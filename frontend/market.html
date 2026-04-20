@@ -315,6 +315,7 @@
 </footer>
 
 <script src="js/marketplace-sync.js"></script>
+<script src="js/featured-ticker-sync.js"></script>
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
 
@@ -367,7 +368,7 @@
 
   async function loadFeaturedProducts() {
     try {
-      const res = await fetch(`${API}/products/featured?limit=30`);
+      const res = await fetch(`${API}/products/featured?limit=100`);
       if (!res.ok) throw new Error();
       const products = await res.json();
       featuredProducts = Array.isArray(products) ? products : [];
@@ -530,6 +531,13 @@
     } catch (e) {}
     loadProducts();
     startMarketplacePolling();
+    if (window.onFeaturedTickerChanged) {
+      onFeaturedTickerChanged(function () {
+        loadFeaturedProducts().then(function () {
+          renderProductTicker(featuredProducts);
+        });
+      });
+    }
   });
 
   (function(){

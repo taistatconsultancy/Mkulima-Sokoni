@@ -339,7 +339,11 @@
         <div id="featured-items" class="tab-content">
           <div class="section-card">
             <h2 class="section-title">Featured / Top Moving Items ⭐</h2>
-            <p style="color:var(--muted);margin-bottom:18px;">Only items checked below appear in the marketplace moving ticker. Uncheck all to hide the ticker until you select products again.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;">
+              <button type="button" class="btn btn-primary btn-sm" id="featured-save-btn">Save</button>
+              <button type="button" class="btn btn-outline-on-light btn-sm" id="featured-unselect-all-btn">Unselect all</button>
+            </div>
+            <p style="color:var(--muted);margin-bottom:18px;">Only items checked below appear in the marketplace moving ticker. Changes from checkboxes save immediately; use Save to reload the list from the server and broadcast updates to open marketplace pages.</p>
             <div style="overflow-x:auto;">
               <table>
                 <thead><tr><th>#</th><th>Item</th><th>Category</th><th>Owner (email)</th><th>Seller / business name</th><th>Price</th><th>Listed</th><th>Featured ticker</th></tr></thead>
@@ -458,6 +462,7 @@
 
   <script type="module" src="js/admin-support-firebase.js"></script>
   <script src="js/support-center.js"></script>
+  <script src="js/featured-ticker-sync.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
@@ -689,9 +694,16 @@
       return '—';
     }
 
+    function parseFeaturedFlag(p) {
+      var v = p && p.is_featured;
+      if (v === true || v === 1 || v === '1') return true;
+      if (typeof v === 'string' && v.toLowerCase() === 'true') return true;
+      return false;
+    }
+
     async function loadFeaturedProducts() {
       var tbody = document.getElementById('featured-products-table-body');
-      if (!tbody) return;
+      if (!tbody) return false;
       try {
         var res = await authFetch(API_BASE + '/products/admin/catalog?status=active&limit=500');
         if (!res.ok) throw new Error();
@@ -699,8 +711,10 @@
         allFeaturedCatalog = Array.isArray(products) ? products : [];
         featuredPage = 0;
         renderFeaturedTable();
+        return true;
       } catch (e) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:28px;">Failed to load products (admin catalog requires sign-in)</td></tr>';
+        return false;
       }
     }
 
@@ -727,7 +741,7 @@
         var sellerName = esc((p.seller_farm_name || '').trim() || (p.seller_account_name || '').trim() || '—');
         var created = fmtDate(p.created_at);
         var price = formatProductPrice(p);
-        var checked = p.is_featured ? 'checked' : '';
+        var checked = parseFeaturedFlag(p) ? 'checked' : '';
         return '<tr>' +
           '<td>' + (start + idx + 1) + '</td>' +
           '<td><strong>' + name + '</strong></td>' +
@@ -916,11 +930,50 @@
         });
         var data = await res.json().catch(function(){ return {}; });
         if (!res.ok) throw new Error(data.error || 'Failed to update featured status');
+        var row = allFeaturedCatalog.find(function (x) { return String(x.id) === String(productId); });
+        if (row) row.is_featured = !!input.checked;
+        if (typeof notifyFeaturedTickerChanged === 'function') notifyFeaturedTickerChanged();
       } catch (e) {
         input.checked = !input.checked;
         alert(e.message || 'Failed to update featured status');
       } finally {
         input.disabled = false;
+      }
+    });
+
+    document.getElementById('featured-save-btn')?.addEventListener('click', async function () {
+      var btn = document.getElementById('featured-save-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+      try {
+        var ok = await loadFeaturedProducts();
+        if (!ok) {
+          alert('Could not reload the catalog. Check your connection and that you are signed in as admin.');
+          return;
+        }
+        if (typeof notifyFeaturedTickerChanged === 'function') notifyFeaturedTickerChanged();
+        alert('Featured list refreshed and ticker updates sent to open pages.');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+      }
+    });
+
+    document.getElementById('featured-unselect-all-btn')?.addEventListener('click', async function () {
+      if (!confirm('Remove every product from the featured ticker? You can select items again afterward.')) return;
+      var btn = document.getElementById('featured-unselect-all-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Clearing…'; }
+      try {
+        var res = await authFetch(API_BASE + '/products/admin/clear-featured', { method: 'POST' });
+        var data = await res.json().catch(function () { return {}; });
+        if (!res.ok) throw new Error(data.error || 'Failed to clear featured items');
+        allFeaturedCatalog.forEach(function (p) { p.is_featured = false; });
+        renderFeaturedTable();
+        await loadFeaturedProducts();
+        if (typeof notifyFeaturedTickerChanged === 'function') notifyFeaturedTickerChanged();
+        alert('All featured selections were cleared.');
+      } catch (e) {
+        alert(e.message || 'Failed to clear featured items');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Unselect all'; }
       }
     });
     function viewTicket(ticketId) { alert('Viewing ticket ' + ticketId); }

@@ -378,7 +378,10 @@ class Product:
 
     @staticmethod
     def get_featured_products(limit=20):
-        """Get featured active products (admin-curated ticker items)."""
+        """
+        Admin-curated ticker: active listings explicitly marked is_featured.
+        No extra seller-verification filter — the admin selection is authoritative for the ticker.
+        """
         try:
             query = """
                 SELECT p.*,
@@ -392,12 +395,7 @@ class Product:
                 FROM products p
                 INNER JOIN farmer_profiles fp ON fp.id = p.farmer_profile_id
                 WHERE p.status = 'active'
-                  AND p.is_featured = TRUE
-                  AND COALESCE(fp.certification_status, 'pending') IN ('verified', 'approved')
-                  AND NULLIF(TRIM(COALESCE(fp.farm_name, '')), '') IS NOT NULL
-                  AND NULLIF(TRIM(COALESCE(fp.location, '')), '') IS NOT NULL
-                  AND NULLIF(TRIM(COALESCE(fp.county, '')), '') IS NOT NULL
-                  AND NULLIF(TRIM(COALESCE(fp.national_id, '')), '') IS NOT NULL
+                  AND COALESCE(p.is_featured, FALSE) = TRUE
                 ORDER BY p.updated_at DESC, p.created_at DESC
                 LIMIT %s
             """
@@ -405,5 +403,18 @@ class Product:
             return result if result else []
         except Exception as e:
             logger.error(f"Error getting featured products: {str(e)}")
+            raise
+
+    @staticmethod
+    def clear_all_featured_flags():
+        """Remove featured flag from every product (admin ticker reset)."""
+        try:
+            execute_query(
+                "UPDATE products SET is_featured = FALSE WHERE COALESCE(is_featured, FALSE) = TRUE",
+                tuple(),
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Error clearing featured flags: {str(e)}")
             raise
 

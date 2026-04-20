@@ -39,6 +39,31 @@
     .topbar-btn.danger{border-color:rgba(239,68,68,.4);color:#fca5a5;}
     .topbar-btn.danger:hover{background:rgba(239,68,68,.15);}
 
+    .verified-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: .7rem;
+      font-weight: 600;
+      background: #F4A261;
+      color: #fff;
+      box-shadow: 0 0 0 1px rgba(255,255,255,.35);
+      white-space: nowrap;
+    }
+    .verified-badge-icon {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+
     /* User dropdown */
     .user-menu{position:relative;}
     .user-menu-btn{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:100px;padding:5px 12px 5px 5px;cursor:pointer;transition:all .2s;}
@@ -213,6 +238,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
     <button class="topbar-nav-link" onclick="showPage('support',this)">💬 Support</button>
   </nav>
   <div class="topbar-right">
+    <div class="verified-badge" id="agroAccountStatusBadge"><span class="verified-badge-icon" id="agroAccountStatusBadgeIcon">⏳</span><span id="agroAccountStatusBadgeLabel">Pending</span></div>
     <button class="mobile-account-btn" type="button" onclick="toggleDropdown()">Account</button>
     <div class="user-menu" id="userMenu">
       <div class="user-menu-btn" onclick="toggleDropdown()">
@@ -440,7 +466,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
       <h2>👤 Business Profile</h2>
       <p class="sub">Manage your agro-dealer business information</p>
       <div id="profileCompletionWarning" style="display:none;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;padding:10px 12px;border-radius:10px;margin-bottom:12px;font-size:.85rem;font-weight:600;">
-        Complete mandatory fields (Farm Name, Location, County, National ID). Your account remains pending until verified.
+        Complete mandatory fields (Company Name, Location, County, National ID). Your account stays pending until admin verifies it.
       </div>
       <form id="profileForm" onsubmit="saveProfile(event)">
         <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px;overflow-x:auto;">
@@ -450,10 +476,10 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
         </div>
         <div id="profile-tab-basic" class="profile-tab-pane" style="display:block;">
           <div class="form-grid">
-            <div class="form-group"><label>Business / Farm Name *</label><input type="text" id="profile-business" placeholder="Your business name" required /></div>
-            <div class="form-group"><label>Owner Name</label><input type="text" id="profile-owner" placeholder="Full name" readonly /></div>
-            <div class="form-group"><label>Email</label><input type="email" id="profile-email" readonly /></div>
-            <div class="form-group"><label>Phone Number</label><input type="tel" id="profile-phone" placeholder="+254 700 000 000" /></div>
+            <div class="form-group"><label>Company Name *</label><input type="text" id="profile-business" placeholder="e.g. Green Valley Agro Supplies" required /></div>
+            <div class="form-group"><label>Owner Name</label><input type="text" id="profile-owner" placeholder="Full name" readonly style="background:var(--cream);" /></div>
+            <div class="form-group"><label>Email</label><input type="email" id="profile-email" readonly style="background:var(--cream);" /><p style="font-size:.72rem;color:var(--muted);margin-top:4px;">Linked from your account</p></div>
+            <div class="form-group"><label>Phone Number</label><input type="tel" id="profile-phone" placeholder="+254 700 000 000" readonly style="background:var(--cream);" /><p style="font-size:.72rem;color:var(--muted);margin-top:4px;">Linked from your account</p></div>
             <div class="form-group"><label>Location *</label><input type="text" id="profile-location" placeholder="e.g. Nakuru" required /></div>
             <div class="form-group"><label>County *</label><input type="text" id="profile-county" placeholder="e.g. Nakuru" required /></div>
             <div class="form-group"><label>National ID *</label><input type="text" id="profile-national-id" placeholder="e.g. 12345678" required /></div>
@@ -512,6 +538,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
 
 <script src="js/support-center.js"></script>
 <script src="js/marketplace-sync.js"></script>
+<script src="js/featured-ticker-sync.js"></script>
 <script src="js/ui-feedback.js"></script>
 <script>
 document.getElementById('yr').textContent = new Date().getFullYear();
@@ -526,10 +553,51 @@ const uiPrompt = (cfg) => window.SokoUI ? window.SokoUI.prompt(cfg) : Promise.re
 let firebaseUid = null;
 let myProducts = [];
 let allMarketProducts = [];
+let featuredTickerProducts = [];
 let mkPage = 0;
 const MK_PER_PAGE = 12;
 let profileLocked = false;
 const AGRO_GATE_STATUS_KEY = 'soko_gate_agro_cert';
+let agroAccountRejected = false;
+
+async function loadFeaturedTickerRows() {
+  try {
+    const res = await fetch(`${API}/products/featured?limit=100`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    featuredTickerProducts = Array.isArray(data) ? data : [];
+  } catch (e) {
+    featuredTickerProducts = [];
+  }
+}
+
+function applyAgroAccountStatusUi(rawStatus, silentRejectedAlert) {
+  var status = String(rawStatus || 'pending').toLowerCase();
+  var badge = document.getElementById('agroAccountStatusBadge');
+  var icon = document.getElementById('agroAccountStatusBadgeIcon');
+  var label = document.getElementById('agroAccountStatusBadgeLabel');
+  if (!badge || !icon || !label) return;
+  agroAccountRejected = status === 'rejected';
+  if (status === 'verified' || status === 'approved') {
+    badge.style.background = '#1DA1F2';
+    icon.textContent = '✔';
+    icon.style.color = '#1DA1F2';
+    label.textContent = 'Verified';
+  } else if (status === 'rejected') {
+    badge.style.background = '#ef4444';
+    icon.textContent = '!';
+    icon.style.color = '#ef4444';
+    label.textContent = 'Rejected';
+    if (!silentRejectedAlert) {
+      window.SokoUI?.toast('Your account is rejected. You can use support; some actions may be limited.', 'warning');
+    }
+  } else {
+    badge.style.background = '#F4A261';
+    icon.textContent = '⏳';
+    icon.style.color = '#F4A261';
+    label.textContent = 'Pending';
+  }
+}
 
 function applyAgroVerificationTransition(prevStored, certificationStatus, hasRequired) {
   const cs = String(certificationStatus || 'pending').toLowerCase();
@@ -679,9 +747,16 @@ async function init() {
     }
   } catch(e) {}
 
+  await enforceAgroProfileCompletion(false);
+
   loadMyProducts();
   loadMarketplace();
   startMarketplacePolling();
+  if (typeof onFeaturedTickerChanged === 'function') {
+    onFeaturedTickerChanged(() => {
+      loadFeaturedTickerRows().then(() => renderTicker(featuredTickerProducts));
+    });
+  }
   loadProfile();
   if (window.SokoSupportCenter) {
     window.SokoSupportCenter.initUserSupport({
@@ -690,8 +765,7 @@ async function init() {
     });
   }
   const action = new URLSearchParams(window.location.search).get('action');
-  if (action === 'list-produce') showPage('add-product');
-  enforceAgroProfileCompletion(false);
+  if (action === 'list-produce' && !profileLocked) showPage('add-product');
 }
 
 async function enforceAgroProfileCompletion(silent) {
@@ -712,9 +786,11 @@ async function enforceAgroProfileCompletion(silent) {
     if (profileLocked) {
       sessionStorage.setItem(AGRO_GATE_STATUS_KEY, String(p.certification_status_db || p.certification_status || 'pending').toLowerCase());
       showPage('profile');
+      if (!silent) window.SokoUI?.toast('Complete your profile details (company name, location, county, national ID) to continue.', 'warning');
       return;
     }
     applyAgroVerificationTransition(prevStored, p.certification_status_db || p.certification_status || 'pending', hasRequired);
+    applyAgroAccountStatusUi(p.certification_status || 'pending', true);
   } catch (e) {}
 }
 
@@ -776,6 +852,8 @@ async function loadMyProducts() {
 }
 
 async function activateProduct(pid) {
+  if (profileLocked) { await uiAlert('Complete your profile before publishing listings.', 'Complete profile'); return; }
+  if (agroAccountRejected) { await uiAlert('Your account is rejected. Contact support before activating listings.', 'Account rejected'); return; }
   try {
     const res = await fetch(`${API}/products/${pid}/status`, {
       method:'PUT',
@@ -800,6 +878,11 @@ document.getElementById('addProductForm').addEventListener('submit', function(e)
 
 async function submitProduct(status) {
   if (!firebaseUid) { await uiAlert('Please sign in first.', 'Sign in required'); return; }
+  if (profileLocked) { await uiAlert('Complete your profile (company name, location, county, national ID) before listing products.', 'Complete profile'); return; }
+  if (status === 'active' && agroAccountRejected) {
+    await uiAlert('Your account is rejected. Contact support before publishing listings.', 'Account rejected');
+    return;
+  }
   const form = document.getElementById('addProductForm');
   if (!form.checkValidity()) { form.reportValidity(); return; }
 
@@ -862,11 +945,12 @@ async function submitProduct(status) {
 /* ── Marketplace ── */
 async function loadMarketplace() {
   const grid = document.getElementById('mk-grid');
+  await loadFeaturedTickerRows();
   try {
     const cached = sessionStorage.getItem('productsCache');
     if (cached) {
       const arr = JSON.parse(cached);
-      if (arr.length) { allMarketProducts = arr; renderMkPage(); renderDashMk(); renderTicker(arr); }
+      if (arr.length) { allMarketProducts = arr; renderMkPage(); renderDashMk(); renderTicker(featuredTickerProducts); }
     }
   } catch(e) {}
 
@@ -879,13 +963,14 @@ async function loadMarketplace() {
     document.getElementById('stat-market').textContent = products.length;
     renderMkPage();
     renderDashMk();
-    renderTicker(products);
+    await loadFeaturedTickerRows();
+    renderTicker(featuredTickerProducts);
   } catch(e) {
     if (!allMarketProducts.length) grid.innerHTML = '<div style="grid-column:1/-1;" class="empty-state"><div class="icon">😕</div><h4>Could not load marketplace</h4></div>';
   }
 }
 
-function applyMarketplaceProducts(products) {
+async function applyMarketplaceProducts(products) {
   allMarketProducts = products;
   try {
     sessionStorage.setItem('productsCache', JSON.stringify(products));
@@ -894,7 +979,8 @@ function applyMarketplaceProducts(products) {
   if (stat) stat.textContent = products.length;
   renderMkPage();
   renderDashMk();
-  renderTicker(products);
+  await loadFeaturedTickerRows();
+  renderTicker(featuredTickerProducts);
 }
 
 function startMarketplacePolling() {
@@ -902,8 +988,8 @@ function startMarketplacePolling() {
   window.SokoMarketplaceSync.stop();
   window.SokoMarketplaceSync.start(API, {
     intervalMs: 12000,
-    onRefresh: function (products) {
-      applyMarketplaceProducts(products);
+    onRefresh: async function (products) {
+      await applyMarketplaceProducts(products);
     },
   });
 }
@@ -1009,6 +1095,7 @@ async function loadProfile() {
     applyAgroVerificationTransition(prevGate, stDb, hasReq);
     var stEl = document.getElementById('profile-verification-status');
     if (stEl) stEl.textContent = stEffective.charAt(0).toUpperCase() + stEffective.slice(1).toLowerCase();
+    applyAgroAccountStatusUi(stEffective, false);
     updateAgroProfileWarning(prof, stEffective);
   } catch(e) {}
 }
@@ -1085,7 +1172,12 @@ async function saveProfile(e) {
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(body)
     });
-    if (res.ok) { window.SokoUI?.toast('Profile saved successfully!', 'success'); loadProfile(); setTimeout(function(){ showPage('dashboard'); }, 500); }
+    if (res.ok) {
+      window.SokoUI?.toast('Profile saved successfully!', 'success');
+      await loadProfile();
+      await enforceAgroProfileCompletion(true);
+      setTimeout(function(){ showPage('dashboard'); }, 400);
+    }
     else { const d = await res.json(); await uiAlert(d.error || 'Save failed', 'Profile save failed'); }
   } catch(e) { await uiAlert(e.message || 'Save failed', 'Error'); }
   finally {

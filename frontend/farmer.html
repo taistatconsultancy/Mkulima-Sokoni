@@ -1424,6 +1424,7 @@ function exitSuperUser() {
 
 <script src="js/support-center.js"></script>
 <script src="js/marketplace-sync.js"></script>
+<script src="js/featured-ticker-sync.js"></script>
 <script src="js/ui-feedback.js"></script>
 <script>
   /* ── Init ── */
@@ -2906,10 +2907,22 @@ function exitSuperUser() {
   /* ── Marketplace Listings (agro-dealers first, then farmer products) ── */
   const EMOJI_MK = { Vegetables:'🥬', Fruits:'🍊', Cereals:'🌽', Livestock:'🐄', Dairy:'🥛', Tea:'🍵', Nuts:'🥜', Legumes:'🫘', Herbs:'🌿', Potatoes:'🥔', Seeds:'🌱', Fertilizers:'🧪', Pesticides:'💊', Equipment:'🔧', 'Animal Feed':'🐄', Veterinary:'💉', Irrigation:'💧', Other:'📦' };
   let allMarketProducts = [];
+  let featuredTickerProducts = [];
   let farmerProducts = [];
   let agroDealerProducts = [];
   let mkPage = 0;
   const MK_PER_PAGE = 12;
+
+  async function loadFeaturedTickerRows() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/products/featured?limit=100`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      featuredTickerProducts = Array.isArray(data) ? data : [];
+    } catch (e) {
+      featuredTickerProducts = [];
+    }
+  }
 
   function splitProducts(products) {
     agroDealerProducts = products.filter(p => p.seller_role === 'agro-dealer');
@@ -2917,6 +2930,8 @@ function exitSuperUser() {
   }
 
   async function loadMarketplaceListings() {
+    await loadFeaturedTickerRows();
+
     try {
       const cached = JSON.parse(sessionStorage.getItem('productsCache'));
       if (cached && cached.length) {
@@ -2925,7 +2940,7 @@ function exitSuperUser() {
         mkPage = 0;
         renderAgroDealerGrid();
         renderMarketplacePage();
-        renderAgroDealerTicker(allMarketProducts);
+        renderAgroDealerTicker(featuredTickerProducts);
       }
     } catch(e) {}
 
@@ -2939,7 +2954,8 @@ function exitSuperUser() {
       mkPage = 0;
       renderAgroDealerGrid();
       renderMarketplacePage();
-      renderAgroDealerTicker(allMarketProducts);
+      await loadFeaturedTickerRows();
+      renderAgroDealerTicker(featuredTickerProducts);
     } catch(e) { console.warn('Could not load marketplace listings', e); }
   }
 
@@ -3026,7 +3042,7 @@ function exitSuperUser() {
     window.SokoMarketplaceSync.stop();
     window.SokoMarketplaceSync.start(API_BASE_URL, {
       intervalMs: 12000,
-      onRefresh: function (products) {
+      onRefresh: async function (products) {
         allMarketProducts = products;
         splitProducts(products);
         mkPage = 0;
@@ -3035,7 +3051,8 @@ function exitSuperUser() {
         } catch (e) {}
         renderAgroDealerGrid();
         renderMarketplacePage();
-        renderAgroDealerTicker(allMarketProducts);
+        await loadFeaturedTickerRows();
+        renderAgroDealerTicker(featuredTickerProducts);
       },
     });
   }
@@ -3048,6 +3065,11 @@ function exitSuperUser() {
     loadProducts();
     loadMarketplaceListings();
     startMarketplacePolling();
+    if (typeof onFeaturedTickerChanged === 'function') {
+      onFeaturedTickerChanged(function () {
+        loadFeaturedTickerRows().then(function () { renderAgroDealerTicker(featuredTickerProducts); });
+      });
+    }
     if (window.SokoSupportCenter) {
       window.SokoSupportCenter.initUserSupport({
         rootId: 'farmerSupportCenterRoot',

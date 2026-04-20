@@ -183,13 +183,20 @@ def create_farmer_profile():
                 logger.error(f"Invalid user_id format from get_user_id_by_firebase_uid: {user_id}")
                 return jsonify({'error': f'Invalid user ID format: {user_id}'}), 500
             
-            # Get user object to check role
+            # Get user object to check role (farmer + agro-dealer share farmer_profiles)
             user = User.get_user_by_firebase_uid(firebase_uid)
             if user:
-                # Check if user has farmer role
                 user_roles = User.get_user_roles(user_id)
-                if 'farmer' not in user_roles and user.get('role') != 'farmer' and 'farmer' not in user.get('role', ''):
-                    return jsonify({'error': 'User does not have farmer role'}), 403
+                role_text = str(user.get('role') or '').lower().replace(' ', '')
+                has_farmer_slot = (
+                    'farmer' in user_roles
+                    or 'agro-dealer' in user_roles
+                    or 'farmer' in role_text
+                    or 'agro-dealer' in role_text
+                    or 'agrodealer' in role_text
+                )
+                if not has_farmer_slot:
+                    return jsonify({'error': 'User does not have farmer or agro-dealer role'}), 403
         else:
             # Validate the user_id we got from profile table
             import uuid

@@ -522,12 +522,25 @@
 <div id="newProductsNotif">🔄 New listings just arrived!</div>
 
 <script src="js/marketplace-sync.js"></script>
+<script src="js/featured-ticker-sync.js"></script>
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();
 
   const isProduction = !['localhost', '127.0.0.1'].includes(window.location.hostname);
   const API = isProduction ? '/api' : 'http://localhost:5000/api';
   let allProducts = [];
+  let featuredProducts = [];
+
+  async function loadFeaturedProductsTicker() {
+    try {
+      const res = await fetch(`${API}/products/featured?limit=100`);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      featuredProducts = Array.isArray(data) ? data : [];
+    } catch (e) {
+      featuredProducts = [];
+    }
+  }
 
   /* ── Navigation ── */
   function showPage(pageName) {
@@ -550,25 +563,29 @@
   async function loadProducts() {
     const container = document.getElementById('products-container');
 
+    await loadFeaturedProductsTicker();
+
     // Instant render from cache
     try {
       const cached = JSON.parse(sessionStorage.getItem('productsCache'));
       if (cached && cached.length) {
         allProducts = cached;
         renderProducts(cached);
-        renderProductTicker(cached);
+        renderProductTicker(featuredProducts);
       }
     } catch(e) {}
 
     // Fetch fresh data in background
     try {
+      await loadFeaturedProductsTicker();
       const res = await fetch(`${API}/products?status=active`);
       if (!res.ok) throw new Error();
       const products = await res.json();
       allProducts = products;
       try { sessionStorage.setItem('productsCache', JSON.stringify(products)); } catch(e) {}
       renderProducts(products);
-      renderProductTicker(products);
+      await loadFeaturedProductsTicker();
+      renderProductTicker(featuredProducts);
     } catch {
       if (!allProducts.length) {
         container.innerHTML = `
@@ -719,7 +736,7 @@
     window.SokoMarketplaceSync.stop();
     window.SokoMarketplaceSync.start(API, {
       intervalMs: 12000,
-      onRefresh: function (products, meta) {
+      onRefresh: async function (products, meta) {
         const prev = lastCount;
         const ts = meta && meta.latest_updated_at ? meta.latest_updated_at : '';
         const metaChanged = lastMarketMetaTs !== null && ts && ts !== lastMarketMetaTs;
@@ -730,7 +747,8 @@
           sessionStorage.setItem('productsCache', JSON.stringify(products));
         } catch (e) {}
         applyFilters();
-        renderProductTicker(products);
+        await loadFeaturedProductsTicker();
+        renderProductTicker(featuredProducts);
         if (prev > 0 && (products.length !== prev || metaChanged)) {
           const n = document.getElementById('newProductsNotif');
           n.style.display = 'flex';
@@ -757,6 +775,13 @@
   window.addEventListener('DOMContentLoaded', () => {
     loadProducts();
     startPolling();
+    if (window.onFeaturedTickerChanged) {
+      onFeaturedTickerChanged(function () {
+        loadFeaturedProductsTicker().then(function () {
+          renderProductTicker(featuredProducts);
+        });
+      });
+    }
   });
 
   (function(){
