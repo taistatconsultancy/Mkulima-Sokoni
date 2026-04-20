@@ -394,6 +394,10 @@
       border-color: var(--leaf); background: #fff;
       box-shadow: 0 0 0 3px rgba(64,145,108,.1);
     }
+    .field-invalid {
+      border-color: #dc2626 !important;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, .12) !important;
+    }
     .form-group input[readonly] { background: #f3f4f6; cursor: not-allowed; }
     .form-group textarea { resize: vertical; min-height: 90px; }
     .form-hint { font-size: .72rem; color: var(--muted); margin-top: 2px; }
@@ -1203,6 +1207,7 @@ function exitSuperUser() {
 
         <div id="profile-nav-actions" style="display:flex;gap:10px;margin-top:28px;padding-top:20px;border-top:1.5px solid var(--border);">
           <button type="button" class="btn btn-outline" onclick="showPage('dashboard')">Cancel</button>
+          <button type="button" class="btn btn-outline" id="profile-back-btn" style="display:none;" onclick="goToPreviousProfileTab()">Back</button>
           <button type="button" class="btn btn-primary" id="save-profile-btn" style="flex:1;" onclick="handleProfilePrimaryAction()">
             <span id="save-btn-text">Next</span>
             <span id="save-btn-spinner" style="display:none;"><div class="spinner-sm"></div></span>
@@ -2600,6 +2605,13 @@ function exitSuperUser() {
   /* ── Farmer profile form ── */
   let currentImageUrl = '';
   let accountRejected = false;
+  const PROFILE_TAB_ORDER = ['basic', 'farm', 'experience', 'additional'];
+  const PROFILE_TAB_REQUIRED_FIELDS = {
+    basic: ['farm-name', 'location', 'county', 'national-id'],
+    farm: [],
+    experience: [],
+    additional: []
+  };
 
   function applyAccountStatusUi(rawStatus, silentRejectedAlert) {
     const status = String(rawStatus || 'pending').toLowerCase();
@@ -2753,7 +2765,7 @@ function exitSuperUser() {
       if (!res.ok) throw new Error(d.error || 'Failed');
       showAlert('✅ Profile saved successfully!','success');
       loadFarmerProfile();
-      setTimeout(() => showPage('dashboard'), 500);
+      showPage('dashboard');
     } catch(err) {
       showAlert(err.message || 'Failed to save profile','error');
     } finally {
@@ -2777,6 +2789,57 @@ function exitSuperUser() {
     updateProfilePrimaryAction();
   }
 
+  function markFieldAsInvalid(field) {
+    if (!field) return;
+    field.classList.add('field-invalid');
+  }
+
+  function clearFieldInvalidState(field) {
+    if (!field) return;
+    field.classList.remove('field-invalid');
+  }
+
+  function clearTabInvalidState(tabName) {
+    const fields = PROFILE_TAB_REQUIRED_FIELDS[tabName] || [];
+    fields.forEach((id) => clearFieldInvalidState(document.getElementById(id)));
+  }
+
+  function validateProfileTab(tabName) {
+    const fields = PROFILE_TAB_REQUIRED_FIELDS[tabName] || [];
+    let firstInvalid = null;
+    fields.forEach((id) => {
+      const field = document.getElementById(id);
+      if (!field) return;
+      const value = String(field.value || '').trim();
+      if (!value) {
+        markFieldAsInvalid(field);
+        if (!firstInvalid) firstInvalid = field;
+      } else {
+        clearFieldInvalidState(field);
+      }
+    });
+
+    if (firstInvalid) {
+      showAlert('Please fill all mandatory fields in this tab before proceeding.', 'error');
+      firstInvalid.focus();
+      return false;
+    }
+
+    return true;
+  }
+
+  function goToProfileTabByName(name) {
+    const targetBtn = document.querySelector('.profile-tab-btn[onclick*="' + name + '"]');
+    if (targetBtn) switchTab(name, targetBtn);
+  }
+
+  function goToPreviousProfileTab() {
+    const active = getActiveProfileTab();
+    const i = PROFILE_TAB_ORDER.indexOf(active);
+    if (i <= 0) return;
+    goToProfileTabByName(PROFILE_TAB_ORDER[i - 1]);
+  }
+
   function getActiveProfileTab() {
     const active = document.querySelector('.profile-tab-content.active');
     return active && active.id ? active.id.replace('tab-', '') : 'basic';
@@ -2785,8 +2848,11 @@ function exitSuperUser() {
   function updateProfilePrimaryAction() {
     const txt = document.getElementById('save-btn-text');
     const btn = document.getElementById('save-profile-btn');
+    const backBtn = document.getElementById('profile-back-btn');
     if (!txt || !btn) return;
     const active = getActiveProfileTab();
+    const activeIndex = PROFILE_TAB_ORDER.indexOf(active);
+    if (backBtn) backBtn.style.display = activeIndex > 0 ? '' : 'none';
     if (active === 'additional') {
       txt.textContent = 'Save Changes';
       btn.dataset.action = 'save';
@@ -2799,17 +2865,18 @@ function exitSuperUser() {
   function handleProfilePrimaryAction() {
     const btn = document.getElementById('save-profile-btn');
     if (!btn) return;
+    const active = getActiveProfileTab();
     if (btn.dataset.action === 'save') {
+      if (!validateProfileTab(active)) return;
       document.getElementById('farmerProfileForm').requestSubmit();
       return;
     }
-    const order = ['basic', 'farm', 'experience', 'additional'];
-    const active = getActiveProfileTab();
-    const i = order.indexOf(active);
-    const next = i >= 0 ? order[i + 1] : null;
+    if (!validateProfileTab(active)) return;
+    const i = PROFILE_TAB_ORDER.indexOf(active);
+    const next = i >= 0 ? PROFILE_TAB_ORDER[i + 1] : null;
     if (!next) return;
-    const nextBtn = document.querySelector('.profile-tab-btn[onclick*="' + next + '"]');
-    if (nextBtn) switchTab(next, nextBtn);
+    clearTabInvalidState(active);
+    goToProfileTabByName(next);
   }
 
   function updateProfileCompletionWarning(profile, statusRaw) {
@@ -2913,6 +2980,13 @@ function exitSuperUser() {
 
   document.getElementById('crops-select').addEventListener('change', updateCropsDisplay);
   document.getElementById('livestock-select').addEventListener('change', updateLivestockDisplay);
+  Object.values(PROFILE_TAB_REQUIRED_FIELDS).flat().forEach((id) => {
+    const field = document.getElementById(id);
+    if (!field) return;
+    field.addEventListener('input', () => {
+      if (String(field.value || '').trim()) clearFieldInvalidState(field);
+    });
+  });
 
   /* ── Profile image preview ── */
   document.getElementById('id-front').addEventListener('change', e => {
@@ -2990,8 +3064,18 @@ function exitSuperUser() {
   }
 
   function splitProducts(products) {
-    agroDealerProducts = products.filter(p => p.seller_role === 'agro-dealer');
-    farmerProducts = products.filter(p => p.seller_role !== 'agro-dealer');
+    const normalizedProducts = Array.isArray(products) ? products : [];
+    const isAgroDealer = (product) => {
+      const role = String(
+        product?.seller_role ||
+        product?.role ||
+        product?.seller?.role ||
+        ''
+      ).toLowerCase().replace(/[_\s]/g, '-');
+      return role === 'agro-dealer' || role === 'agrodealer' || role === 'dealer';
+    };
+    agroDealerProducts = normalizedProducts.filter((p) => isAgroDealer(p));
+    farmerProducts = normalizedProducts.filter((p) => !isAgroDealer(p));
   }
 
   async function loadMarketplaceListings() {

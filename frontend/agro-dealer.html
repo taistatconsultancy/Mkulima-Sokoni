@@ -132,6 +132,7 @@
     .form-group label{display:block;font-size:.78rem;font-weight:600;margin-bottom:5px;}
     .form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:.86rem;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--cream);outline:none;transition:all .2s;}
     .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--leaf);background:#fff;box-shadow:0 0 0 3px rgba(64,145,108,.1);}
+    .field-invalid{border-color:#dc2626 !important;box-shadow:0 0 0 3px rgba(220,38,38,.12) !important;}
     .form-group textarea{resize:vertical;min-height:80px;}
     .form-submit{padding:12px 24px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--forest),var(--leaf));color:#fff;font-size:.88rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;box-shadow:0 4px 14px rgba(27,67,50,.22);}
     .form-submit:hover{opacity:.92;transform:translateY(-2px);}
@@ -576,6 +577,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
         </div>
         <div class="form-full" style="margin-top:16px;display:flex;gap:10px;">
           <button type="button" class="form-submit" style="background:#fff;color:var(--forest);border:1.5px solid var(--forest);" onclick="showPage('dashboard')">Cancel</button>
+          <button type="button" class="form-submit" id="profile-back-btn" style="display:none;background:#fff;color:var(--forest);border:1.5px solid var(--forest);" onclick="goToPreviousAgroProfileTab()">Back</button>
           <button type="button" class="form-submit" id="profile-save-btn" onclick="handleAgroProfilePrimaryAction()">Next</button>
           <button type="submit" id="profile-submit-hidden" style="display:none;"></button>
         </div>
@@ -627,6 +629,12 @@ let allMarketProducts = [];
 let featuredTickerProducts = [];
 let mkPage = 0;
 const MK_PER_PAGE = 12;
+const AGRO_PROFILE_TAB_ORDER = ['basic', 'business', 'additional'];
+const AGRO_PROFILE_REQUIRED_FIELDS = {
+  basic: ['profile-business', 'profile-location', 'profile-county', 'profile-national-id'],
+  business: [],
+  additional: []
+};
 let profileLocked = false;
 const AGRO_GATE_STATUS_KEY = 'soko_gate_agro_cert';
 let agroAccountRejected = false;
@@ -835,6 +843,7 @@ window.addEventListener('resize', () => {
 
 /* ── Init ── */
 async function init() {
+  wireAgroRequiredFieldValidation();
   try {
     const user = JSON.parse(localStorage.getItem('user'));
     if (user) {
@@ -1222,23 +1231,84 @@ function switchProfileTab(name, btn) {
   var pane = document.getElementById('profile-tab-' + name);
   if (pane) pane.style.display = 'block';
   var saveBtn = document.getElementById('profile-save-btn');
+  var backBtn = document.getElementById('profile-back-btn');
+  var activeIndex = AGRO_PROFILE_TAB_ORDER.indexOf(name);
+  if (backBtn) backBtn.style.display = activeIndex > 0 ? '' : 'none';
   if (saveBtn) saveBtn.textContent = name === 'additional' ? 'Save Changes' : 'Next';
+}
+
+function markAgroFieldInvalid(field) {
+  if (!field) return;
+  field.classList.add('field-invalid');
+}
+
+function clearAgroFieldInvalid(field) {
+  if (!field) return;
+  field.classList.remove('field-invalid');
+}
+
+function validateAgroProfileTab(tabName) {
+  var requiredFields = AGRO_PROFILE_REQUIRED_FIELDS[tabName] || [];
+  var firstInvalid = null;
+  requiredFields.forEach(function(id){
+    var field = document.getElementById(id);
+    if (!field) return;
+    if (!String(field.value || '').trim()) {
+      markAgroFieldInvalid(field);
+      if (!firstInvalid) firstInvalid = field;
+    } else {
+      clearAgroFieldInvalid(field);
+    }
+  });
+  if (firstInvalid) {
+    window.SokoUI?.toast('Fill all mandatory fields in this tab before continuing.', 'warning');
+    firstInvalid.focus();
+    return false;
+  }
+  return true;
+}
+
+function goToAgroTabByName(name) {
+  var btn = Array.from(document.querySelectorAll('#profile .profile-tab-btn')).find(function(b){
+    return (b.getAttribute('onclick') || '').includes("'" + name + "'");
+  });
+  if (btn) switchProfileTab(name, btn);
+}
+
+function goToPreviousAgroProfileTab() {
+  var active = document.querySelector('#profile .profile-tab-btn.active');
+  var name = active ? (active.textContent || '').toLowerCase() : 'basic';
+  var key = name.includes('basic') ? 'basic' : (name.includes('business') ? 'business' : 'additional');
+  var index = AGRO_PROFILE_TAB_ORDER.indexOf(key);
+  if (index <= 0) return;
+  goToAgroTabByName(AGRO_PROFILE_TAB_ORDER[index - 1]);
+}
+
+function wireAgroRequiredFieldValidation() {
+  Object.values(AGRO_PROFILE_REQUIRED_FIELDS).flat().forEach(function(id){
+    var field = document.getElementById(id);
+    if (!field) return;
+    field.addEventListener('input', function(){
+      if (String(field.value || '').trim()) clearAgroFieldInvalid(field);
+    });
+  });
 }
 
 function handleAgroProfilePrimaryAction() {
   var active = document.querySelector('#profile .profile-tab-btn.active');
   var name = active ? (active.textContent || '').toLowerCase() : 'basic';
+  var key = name.includes('basic') ? 'basic' : (name.includes('business') ? 'business' : 'additional');
   if (name.includes('additional')) {
+    if (!validateAgroProfileTab(key)) return;
     document.getElementById('profile-submit-hidden').click();
     return;
   }
+  if (!validateAgroProfileTab(key)) return;
   if (name.includes('basic')) {
-    var btn = Array.from(document.querySelectorAll('#profile .profile-tab-btn')).find(function(b){ return (b.textContent || '').toLowerCase().includes('business'); });
-    if (btn) switchProfileTab('business', btn);
+    goToAgroTabByName('business');
     return;
   }
-  var btn2 = Array.from(document.querySelectorAll('#profile .profile-tab-btn')).find(function(b){ return (b.textContent || '').toLowerCase().includes('additional'); });
-  if (btn2) switchProfileTab('additional', btn2);
+  goToAgroTabByName('additional');
 }
 
 function updateAgroProfileWarning(profile, statusRaw) {
@@ -1283,7 +1353,7 @@ async function saveProfile(e) {
       window.SokoUI?.toast('Profile saved successfully!', 'success');
       await loadProfile();
       await enforceAgroProfileCompletion(true);
-      setTimeout(function(){ showPage('dashboard'); }, 400);
+      showPage('dashboard');
     }
     else { const d = await res.json(); await uiAlert(d.error || 'Save failed', 'Profile save failed'); }
   } catch(e) { await uiAlert(e.message || 'Save failed', 'Error'); }
