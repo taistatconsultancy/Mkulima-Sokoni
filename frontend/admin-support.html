@@ -142,6 +142,27 @@
     .action-buttons { display: flex; gap: 6px; }
     .btn-sm { padding: 5px 12px; font-size: .78rem; border-radius: 100px; }
 
+    /* Visible pagination on cream/white backgrounds (avoid header “white outline” buttons) */
+    .btn-outline-on-light {
+      background: #fff;
+      color: var(--forest);
+      border: 1.5px solid var(--forest);
+      font-weight: 600;
+    }
+    .btn-outline-on-light:hover:not(:disabled) {
+      background: rgba(27, 67, 50, .08);
+      color: var(--forest);
+      border-color: var(--forest);
+    }
+    .table-pager {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
     footer { background: var(--forest); padding: 20px 28px; text-align: center; margin-top: 28px; }
     .footer-text { font-size: .76rem; color: rgba(255,255,255,.4); }
     .footer-text strong { color: var(--lime); }
@@ -255,6 +276,16 @@
             <p style="color:var(--muted);margin-bottom:18px;">Manage all registered users - farmers, buyers, and agro-dealers</p>
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
               <div>
+                <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Status</label>
+                <select id="users-filter-status" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;min-width:140px;">
+                  <option value="">All statuses</option>
+                  <option value="verified">Verified</option>
+                  <option value="pending">Pending</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              <div>
                 <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Month</label>
                 <select id="users-filter-month" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;">
                   <option value="">All</option>
@@ -275,10 +306,10 @@
                 </tbody>
               </table>
             </div>
-            <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:12px;">
-              <button class="btn btn-outline btn-sm" type="button" id="users-prev-btn">Previous</button>
+            <div class="table-pager">
+              <button class="btn btn-outline-on-light btn-sm" type="button" id="users-prev-btn">Previous</button>
               <span id="users-page-label" style="font-size:.8rem;color:var(--muted);">Page 1</span>
-              <button class="btn btn-outline btn-sm" type="button" id="users-next-btn">Next</button>
+              <button class="btn btn-outline-on-light btn-sm" type="button" id="users-next-btn">Next</button>
             </div>
           </div>
         </div>
@@ -290,11 +321,16 @@
             <p style="color:var(--muted);margin-bottom:18px;">Review pending accounts and re-approve rejected accounts</p>
             <div style="overflow-x:auto;">
               <table>
-                <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Submitted</th><th>Status</th><th>Actions</th></tr></thead>
+                <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Submitted</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody id="verification-table-body">
-                  <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px;">Loading verifications…</td></tr>
+                  <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px;">Loading verifications…</td></tr>
                 </tbody>
               </table>
+            </div>
+            <div class="table-pager">
+              <button class="btn btn-outline-on-light btn-sm" type="button" id="verification-prev-btn">Previous</button>
+              <span id="verification-page-label" style="font-size:.8rem;color:var(--muted);">Page 1</span>
+              <button class="btn btn-outline-on-light btn-sm" type="button" id="verification-next-btn">Next</button>
             </div>
           </div>
         </div>
@@ -303,14 +339,19 @@
         <div id="featured-items" class="tab-content">
           <div class="section-card">
             <h2 class="section-title">Featured / Top Moving Items ⭐</h2>
-            <p style="color:var(--muted);margin-bottom:18px;">Select products that appear in the moving top ticker on the marketplace.</p>
+            <p style="color:var(--muted);margin-bottom:18px;">Only items checked below appear in the marketplace moving ticker. Uncheck all to hide the ticker until you select products again.</p>
             <div style="overflow-x:auto;">
               <table>
-                <thead><tr><th>Product</th><th>Category</th><th>Seller</th><th>Price</th><th>Created</th><th>Show in Top Items</th></tr></thead>
+                <thead><tr><th>#</th><th>Item</th><th>Category</th><th>Owner (email)</th><th>Seller / business name</th><th>Price</th><th>Listed</th><th>Featured ticker</th></tr></thead>
                 <tbody id="featured-products-table-body">
-                  <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px;">Loading products…</td></tr>
+                  <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px;">Loading products…</td></tr>
                 </tbody>
               </table>
+            </div>
+            <div class="table-pager">
+              <button class="btn btn-outline-on-light btn-sm" type="button" id="featured-prev-btn">Previous</button>
+              <span id="featured-page-label" style="font-size:.8rem;color:var(--muted);">Page 1</span>
+              <button class="btn btn-outline-on-light btn-sm" type="button" id="featured-next-btn">Next</button>
             </div>
           </div>
         </div>
@@ -373,9 +414,14 @@
               <table>
                 <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Accessed At</th></tr></thead>
                 <tbody id="access-log-body">
-                  <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:28px;">No client accounts accessed this session</td></tr>
+                  <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:28px;">Loading access log…</td></tr>
                 </tbody>
               </table>
+            </div>
+            <div class="table-pager">
+              <button class="btn btn-outline-on-light btn-sm" type="button" id="access-log-prev-btn">Previous</button>
+              <span id="access-log-page-label" style="font-size:.8rem;color:var(--muted);">Page 1</span>
+              <button class="btn btn-outline-on-light btn-sm" type="button" id="access-log-next-btn">Next</button>
             </div>
           </div>
         </div>
@@ -481,6 +527,32 @@
     var allAdminUsers = [];
     var usersPage = 0;
     var USERS_PER_PAGE = 10;
+    var verificationQueueUsers = [];
+    var verificationPage = 0;
+    var VERIFY_PER_PAGE = 10;
+    var allFeaturedCatalog = [];
+    var featuredPage = 0;
+    var FEATURED_PER_PAGE = 10;
+    var accessLogRows = [];
+    var accessLogPage = 0;
+    var ACCESS_LOG_PER_PAGE = 10;
+
+    function userCombinedStatus(u) {
+      var cs = (u.certification_status || '').toLowerCase();
+      var bs = (u.buyer_verification_status || '').toLowerCase();
+      function rank(s) {
+        if (s === 'rejected') return 3;
+        if (s === 'pending') return 2;
+        if (s === 'verified' || s === 'approved') return 1;
+        return 0;
+      }
+      var worst = cs;
+      if (rank(bs) > rank(cs)) worst = bs;
+      if (worst === 'verified' || worst === 'approved') return 'verified';
+      if (worst === 'rejected') return 'rejected';
+      if (worst === 'pending') return 'pending';
+      return u.is_active !== false ? 'active' : 'inactive';
+    }
 
     function isVerificationActionable(u) {
       /* Use DB columns so verified-in-DB users with incomplete profiles do not re-queue */
@@ -495,13 +567,15 @@
         if (!res.ok) throw new Error();
         allAdminUsers = await res.json();
         buildUserFilters(allAdminUsers);
+        verificationQueueUsers = allAdminUsers.filter(isVerificationActionable);
+        verificationPage = 0;
         renderUsersTable(allAdminUsers);
-        renderVerificationTable(allAdminUsers.filter(isVerificationActionable));
+        renderVerificationTable();
       } catch (e) {
         document.getElementById('users-table-body').innerHTML =
           '<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:28px;">Failed to load users</td></tr>';
         document.getElementById('verification-table-body').innerHTML =
-          '<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:28px;">Failed to load verifications</td></tr>';
+          '<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:28px;">Failed to load verifications</td></tr>';
       }
     }
 
@@ -532,9 +606,14 @@
     }
 
     function filteredUsers(users) {
+      var statusVal = (document.getElementById('users-filter-status')?.value || '').toLowerCase();
       var monthVal = document.getElementById('users-filter-month')?.value || '';
       var yearVal = document.getElementById('users-filter-year')?.value || '';
       return (users || []).filter(function(u) {
+        if (statusVal) {
+          var st = userCombinedStatus(u);
+          if (st !== statusVal) return false;
+        }
         if (!monthVal && !yearVal) return true;
         if (!u.created_at) return false;
         var d = new Date(u.created_at);
@@ -569,7 +648,7 @@
           '<td>' + roleBadge(u.role) + '</td>' +
           '<td>' + statusBadge(u) + '</td>' +
           '<td>' + fmtDate(u.created_at) + '</td>' +
-          '<td><div class="action-buttons"><button class="btn btn-outline btn-sm" onclick="viewUser(\'' + esc(u.email) + '\')">View</button></div></td>' +
+          '<td><div class="action-buttons"><button class="btn btn-outline-on-light btn-sm" onclick="viewUser(\'' + esc(u.email) + '\')">View</button></div></td>' +
           '</tr>';
       }).join('');
       document.getElementById('users-page-label').textContent = 'Page ' + (usersPage + 1) + ' of ' + totalPages;
@@ -600,50 +679,90 @@
         .join('');
     }
 
+    function formatProductPrice(p) {
+      if (p.product_type === 'livestock' && p.price_min != null && p.price_max != null) {
+        return 'KSh ' + Number(p.price_min).toLocaleString() + ' – ' + Number(p.price_max).toLocaleString();
+      }
+      if (p.price !== null && p.price !== undefined && p.price !== '') {
+        return 'KSh ' + Number(p.price).toLocaleString();
+      }
+      return '—';
+    }
+
     async function loadFeaturedProducts() {
       var tbody = document.getElementById('featured-products-table-body');
       if (!tbody) return;
       try {
-        var res = await authFetch(API_BASE + '/products?status=active&limit=200');
+        var res = await authFetch(API_BASE + '/products/admin/catalog?status=active&limit=500');
         if (!res.ok) throw new Error();
         var products = await res.json();
-        if (!products || !products.length) {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px;">No active products found</td></tr>';
-          return;
-        }
-        tbody.innerHTML = products.map(function(p) {
-          var name = esc(p.name || 'Unnamed product');
-          var category = esc(p.category || '—');
-          var seller = esc(p.farm_name || p.seller_name || 'Seller');
-          var created = fmtDate(p.created_at);
-          var price = (p.price !== null && p.price !== undefined && p.price !== '')
-            ? ('KSh ' + Number(p.price).toLocaleString())
-            : '—';
-          var checked = p.is_featured ? 'checked' : '';
-          return '<tr>' +
-            '<td><strong>' + name + '</strong></td>' +
-            '<td>' + category + '</td>' +
-            '<td>' + seller + '</td>' +
-            '<td>' + price + '</td>' +
-            '<td>' + created + '</td>' +
-            '<td><label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;">' +
-              '<input type="checkbox" data-featured-toggle="1" data-product-id="' + esc(p.id) + '" ' + checked + ' />' +
-              '<span style="font-size:.8rem;color:var(--muted);">Featured</span>' +
-            '</label></td>' +
-          '</tr>';
-        }).join('');
+        allFeaturedCatalog = Array.isArray(products) ? products : [];
+        featuredPage = 0;
+        renderFeaturedTable();
       } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:28px;">Failed to load products</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:28px;">Failed to load products (admin catalog requires sign-in)</td></tr>';
       }
     }
 
-    function renderVerificationTable(users) {
-      var tbody = document.getElementById('verification-table-body');
-      if (!users.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:28px;">No pending or rejected verification items</td></tr>';
+    function renderFeaturedTable() {
+      var tbody = document.getElementById('featured-products-table-body');
+      if (!tbody) return;
+      var products = allFeaturedCatalog;
+      if (!products.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px;">No active products found</td></tr>';
+        document.getElementById('featured-page-label').textContent = 'Page 1';
+        document.getElementById('featured-prev-btn').disabled = true;
+        document.getElementById('featured-next-btn').disabled = true;
         return;
       }
-      tbody.innerHTML = users.map(function(u) {
+      var totalPages = Math.max(1, Math.ceil(products.length / FEATURED_PER_PAGE));
+      if (featuredPage >= totalPages) featuredPage = totalPages - 1;
+      if (featuredPage < 0) featuredPage = 0;
+      var start = featuredPage * FEATURED_PER_PAGE;
+      var pageProducts = products.slice(start, start + FEATURED_PER_PAGE);
+      tbody.innerHTML = pageProducts.map(function(p, idx) {
+        var name = esc(p.name || 'Unnamed product');
+        var category = esc(p.category || '—');
+        var ownerEmail = esc(p.seller_email || '—');
+        var sellerName = esc((p.seller_farm_name || '').trim() || (p.seller_account_name || '').trim() || '—');
+        var created = fmtDate(p.created_at);
+        var price = formatProductPrice(p);
+        var checked = p.is_featured ? 'checked' : '';
+        return '<tr>' +
+          '<td>' + (start + idx + 1) + '</td>' +
+          '<td><strong>' + name + '</strong></td>' +
+          '<td>' + category + '</td>' +
+          '<td style="font-size:.8rem;">' + ownerEmail + '</td>' +
+          '<td>' + sellerName + '</td>' +
+          '<td>' + price + '</td>' +
+          '<td>' + created + '</td>' +
+          '<td><label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;">' +
+            '<input type="checkbox" data-featured-toggle="1" data-product-id="' + esc(p.id) + '" ' + checked + ' />' +
+            '<span style="font-size:.78rem;color:var(--muted);">Ticker</span>' +
+          '</label></td>' +
+        '</tr>';
+      }).join('');
+      document.getElementById('featured-page-label').textContent = 'Page ' + (featuredPage + 1) + ' of ' + totalPages;
+      document.getElementById('featured-prev-btn').disabled = featuredPage === 0;
+      document.getElementById('featured-next-btn').disabled = featuredPage >= totalPages - 1;
+    }
+
+    function renderVerificationTable() {
+      var tbody = document.getElementById('verification-table-body');
+      var users = verificationQueueUsers || [];
+      if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px;">No pending or rejected verification items</td></tr>';
+        document.getElementById('verification-page-label').textContent = 'Page 1';
+        document.getElementById('verification-prev-btn').disabled = true;
+        document.getElementById('verification-next-btn').disabled = true;
+        return;
+      }
+      var totalPages = Math.max(1, Math.ceil(users.length / VERIFY_PER_PAGE));
+      if (verificationPage >= totalPages) verificationPage = totalPages - 1;
+      if (verificationPage < 0) verificationPage = 0;
+      var start = verificationPage * VERIFY_PER_PAGE;
+      var pageUsers = users.slice(start, start + VERIFY_PER_PAGE);
+      tbody.innerHTML = pageUsers.map(function(u, idx) {
         var name = esc((u.first_name || '') + ' ' + (u.last_name || '')).trim() || esc(u.email);
         var cs = (u.certification_status_db || u.certification_status || '').toLowerCase();
         var bs = (u.buyer_verification_status_db || u.buyer_verification_status || '').toLowerCase();
@@ -651,6 +770,7 @@
         var statusLabel = isRejected ? '<span class="badge rejected">Rejected</span>' : '<span class="badge pending">Pending Review</span>';
         var approveLabel = isRejected ? 'Re-approve' : 'Approve';
         return '<tr>' +
+          '<td>' + (start + idx + 1) + '</td>' +
           '<td><strong>' + name + '</strong></td>' +
           '<td>' + esc(u.email) + '</td>' +
           '<td>' + roleBadge(u.role) + '</td>' +
@@ -659,9 +779,12 @@
           '<td><div class="action-buttons">' +
             '<button type="button" class="btn btn-success btn-sm" data-verify-action="approve" data-user-id="' + esc(u.id) + '">' + approveLabel + '</button>' +
             '<button type="button" class="btn btn-danger btn-sm" data-verify-action="reject" data-user-id="' + esc(u.id) + '">Reject</button>' +
-            '<button type="button" class="btn btn-outline btn-sm" data-verify-action="message" data-user-id="' + esc(u.id) + '">Message User</button>' +
+            '<button type="button" class="btn btn-outline-on-light btn-sm" data-verify-action="message" data-user-id="' + esc(u.id) + '">Message User</button>' +
           '</div></td></tr>';
       }).join('');
+      document.getElementById('verification-page-label').textContent = 'Page ' + (verificationPage + 1) + ' of ' + totalPages;
+      document.getElementById('verification-prev-btn').disabled = verificationPage === 0;
+      document.getElementById('verification-next-btn').disabled = verificationPage >= totalPages - 1;
     }
 
     /* ── Tab Switching ── */
@@ -806,7 +929,6 @@
 
     /* ── Client Access (Super User) ── */
     var currentClientData = null;
-    var accessLog = [];
 
     async function accessClientAccount() {
       var email = document.getElementById('client-email').value.trim();
@@ -917,36 +1039,61 @@
     }
 
     function addAccessLog(user) {
-      accessLog.unshift({
+      accessLogRows.unshift({
         name: ((user.first_name || '') + ' ' + (user.last_name || '')).trim(),
         email: user.email,
         role: user.role || 'Unknown',
-        time: new Date().toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })
+        accessedAt: new Date().toLocaleString('en-KE', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })
       });
-      renderAccessLog();
+      accessLogPage = 0;
+      renderAccessLogPaged();
     }
 
-    function renderAccessLog() {
+    function renderAccessLogPaged() {
       var tbody = document.getElementById('access-log-body');
-      if (!accessLog.length) return;
-      tbody.innerHTML = accessLog.map(function(e) {
-        return '<tr><td><strong>' + esc(e.name) + '</strong></td><td>' + esc(e.email) + '</td><td>' + roleBadge(e.role) + '</td><td>' + e.time + '</td></tr>';
+      if (!tbody) return;
+      var rows = accessLogRows || [];
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:28px;">No client accounts accessed yet</td></tr>';
+        document.getElementById('access-log-page-label').textContent = 'Page 1';
+        document.getElementById('access-log-prev-btn').disabled = true;
+        document.getElementById('access-log-next-btn').disabled = true;
+        return;
+      }
+      var totalPages = Math.max(1, Math.ceil(rows.length / ACCESS_LOG_PER_PAGE));
+      if (accessLogPage >= totalPages) accessLogPage = totalPages - 1;
+      if (accessLogPage < 0) accessLogPage = 0;
+      var start = accessLogPage * ACCESS_LOG_PER_PAGE;
+      var slice = rows.slice(start, start + ACCESS_LOG_PER_PAGE);
+      tbody.innerHTML = slice.map(function(e) {
+        return '<tr><td><strong>' + esc(e.name || '—') + '</strong></td><td>' + esc(e.email || '') + '</td><td>' + roleBadge(e.role) + '</td><td>' + esc(e.accessedAt || '') + '</td></tr>';
       }).join('');
+      document.getElementById('access-log-page-label').textContent = 'Page ' + (accessLogPage + 1) + ' of ' + totalPages;
+      document.getElementById('access-log-prev-btn').disabled = accessLogPage === 0;
+      document.getElementById('access-log-next-btn').disabled = accessLogPage >= totalPages - 1;
     }
 
     async function loadImpersonationLogs() {
       try {
-        var res = await authFetch(API_BASE + '/auth/admin/impersonation-log?limit=30');
+        var res = await authFetch(API_BASE + '/auth/admin/impersonation-log?limit=120');
         if (!res.ok) return;
         var data = await res.json();
         var logs = (data.logs || []);
-        if (!logs.length) return;
-        var tbody = document.getElementById('access-log-body');
-        tbody.innerHTML = logs.map(function(row) {
-          var name = esc(((row.first_name || '') + ' ' + (row.last_name || '')).trim() || row.target_email || '');
-          return '<tr><td><strong>' + name + '</strong></td><td>' + esc(row.target_email || '') + '</td><td>' + roleBadge(row.role) + '</td><td>' + esc(String(row.created_at || '')) + '</td></tr>';
-        }).join('');
-      } catch (e) { console.warn('impersonation logs', e); }
+        accessLogRows = logs.map(function(row) {
+          var name = ((row.first_name || '') + ' ' + (row.last_name || '')).trim() || row.target_email || '';
+          var accessed = row.created_at ? new Date(row.created_at).toLocaleString('en-KE', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+          return {
+            name: name,
+            email: row.target_email || '',
+            role: row.role || 'Unknown',
+            accessedAt: accessed
+          };
+        });
+        accessLogPage = 0;
+        renderAccessLogPaged();
+      } catch (e) {
+        console.warn('impersonation logs', e);
+      }
     }
 
     document.getElementById('client-email').addEventListener('keydown', function(e) {
@@ -977,6 +1124,37 @@
     document.getElementById('users-filter-year').addEventListener('change', function() {
       usersPage = 0;
       renderUsersTable(allAdminUsers);
+    });
+    document.getElementById('users-filter-status').addEventListener('change', function() {
+      usersPage = 0;
+      renderUsersTable(allAdminUsers);
+    });
+
+    document.getElementById('verification-prev-btn').addEventListener('click', function() {
+      verificationPage -= 1;
+      renderVerificationTable();
+    });
+    document.getElementById('verification-next-btn').addEventListener('click', function() {
+      verificationPage += 1;
+      renderVerificationTable();
+    });
+
+    document.getElementById('featured-prev-btn').addEventListener('click', function() {
+      featuredPage -= 1;
+      renderFeaturedTable();
+    });
+    document.getElementById('featured-next-btn').addEventListener('click', function() {
+      featuredPage += 1;
+      renderFeaturedTable();
+    });
+
+    document.getElementById('access-log-prev-btn').addEventListener('click', function() {
+      accessLogPage -= 1;
+      renderAccessLogPaged();
+    });
+    document.getElementById('access-log-next-btn').addEventListener('click', function() {
+      accessLogPage += 1;
+      renderAccessLogPaged();
     });
   </script>
 </body>

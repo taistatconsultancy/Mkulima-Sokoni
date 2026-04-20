@@ -276,6 +276,42 @@ def get_products():
         return jsonify({'error': error_msg}), 500
 
 
+@products_bp.route('/admin/catalog', methods=['GET'])
+def admin_product_catalog():
+    """Admin-only: full product list with seller email / names for featured-item management."""
+    try:
+        _decoded, err = decode_token_if_admin()
+        if err:
+            resp, code = err
+            return resp, code
+
+        status = request.args.get('status', 'active')
+        limit = int(request.args.get('limit', 200))
+        offset = int(request.args.get('offset', 0))
+
+        products = Product.get_admin_product_catalog(
+            status=status,
+            limit=limit,
+            offset=offset,
+        )
+
+        products_list = []
+        for product in products:
+            product_dict = dict(product)
+            product_dict['id'] = str(product_dict['id'])
+            product_dict['farmer_profile_id'] = str(product_dict['farmer_profile_id'])
+            if 'seller_role' not in product_dict:
+                product_dict['seller_role'] = 'farmer'
+            products_list.append(product_dict)
+
+        return jsonify(products_list), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        logger.error(f"Admin catalog error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
 @products_bp.route('/featured', methods=['GET'])
 def get_featured_products():
     """Get featured products selected by admin-support."""

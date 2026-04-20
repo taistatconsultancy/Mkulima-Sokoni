@@ -328,13 +328,15 @@
   async function loadProducts() {
     const container = document.getElementById('products-container');
 
+    await loadFeaturedProducts();
+
     // Instant render from cache
     try {
       const cached = JSON.parse(sessionStorage.getItem('productsCache'));
       if (cached && cached.length) {
         allProducts = cached;
         renderProducts(cached);
-        renderProductTicker(featuredProducts.length ? featuredProducts : cached);
+        renderProductTicker(featuredProducts);
       }
     } catch(e) {}
 
@@ -347,7 +349,8 @@
       allProducts = products;
       try { sessionStorage.setItem('productsCache', JSON.stringify(products)); } catch(e) {}
       renderProducts(products);
-      renderProductTicker(featuredProducts.length ? featuredProducts : products);
+      await loadFeaturedProducts();
+      renderProductTicker(featuredProducts);
     } catch {
       if (!allProducts.length) {
         container.innerHTML = `
@@ -507,10 +510,10 @@
         applyFilters();
         loadFeaturedProducts()
           .then(function() {
-            renderProductTicker(featuredProducts.length ? featuredProducts : products);
+            renderProductTicker(featuredProducts);
           })
           .catch(function() {
-            renderProductTicker(products);
+            renderProductTicker([]);
           });
       },
     });

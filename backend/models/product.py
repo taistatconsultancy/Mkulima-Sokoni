@@ -190,6 +190,40 @@ class Product:
             raise
 
     @staticmethod
+    def get_admin_product_catalog(status='active', limit=200, offset=0):
+        """
+        All listings for admin dashboard (no marketplace verification filter).
+        Includes seller email and display names for management UI.
+        """
+        try:
+            limit = max(1, min(int(limit), 500))
+            offset = max(0, int(offset))
+            query = """
+                SELECT p.*,
+                       fp.farm_name AS seller_farm_name,
+                       u.email AS seller_email,
+                       NULLIF(TRIM(CONCAT_WS(' ', NULLIF(TRIM(u.first_name), ''), NULLIF(TRIM(u.last_name), ''))), '') AS seller_account_name,
+                       COALESCE(
+                         (SELECT ur.role FROM user_roles ur
+                          JOIN farmer_profiles fp2 ON fp2.user_id = ur.user_id
+                          WHERE fp2.id = p.farmer_profile_id
+                          LIMIT 1),
+                         'farmer'
+                       ) AS seller_role
+                FROM products p
+                INNER JOIN farmer_profiles fp ON fp.id = p.farmer_profile_id
+                INNER JOIN users u ON u.id = fp.user_id
+                WHERE p.status = %s
+                ORDER BY p.created_at DESC
+                LIMIT %s OFFSET %s
+            """
+            result = execute_query(query, (status, limit, offset), fetch_all=True)
+            return result if result else []
+        except Exception as e:
+            logger.error(f"Error getting admin product catalog: {str(e)}")
+            raise
+
+    @staticmethod
     def get_marketplace_meta(status='active', category=None, product_type=None):
         """
         Cheap aggregate for polling: active listing count and latest updated_at.

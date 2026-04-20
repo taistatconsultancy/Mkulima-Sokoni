@@ -510,6 +510,11 @@
             '<tbody data-ssc-admin-list></tbody>',
           '</table>',
         '</div>',
+        '<div class="ssc-inline" style="justify-content:flex-end;flex-wrap:wrap;gap:8px;padding-top:12px;">',
+          '<button type="button" class="ssc-btn ssc-btn-outline" data-ssc-admin-page-prev>Previous</button>',
+          '<span data-ssc-admin-page-label style="font-size:.8rem;color:var(--muted, #6B705C);">Page 1</span>',
+          '<button type="button" class="ssc-btn ssc-btn-outline" data-ssc-admin-page-next>Next</button>',
+        '</div>',
       '</div>',
       '<div class="ssc-modal" data-ssc-admin-modal>',
         '<div class="ssc-modal-card">',
@@ -536,14 +541,29 @@
     }).join('');
   }
 
+  var ADMIN_TICKETS_PER_PAGE = 10;
+
   function renderAdminList(state) {
     var list = state.root.querySelector('[data-ssc-admin-list]');
-    if (!state.tickets.length) {
+    var label = state.root.querySelector('[data-ssc-admin-page-label]');
+    var all = state.allTickets || state.tickets || [];
+    if (!all.length) {
       list.innerHTML = '<tr><td colspan="7"><div class="ssc-empty">No tickets match the current filters.</div></td></tr>';
+      if (label) label.textContent = 'Page 1';
+      var b0 = state.root.querySelector('[data-ssc-admin-page-prev]');
+      var b1 = state.root.querySelector('[data-ssc-admin-page-next]');
+      if (b0) b0.disabled = true;
+      if (b1) b1.disabled = true;
       return;
     }
+    var page = Math.max(0, state.adminTicketPage || 0);
+    var totalPages = Math.max(1, Math.ceil(all.length / ADMIN_TICKETS_PER_PAGE));
+    if (page >= totalPages) page = totalPages - 1;
+    state.adminTicketPage = page;
+    var start = page * ADMIN_TICKETS_PER_PAGE;
+    var slice = all.slice(start, start + ADMIN_TICKETS_PER_PAGE);
 
-    list.innerHTML = state.tickets.map(function (ticket) {
+    list.innerHTML = slice.map(function (ticket) {
       return [
         '<tr>',
           '<td><strong>' + escapeHtml(ticket.ticket_number) + '</strong><br /><span class="ssc-note">' + escapeHtml(ticket.subject) + '</span></td>',
@@ -556,6 +576,12 @@
         '</tr>'
       ].join('');
     }).join('');
+
+    if (label) label.textContent = 'Page ' + (page + 1) + ' of ' + totalPages;
+    var prevB = state.root.querySelector('[data-ssc-admin-page-prev]');
+    var nextB = state.root.querySelector('[data-ssc-admin-page-next]');
+    if (prevB) prevB.disabled = page === 0;
+    if (nextB) nextB.disabled = page >= totalPages - 1;
   }
 
   function renderAdminTicket(state, ticket) {
@@ -645,7 +671,9 @@
     }
 
     var payload = await requestJson(SUPPORT_API_BASE + '/admin/tickets' + (query.toString() ? '?' + query.toString() : ''));
-    state.tickets = payload.tickets || [];
+    state.allTickets = payload.tickets || [];
+    state.tickets = state.allTickets;
+    state.adminTicketPage = 0;
     renderAdminList(state);
   }
 
@@ -660,9 +688,19 @@
       var view = event.target.closest('[data-ssc-admin-view]');
       var close = event.target.closest('[data-ssc-admin-close]');
       var assign = event.target.closest('[data-ssc-admin-assign]');
+      var pagePrev = event.target.closest('[data-ssc-admin-page-prev]');
+      var pageNext = event.target.closest('[data-ssc-admin-page-next]');
       var modal = state.root.querySelector('[data-ssc-admin-modal]');
 
       try {
+        if (pagePrev && !pagePrev.disabled) {
+          state.adminTicketPage = (state.adminTicketPage || 0) - 1;
+          renderAdminList(state);
+        }
+        if (pageNext && !pageNext.disabled) {
+          state.adminTicketPage = (state.adminTicketPage || 0) + 1;
+          renderAdminList(state);
+        }
         if (refresh) {
           await runWithButtonLoading(refresh, 'Refreshing…', async function () {
             await loadAdminStats(state);
@@ -824,6 +862,8 @@
       root: root,
       adminEmail: options.adminEmail || 'admin@mkulimasokoni.com',
       tickets: [],
+      allTickets: [],
+      adminTicketPage: 0,
       activeTicketId: null
     };
 
