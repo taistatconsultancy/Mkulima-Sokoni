@@ -169,6 +169,39 @@
     .mk-pagination button:disabled{opacity:.4;cursor:not-allowed;}
 
     .img-preview{max-width:100%;max-height:200px;border-radius:10px;margin-top:8px;display:none;border:2px solid var(--border);}
+    .chat-shell { display:grid; grid-template-columns:320px 1fr; gap:14px; min-height:520px; }
+    .chat-list { background:#fff; border:1.5px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; }
+    .chat-list-head { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--cream); }
+    .chat-list-title { font-weight:800; color:var(--forest); }
+    .chat-refresh-btn { border:1.5px solid var(--leaf); background:#fff; color:var(--leaf); border-radius:999px; padding:6px 12px; font-size:.75rem; font-weight:700; cursor:pointer; }
+    .chat-items { overflow-y:auto; }
+    .chat-item { padding:12px 14px; border-bottom:1px solid var(--border); cursor:pointer; display:flex; gap:10px; align-items:flex-start; transition:background .15s; }
+    .chat-item:hover { background:rgba(27,67,50,.03); }
+    .chat-item.active { background:rgba(116,198,157,.12); }
+    .chat-avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--leaf),var(--lime)); color:#fff; font-weight:700; display:grid; place-items:center; font-size:.8rem; flex-shrink:0; }
+    .chat-item-main { flex:1; min-width:0; }
+    .chat-item-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .chat-item-name { font-weight:800; font-size:.84rem; color:var(--ink); }
+    .chat-item-time { font-size:.72rem; color:var(--muted); flex-shrink:0; }
+    .chat-item-snippet { font-size:.78rem; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .chat-unread-pill { background:#ef4444; color:#fff; font-weight:800; font-size:.7rem; padding:2px 8px; border-radius:999px; margin-left:8px; flex-shrink:0; }
+    .chat-thread { background:#fff; border:1.5px solid var(--border); border-radius:16px; display:flex; flex-direction:column; min-height:520px; box-shadow:var(--shadow-sm); }
+    .chat-thread-head { padding:14px 16px; border-bottom:1px solid var(--border); background:var(--cream); }
+    .chat-thread-title { font-weight:800; color:var(--forest); }
+    .chat-thread-body { flex:1; padding:14px; overflow-y:auto; background:#f7fdf9; }
+    .chat-empty { color:var(--muted); font-size:.82rem; padding:18px 10px; text-align:center; }
+    .chat-bubble { max-width:78%; padding:8px 10px; border-radius:14px; font-size:.84rem; margin-bottom:6px; word-break:break-word; }
+    .chat-bubble.me { margin-left:auto; background:#d1f7c4; border-bottom-right-radius:4px; }
+    .chat-bubble.them { margin-right:auto; background:#fff; border-bottom-left-radius:4px; }
+    .chat-meta { display:block; margin-top:4px; font-size:.68rem; opacity:.75; }
+    .chat-thread-foot { border-top:1px solid var(--border); padding:10px; background:#fff; }
+    .chat-input-row { display:flex; gap:8px; align-items:flex-end; }
+    .chat-input-row textarea { flex:1; min-height:44px; max-height:150px; resize:vertical; border:1.5px solid var(--border); border-radius:12px; padding:9px 10px; font-family:'DM Sans',sans-serif; font-size:.84rem; background:var(--cream); }
+    .chat-send-btn { padding:9px 14px; border-radius:999px; border:none; background:#25D366; color:#fff; font-size:.82rem; font-weight:800; cursor:pointer; white-space:nowrap; box-shadow:0 3px 8px rgba(37,211,102,.35); }
+    .chat-send-btn:disabled { opacity:.6; cursor:not-allowed; box-shadow:none; }
+    .chat-note { font-size:.72rem; color:var(--muted); margin-top:8px; }
+    .messages-nav-dot{display:none;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-left:6px;}
+    .messages-nav-dot.show{display:inline-block;}
 
     /* Footer — matches index.html */
     footer{background:var(--forest);padding:52px 28px 0;margin-top:40px;}
@@ -195,7 +228,7 @@
     .footer-badge{font-size:.68rem;color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:3px 10px;}
 
     @media(max-width:1000px){.footer-grid{grid-template-columns:1fr 1fr 1fr;}.footer-brand-col{grid-column:1/-1;}}
-    @media(max-width:768px){.topbar-nav{display:none;}.mobile-account-btn{display:inline-flex;align-items:center;}.wrap{padding:18px 14px;}.form-grid{grid-template-columns:1fr;}.form-full{grid-column:1;}.stats-grid{grid-template-columns:1fr 1fr;}.mk-grid{grid-template-columns:1fr 1fr;}.footer-grid{grid-template-columns:1fr 1fr;gap:24px;}.footer-grid>div:first-child{grid-column:1/-1;}}
+    @media(max-width:768px){.topbar-nav{display:none;}.mobile-account-btn{display:inline-flex;align-items:center;}.wrap{padding:18px 14px;}.form-grid{grid-template-columns:1fr;}.form-full{grid-column:1;}.stats-grid{grid-template-columns:1fr 1fr;}.mk-grid{grid-template-columns:1fr 1fr;}.chat-shell{grid-template-columns:1fr;min-height:auto;}.chat-thread{min-height:460px;}.footer-grid{grid-template-columns:1fr 1fr;gap:24px;}.footer-grid>div:first-child{grid-column:1/-1;}}
     @media(max-width:480px){.stats-grid{grid-template-columns:1fr;}.mk-grid{grid-template-columns:1fr;}.footer-grid{grid-template-columns:1fr;}}
   </style>
 </head>
@@ -232,9 +265,9 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
     <button class="topbar-nav-link active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
     <button class="topbar-nav-link" onclick="showPage('inventory',this)">📦 My Products</button>
     <button class="topbar-nav-link" onclick="showPage('add-product',this)">➕ Add Product</button>
-    <button class="topbar-nav-link" onclick="showPage('marketplace',this)">🛒 Marketplace</button>
     <button class="topbar-nav-link" onclick="showPage('orders',this)">🛒 Orders</button>
     <button class="topbar-nav-link" onclick="showPage('tenders',this)">📋 Tenders</button>
+    <button class="topbar-nav-link" onclick="showPage('messages',this)">💬 Messages <span id="dealerMessagesNavDot" class="messages-nav-dot"></span></button>
     <button class="topbar-nav-link" onclick="showPage('support',this)">💬 Support</button>
   </nav>
   <div class="topbar-right">
@@ -425,6 +458,42 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
           </thead>
           <tbody id="dealerTendersBody"></tbody>
         </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MESSAGES ── -->
+<div id="messages" class="page-section">
+  <div class="wrap">
+    <div class="section-card">
+      <h2>💬 Messages</h2>
+      <p class="sub">Chat with buyers and follow updates in one inbox.</p>
+      <div class="chat-shell">
+        <div class="chat-list">
+          <div class="chat-list-head">
+            <div class="chat-list-title">Inbox</div>
+            <button class="chat-refresh-btn" onclick="refreshDealerInbox()">Refresh</button>
+          </div>
+          <div class="chat-items" id="dealerChatInbox">
+            <div class="chat-empty">Loading conversations…</div>
+          </div>
+        </div>
+        <div class="chat-thread">
+          <div class="chat-thread-head">
+            <div class="chat-thread-title" id="dealerChatThreadTitle">Select a conversation</div>
+          </div>
+          <div class="chat-thread-body" id="dealerChatThreadBody">
+            <div class="chat-empty">Choose a conversation from your inbox.</div>
+          </div>
+          <div class="chat-thread-foot">
+            <div class="chat-input-row">
+              <textarea id="dealerReplyInput" placeholder="Type your message…" disabled></textarea>
+              <button class="chat-send-btn" id="dealerReplySendBtn" onclick="sendDealerReply()" disabled>Send</button>
+            </div>
+            <div class="chat-note">Replies refresh automatically while this tab is open.</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -633,6 +702,11 @@ let dealerOrdersPollTimer = null;
 let dealerTendersPollTimer = null;
 let dealerOrdersLoading = false;
 let dealerTendersLoading = false;
+let dealerInboxPollTimer = null;
+let dealerInboxLoading = false;
+let dealerThreadLoading = false;
+let dealerActiveConversationId = null;
+let dealerInboxCache = [];
 function activeDealerPage() {
   const active = document.querySelector('.page-section.active');
   return active ? active.id : '';
@@ -672,6 +746,20 @@ function stopDealerCommercePolling() {
   if (dealerTendersPollTimer) clearInterval(dealerTendersPollTimer);
   dealerOrdersPollTimer = dealerTendersPollTimer = null;
 }
+function stopDealerInboxPolling() {
+  if (dealerInboxPollTimer) clearInterval(dealerInboxPollTimer);
+  dealerInboxPollTimer = null;
+}
+function startDealerInboxPolling() {
+  stopDealerInboxPolling();
+  const tick = async () => {
+    if (!document.hidden && activeDealerPage() === 'messages' && !dealerInboxLoading) {
+      await loadDealerInbox(true);
+    }
+    dealerInboxPollTimer = setTimeout(tick, nextPollDelay(12000));
+  };
+  dealerInboxPollTimer = setTimeout(tick, nextPollDelay(12000));
+}
 function startDealerOrdersPolling() {
   if (dealerOrdersPollTimer) return;
   const tick = async () => {
@@ -701,9 +789,11 @@ function showPage(name, btn) {
   if (btn && btn.classList) btn.classList.add('active');
   window.scrollTo({top:0,behavior:'smooth'});
   stopDealerCommercePolling();
+  stopDealerInboxPolling();
   if (name === 'profile' && firebaseUid) loadProfile();
   if (name === 'orders') { setTimeout(() => loadDealerOrders(false), 240); startDealerOrdersPolling(); }
   if (name === 'tenders') { setTimeout(() => loadDealerTenders(false), 360); startDealerTendersPolling(); }
+  if (name === 'messages') { setTimeout(() => loadDealerInbox(false).then(() => startDealerInboxPolling()), 260); }
 }
 
 function previewImg(input) {
@@ -799,6 +889,8 @@ document.addEventListener('visibilitychange', function() {
   enforceAgroProfileCompletion(true);
   var sec = document.getElementById('profile');
   if (sec && sec.classList.contains('active') && firebaseUid) loadProfile();
+  var msgSec = document.getElementById('messages');
+  if (msgSec && msgSec.classList.contains('active') && firebaseUid) loadDealerInbox(true);
 });
 
 /* ── Load my products ── */
@@ -1191,6 +1283,173 @@ async function saveProfile(e) {
 function formatKsh(n) {
   const x = Number(n || 0);
   try { return 'KSh ' + x.toLocaleString(undefined, { maximumFractionDigits: 2 }); } catch { return 'KSh ' + x; }
+}
+
+function _getDealerUserId() {
+  try {
+    const u = JSON.parse(localStorage.getItem('user') || 'null');
+    return u && u.id ? String(u.id) : null;
+  } catch { return null; }
+}
+
+function escapeHtml(s) {
+  return (s || '').toString().replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function refreshDealerInbox() {
+  loadDealerInbox(false);
+}
+
+async function loadDealerInbox(silent = false) {
+  if (!firebaseUid) {
+    var noAuthInbox = document.getElementById('dealerChatInbox');
+    if (noAuthInbox) noAuthInbox.innerHTML = '<div class="chat-empty">Please sign in to view messages.</div>';
+    return;
+  }
+  if (dealerInboxLoading) return;
+  dealerInboxLoading = true;
+  try {
+    var inboxEl = document.getElementById('dealerChatInbox');
+    if (!silent && inboxEl && !dealerInboxCache.length) inboxEl.innerHTML = '<div class="chat-empty">Loading conversations…</div>';
+    var cached = sessionStorage.getItem('dealerInboxCache');
+    if (!silent && cached && !dealerInboxCache.length) {
+      dealerInboxCache = JSON.parse(cached);
+      renderDealerInbox(dealerInboxCache);
+      updateDealerUnreadDot(dealerInboxCache);
+    }
+    const res = await fetch(`${API}/chat/conversations?firebase_uid=${encodeURIComponent(firebaseUid)}&role=agro-dealer`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to load messages inbox');
+    dealerInboxCache = data.conversations || [];
+    try { sessionStorage.setItem('dealerInboxCache', JSON.stringify(dealerInboxCache)); } catch (e) {}
+    renderDealerInbox(dealerInboxCache);
+    stampLastUpdated('messages');
+    updateDealerUnreadDot(dealerInboxCache);
+    if (dealerActiveConversationId) await loadDealerThread(dealerActiveConversationId, true);
+  } catch (e) {
+    console.error(e);
+    var inboxFail = document.getElementById('dealerChatInbox');
+    if (inboxFail) inboxFail.innerHTML = '<div class="chat-empty">Unable to load messages inbox.</div>';
+  } finally {
+    dealerInboxLoading = false;
+  }
+}
+
+function renderDealerInbox(conversations) {
+  const inboxEl = document.getElementById('dealerChatInbox');
+  if (!inboxEl) return;
+  if (!conversations.length) {
+    inboxEl.innerHTML = '<div class="chat-empty">No conversations yet. Buyers can message you from your listings.</div>';
+    return;
+  }
+  inboxEl.innerHTML = conversations.map(c => {
+    const id = c.id;
+    const name = (c.buyer_name || c.other_party_name || c.buyer_email || 'Buyer').toString();
+    const snippet = (c.last_message_body || '').toString();
+    const t = c.last_message_created_at || c.last_message_at || c.created_at;
+    const time = t ? new Date(t).toLocaleDateString('en-KE',{month:'short',day:'numeric'}) : '';
+    const unread = Number(c.unread_count || 0);
+    const initials = name.trim().charAt(0).toUpperCase() || 'B';
+    return `
+      <div class="chat-item ${dealerActiveConversationId===id?'active':''}" onclick="openDealerConversation('${id}')">
+        <div class="chat-avatar">${initials}</div>
+        <div class="chat-item-main">
+          <div class="chat-item-top">
+            <div class="chat-item-name">${escapeHtml(name)}</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${unread>0 ? `<span class="chat-unread-pill">${unread}</span>` : ''}
+              <span class="chat-item-time">${escapeHtml(time)}</span>
+            </div>
+          </div>
+          <div class="chat-item-snippet">${escapeHtml(snippet || '—')}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function updateDealerUnreadDot(conversations) {
+  const dot = document.getElementById('dealerMessagesNavDot');
+  if (!dot) return;
+  const unread = (conversations || []).reduce((sum, c) => sum + Number(c.unread_count || 0), 0);
+  dot.classList.toggle('show', unread > 0);
+}
+
+async function openDealerConversation(conversationId) {
+  dealerActiveConversationId = conversationId;
+  renderDealerInbox(dealerInboxCache);
+  await loadDealerThread(conversationId, false);
+}
+
+async function loadDealerThread(conversationId, silent = false) {
+  if (dealerThreadLoading) return;
+  dealerThreadLoading = true;
+  const bodyEl = document.getElementById('dealerChatThreadBody');
+  const titleEl = document.getElementById('dealerChatThreadTitle');
+  const input = document.getElementById('dealerReplyInput');
+  const sendBtn = document.getElementById('dealerReplySendBtn');
+  if (!firebaseUid) { dealerThreadLoading = false; return; }
+  if (!silent && bodyEl) bodyEl.innerHTML = '<div class="chat-empty">Loading messages…</div>';
+  try {
+    const res = await fetch(`${API}/chat/conversations/${conversationId}/messages?firebase_uid=${encodeURIComponent(firebaseUid)}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to load conversation');
+    const msgs = data.messages || [];
+    const convo = data.conversation || {};
+    const chatName = convo.buyer_name || convo.other_party_name || convo.buyer_email || 'Conversation';
+    if (titleEl) titleEl.textContent = `Chat • ${chatName}`;
+    renderDealerThread(msgs);
+    if (input) input.disabled = false;
+    if (sendBtn) sendBtn.disabled = false;
+    await loadDealerInbox(true);
+  } catch (e) {
+    console.error(e);
+    if (bodyEl) bodyEl.innerHTML = '<div class="chat-empty">Unable to load conversation.</div>';
+  } finally {
+    dealerThreadLoading = false;
+  }
+}
+
+function renderDealerThread(messages) {
+  const bodyEl = document.getElementById('dealerChatThreadBody');
+  if (!bodyEl) return;
+  if (!messages.length) {
+    bodyEl.innerHTML = '<div class="chat-empty">No messages yet.</div>';
+    return;
+  }
+  const myUserId = _getDealerUserId();
+  bodyEl.innerHTML = messages.map(m => {
+    const mine = myUserId && String(m.sender_user_id) === myUserId;
+    const cls = mine ? 'chat-bubble me' : 'chat-bubble them';
+    const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="${cls}"><div>${escapeHtml(m.body || '')}</div>${time?`<span class="chat-meta">${escapeHtml(time)}</span>`:''}</div>`;
+  }).join('');
+  bodyEl.scrollTop = bodyEl.scrollHeight;
+}
+
+async function sendDealerReply() {
+  if (!dealerActiveConversationId || !firebaseUid) return;
+  const input = document.getElementById('dealerReplyInput');
+  const btn = document.getElementById('dealerReplySendBtn');
+  if (!input || !btn) return;
+  const text = (input.value || '').trim();
+  if (!text) return;
+  try {
+    btn.disabled = true;
+    const res = await fetch(`${API}/chat/conversations/${dealerActiveConversationId}/messages`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ firebase_uid: firebaseUid, body: text })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.message) throw new Error(data.error || 'Failed to send message');
+    input.value = '';
+    await loadDealerThread(dealerActiveConversationId, true);
+  } catch (e) {
+    console.error(e);
+    await uiAlert(e.message || 'Unable to send message.', 'Message error');
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function loadDealerOrders(silent=false) {
