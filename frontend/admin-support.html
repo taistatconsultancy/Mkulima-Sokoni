@@ -267,6 +267,7 @@
           <button type="button" class="tab" onclick="switchTab(event, 'tickets')">🎫 Support Tickets</button>
           <button type="button" class="tab" onclick="switchTab(event, 'client-access')">🔑 Client Access</button>
           <button type="button" class="tab" onclick="switchTab(event, 'analytics')">📊 Analytics</button>
+          <button type="button" class="tab" onclick="switchTab(event, 'permanent-delete')">🗑️ Permanent Deletion</button>
         </div>
 
         <!-- Users Tab -->
@@ -283,6 +284,15 @@
                   <option value="pending">Pending</option>
                   <option value="rejected">Rejected</option>
                   <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Role</label>
+                <select id="users-filter-role" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;min-width:140px;">
+                  <option value="">All roles</option>
+                  <option value="farmer">Farmer</option>
+                  <option value="buyer">Buyer</option>
+                  <option value="agro-dealer">Agro-Dealer</option>
                 </select>
               </div>
               <div>
@@ -319,6 +329,38 @@
           <div class="section-card">
             <h2 class="section-title">Verification Queue ⏳</h2>
             <p style="color:var(--muted);margin-bottom:18px;">Review pending accounts and re-approve rejected accounts</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
+              <div>
+                <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Role</label>
+                <select id="verification-filter-role" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;min-width:140px;">
+                  <option value="">All roles</option>
+                  <option value="farmer">Farmer</option>
+                  <option value="buyer">Buyer</option>
+                  <option value="agro-dealer">Agro-Dealer</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Status</label>
+                <select id="verification-filter-status" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;min-width:140px;">
+                  <option value="">All statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="verified">Verified</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Month</label>
+                <select id="verification-filter-month" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;">
+                  <option value="">All</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Year</label>
+                <select id="verification-filter-year" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;">
+                  <option value="">All</option>
+                </select>
+              </div>
+            </div>
             <div style="overflow-x:auto;">
               <table>
                 <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Submitted</th><th>Status</th><th>Actions</th></tr></thead>
@@ -427,6 +469,22 @@
               <span id="access-log-page-label" style="font-size:.8rem;color:var(--muted);">Page 1</span>
               <button class="btn btn-outline-on-light btn-sm" type="button" id="access-log-next-btn">Next</button>
             </div>
+          </div>
+        </div>
+
+        <!-- Permanent Delete Tab -->
+        <div id="permanent-delete" class="tab-content">
+          <div class="section-card">
+            <h2 class="section-title">Permanent Account Deletion 🗑️</h2>
+            <p style="color:var(--danger);margin-bottom:12px;font-weight:600;">This action permanently removes a user and related Neon records, and attempts Cloudinary asset deletion.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;max-width:700px;">
+              <div style="flex:1;min-width:280px;">
+                <label style="display:block;font-size:.8rem;font-weight:600;margin-bottom:5px;">User Email</label>
+                <input type="email" id="delete-user-email" placeholder="user@example.com" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:.88rem;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--cream);outline:none;" />
+              </div>
+              <button class="btn btn-danger" type="button" id="permanent-delete-btn">Delete Permanently</button>
+            </div>
+            <div id="permanent-delete-feedback" style="display:none;margin-top:14px;padding:10px 12px;border-radius:9px;font-size:.85rem;"></div>
           </div>
         </div>
 
@@ -612,9 +670,18 @@
 
     function filteredUsers(users) {
       var statusVal = (document.getElementById('users-filter-status')?.value || '').toLowerCase();
+      var roleVal = (document.getElementById('users-filter-role')?.value || '').toLowerCase();
       var monthVal = document.getElementById('users-filter-month')?.value || '';
       var yearVal = document.getElementById('users-filter-year')?.value || '';
       return (users || []).filter(function(u) {
+        var role = String(u.role || '').toLowerCase();
+        if (roleVal) {
+          if (roleVal === 'agro-dealer') {
+            if (role !== 'agro-dealer' && role !== 'agrodealer') return false;
+          } else if (role !== roleVal) {
+            return false;
+          }
+        }
         if (statusVal) {
           var st = userCombinedStatus(u);
           if (st !== statusVal) return false;
@@ -682,6 +749,12 @@
         .sort().reverse()
         .map(function(y){ return '<option value="' + y + '">' + y + '</option>'; })
         .join('');
+      var vMonth = document.getElementById('verification-filter-month');
+      var vYear = document.getElementById('verification-filter-year');
+      if (vMonth && vYear) {
+        vMonth.innerHTML = monthSelect.innerHTML;
+        vYear.innerHTML = yearSelect.innerHTML;
+      }
     }
 
     function formatProductPrice(p) {
@@ -763,7 +836,31 @@
 
     function renderVerificationTable() {
       var tbody = document.getElementById('verification-table-body');
-      var users = verificationQueueUsers || [];
+      var users = (verificationQueueUsers || []).filter(function(u) {
+        var roleVal = (document.getElementById('verification-filter-role')?.value || '').toLowerCase();
+        var statusVal = (document.getElementById('verification-filter-status')?.value || '').toLowerCase();
+        var monthVal = document.getElementById('verification-filter-month')?.value || '';
+        var yearVal = document.getElementById('verification-filter-year')?.value || '';
+        var role = String(u.role || '').toLowerCase();
+        if (roleVal) {
+          if (roleVal === 'agro-dealer') {
+            if (role !== 'agro-dealer' && role !== 'agrodealer') return false;
+          } else if (role !== roleVal) {
+            return false;
+          }
+        }
+        var cs = (u.certification_status_db || u.certification_status || '').toLowerCase();
+        var bs = (u.buyer_verification_status_db || u.buyer_verification_status || '').toLowerCase();
+        var rowStatus = (cs === 'rejected' || bs === 'rejected') ? 'rejected' : 'pending';
+        if (statusVal && statusVal !== rowStatus) return false;
+        if (!monthVal && !yearVal) return true;
+        if (!u.created_at) return false;
+        var d = new Date(u.created_at);
+        if (isNaN(d.getTime())) return false;
+        if (monthVal && String(d.getMonth() + 1) !== monthVal) return false;
+        if (yearVal && String(d.getFullYear()) !== yearVal) return false;
+        return true;
+      });
       if (!users.length) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px;">No pending or rejected verification items</td></tr>';
         document.getElementById('verification-page-label').textContent = 'Page 1';
@@ -1153,6 +1250,54 @@
       if (e.key === 'Enter') { e.preventDefault(); accessClientAccount(); }
     });
 
+    async function deleteUserPermanently() {
+      var email = (document.getElementById('delete-user-email') || {}).value || '';
+      email = email.trim();
+      var feedback = document.getElementById('permanent-delete-feedback');
+      var btn = document.getElementById('permanent-delete-btn');
+      if (!email) {
+        if (feedback) {
+          feedback.style.display = 'block';
+          feedback.style.background = '#fef2f2';
+          feedback.style.color = '#991b1b';
+          feedback.style.border = '1px solid #fecaca';
+          feedback.textContent = 'Please enter a user email.';
+        }
+        return;
+      }
+      if (!confirm('Permanently delete ' + email + ' and all associated data?')) return;
+      if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
+      try {
+        var lookup = await authFetch(API_BASE + '/auth/user-by-email?email=' + encodeURIComponent(email));
+        var lookupData = await lookup.json().catch(function(){ return {}; });
+        if (!lookup.ok) throw new Error(lookupData.error || 'User lookup failed');
+        var user = lookupData.user || {};
+        var del = await authFetch(API_BASE + '/auth/admin/users/' + encodeURIComponent(user.id) + '/permanent-delete', { method: 'DELETE' });
+        var delData = await del.json().catch(function(){ return {}; });
+        if (!del.ok) throw new Error(delData.error || 'Permanent delete failed');
+        if (feedback) {
+          feedback.style.display = 'block';
+          feedback.style.background = '#ecfdf5';
+          feedback.style.color = '#065f46';
+          feedback.style.border = '1px solid #a7f3d0';
+          feedback.textContent = 'Deleted ' + email + '. Cloudinary removed: ' + ((delData.cloudinary && delData.cloudinary.deleted) || 0) + ', failed: ' + ((delData.cloudinary && delData.cloudinary.failed) || 0) + '.';
+        }
+        document.getElementById('delete-user-email').value = '';
+        await loadAdminUsers();
+        await loadAdminStats();
+      } catch (e) {
+        if (feedback) {
+          feedback.style.display = 'block';
+          feedback.style.background = '#fef2f2';
+          feedback.style.color = '#991b1b';
+          feedback.style.border = '1px solid #fecaca';
+          feedback.textContent = e.message || 'Delete failed';
+        }
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Delete Permanently'; }
+      }
+    }
+
     function logout() {
       if (!confirm('Are you sure you want to logout?')) return;
       if (typeof window.__adminSignOut === 'function') {
@@ -1182,6 +1327,10 @@
       usersPage = 0;
       renderUsersTable(allAdminUsers);
     });
+    document.getElementById('users-filter-role').addEventListener('change', function() {
+      usersPage = 0;
+      renderUsersTable(allAdminUsers);
+    });
 
     document.getElementById('verification-prev-btn').addEventListener('click', function() {
       verificationPage -= 1;
@@ -1190,6 +1339,14 @@
     document.getElementById('verification-next-btn').addEventListener('click', function() {
       verificationPage += 1;
       renderVerificationTable();
+    });
+    ['verification-filter-role','verification-filter-status','verification-filter-month','verification-filter-year'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('change', function() {
+        verificationPage = 0;
+        renderVerificationTable();
+      });
     });
 
     document.getElementById('featured-prev-btn').addEventListener('click', function() {
@@ -1209,6 +1366,7 @@
       accessLogPage += 1;
       renderAccessLogPaged();
     });
+    document.getElementById('permanent-delete-btn')?.addEventListener('click', deleteUserPermanently);
   </script>
 </body>
 </html>

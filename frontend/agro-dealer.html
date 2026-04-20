@@ -125,6 +125,15 @@
     .btn-sm:hover{background:var(--leaf);color:#fff;}
     .btn-sm.solid{background:var(--forest);color:#fff;border-color:var(--forest);}
     .btn-sm.solid:hover{background:var(--leaf);border-color:var(--leaf);}
+    .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:#fff;}
+    table{width:100%;border-collapse:collapse;min-width:700px;}
+    thead{background:var(--forest);color:#fff;}
+    th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:.82rem;}
+    .status-pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:.72rem;font-weight:700;}
+    .status-pill.pending,.status-pill.bidding{background:rgba(245,158,11,.15);color:#b45309;}
+    .status-pill.open,.status-pill.confirmed{background:rgba(59,130,246,.15);color:#1d4ed8;}
+    .status-pill.completed{background:rgba(16,185,129,.15);color:#047857;}
+    .status-pill.rejected{background:rgba(239,68,68,.15);color:#b91c1c;}
 
     .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
     .form-full{grid-column:1/-1;}
@@ -147,7 +156,7 @@
     .inv-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;overflow:hidden;transition:all .2s;}
     .inv-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--lime);}
     .inv-card-img{height:140px;background:var(--cream);display:grid;place-items:center;overflow:hidden;}
-    .inv-card-img img{width:100%;height:100%;object-fit:cover;}
+    .inv-card-img img{width:100%;height:100%;object-fit:contain;background:#f7f7f7;}
     .inv-card-body{padding:14px;}
     .inv-card-name{font-weight:700;font-size:.9rem;margin-bottom:4px;}
     .inv-card-price{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--forest);margin-bottom:4px;}
@@ -159,7 +168,7 @@
     .mk-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;overflow:hidden;transition:all .2s;cursor:pointer;}
     .mk-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--lime);}
     .mk-card-img{height:130px;background:var(--cream);display:grid;place-items:center;overflow:hidden;font-size:32px;}
-    .mk-card-img img{width:100%;height:100%;object-fit:cover;}
+    .mk-card-img img{width:100%;height:100%;object-fit:contain;background:#f7f7f7;}
     .mk-card-body{padding:12px;}
     .mk-card-name{font-weight:700;font-size:.85rem;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .mk-card-price{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;color:var(--forest);margin-bottom:2px;}
@@ -363,11 +372,23 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
           </div>
           <div class="form-group">
             <label>Category *</label>
-            <select id="ap-category" required>
+            <select id="ap-category" required onchange="syncAgroUnitsByCategory()">
               <option value="">Select category</option>
-              <option value="Machinery">Machinery</option>
-              <option value="Fertilizer">Fertilizer</option>
               <option value="Seeds">Seeds</option>
+              <option value="Seedlings">Seedlings</option>
+              <option value="Fertilizer">Fertilizer</option>
+              <option value="Fertilizers">Fertilizers</option>
+              <option value="Pesticides">Pesticides</option>
+              <option value="Herbicides">Herbicides</option>
+              <option value="Insecticides">Insecticides</option>
+              <option value="Machinery">Machinery</option>
+              <option value="Rent a Machinery">Rent a Machinery</option>
+              <option value="Farm Equipment">Farm Equipment</option>
+              <option value="Irrigation">Irrigation</option>
+              <option value="Animal Feed">Animal Feed</option>
+              <option value="Veterinary">Veterinary</option>
+              <option value="Agro Chemicals">Agro Chemicals</option>
+              <option value="Other">Other</option>
             </select>
           </div>
           <div class="form-group">
@@ -387,6 +408,11 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
               <option value="Piece">Piece</option>
               <option value="Pack">Pack</option>
               <option value="Tonne">Tonne</option>
+              <option value="Tray">Tray</option>
+              <option value="Sachet">Sachet</option>
+              <option value="Bottle">Bottle</option>
+              <option value="Acre">Acre</option>
+              <option value="Metre">Metre</option>
             </select>
           </div>
           <div class="form-group">
@@ -662,11 +688,19 @@ function applyAgroAccountStatusUi(rawStatus, silentRejectedAlert) {
     icon.textContent = '✔';
     icon.style.color = '#1DA1F2';
     label.textContent = 'Verified';
+    document.querySelectorAll('.topbar-nav-link').forEach(function(btn){ btn.style.display = ''; });
   } else if (status === 'rejected') {
     badge.style.background = '#ef4444';
     icon.textContent = '!';
     icon.style.color = '#ef4444';
     label.textContent = 'Rejected';
+    var allow = { messages: true, support: true };
+    document.querySelectorAll('.topbar-nav-link').forEach(function(btn){
+      var onclick = btn.getAttribute('onclick') || '';
+      var m = onclick.match(/showPage\('([^']+)'/);
+      if (!m) return;
+      btn.style.display = allow[m[1]] ? '' : 'none';
+    });
     if (!silentRejectedAlert) {
       window.SokoUI?.toast('Your account is rejected. You can use support; some actions may be limited.', 'warning');
     }
@@ -675,6 +709,7 @@ function applyAgroAccountStatusUi(rawStatus, silentRejectedAlert) {
     icon.textContent = '⏳';
     icon.style.color = '#F4A261';
     label.textContent = 'Pending';
+    document.querySelectorAll('.topbar-nav-link').forEach(function(btn){ btn.style.display = ''; });
   }
 }
 
@@ -789,6 +824,10 @@ function startDealerTendersPolling() {
 
 function showPage(name, btn) {
   document.getElementById('topbarNav')?.classList.remove('mobile-open');
+  if (agroAccountRejected) {
+    var allowed = { messages: true, support: true };
+    if (!allowed[name]) name = 'support';
+  }
   if (profileLocked && name !== 'profile') {
     name = 'profile';
     window.SokoUI?.toast('Complete your profile first to continue.', 'warning');
@@ -991,6 +1030,16 @@ document.getElementById('addProductForm').addEventListener('submit', function(e)
   e.preventDefault();
   submitProduct('active');
 });
+
+function syncAgroUnitsByCategory() {
+  var cat = (document.getElementById('ap-category')?.value || '').toLowerCase();
+  var unit = document.getElementById('ap-unit');
+  if (!unit) return;
+  var opts = (cat === 'rent a machinery')
+    ? ['Hour', 'Day', 'Week', 'Month']
+    : ['Kg', 'Bag', 'Litre', 'Piece', 'Pack', 'Tonne', 'Tray', 'Sachet', 'Bottle', 'Acre', 'Metre'];
+  unit.innerHTML = opts.map(function(o){ return '<option value="' + o + '">' + o + '</option>'; }).join('');
+}
 
 async function submitProduct(status) {
   if (!firebaseUid) { await uiAlert('Please sign in first.', 'Sign in required'); return; }
@@ -1353,7 +1402,7 @@ async function saveProfile(e) {
       window.SokoUI?.toast('Profile saved successfully!', 'success');
       await loadProfile();
       await enforceAgroProfileCompletion(true);
-      showPage('dashboard');
+      setTimeout(function(){ window.location.reload(); }, 350);
     }
     else { const d = await res.json(); await uiAlert(d.error || 'Save failed', 'Profile save failed'); }
   } catch(e) { await uiAlert(e.message || 'Save failed', 'Error'); }

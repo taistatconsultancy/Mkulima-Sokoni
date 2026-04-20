@@ -5,6 +5,7 @@ from models.user import User
 from models.farmer_profile import FarmerProfile
 from models.buyer_profile import BuyerProfile
 from models.verification_audit import VerificationAudit
+from database import execute_query
 import logging
 
 logger = logging.getLogger(__name__)
@@ -78,8 +79,10 @@ def apply_verification_change(
     updated = []
     audits = []
 
+    seller_profile_id = None
     if has_seller and FarmerProfile.profile_exists(uid_str):
         fp = FarmerProfile.get_profile_by_user_id(uid_str)
+        seller_profile_id = fp.get('id') if fp else None
         if action == 'approve' and not _is_farmer_complete(fp):
             raise ValueError('Farmer profile is incomplete. Complete required profile settings before verification.')
         prev = fp.get('certification_status') if fp else None
@@ -115,6 +118,20 @@ def apply_verification_change(
         )
         updated.append('buyer_profile')
         audits.append(dict(row) if row else None)
+
+    if action == 'reject' and seller_profile_id:
+        try:
+            execute_query(
+                """
+                UPDATE products
+                SET status = 'draft', updated_at = CURRENT_TIMESTAMP
+                WHERE farmer_profile_id = %s::uuid
+                  AND status = 'active'
+                """,
+                (str(seller_profile_id),),
+            )
+        except Exception as exc:
+            logger.warning('Failed to downgrade seller products on reject: %s', exc)
 
     if not updated:
         raise ValueError('No farmer or buyer profile exists for this user')

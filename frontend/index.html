@@ -153,12 +153,12 @@
     .product-card { background: #fff; border-radius: 14px; border: 1.5px solid var(--border); overflow: hidden; display: flex; flex-direction: column; transition: all .28s cubic-bezier(.34,1.56,.64,1); cursor: pointer; }
     .product-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-color: var(--lime); }
     .product-img { height: 130px; background: linear-gradient(135deg, var(--forest), var(--leaf)); position: relative; overflow: hidden; display: grid; place-items: center; font-size: 44px; }
-    .product-img-real { position: absolute; inset: 0; object-fit: cover; width: 100%; height: 100%; }
+    .product-img-real { position: absolute; inset: 0; object-fit: contain; width: 100%; height: 100%; background: #f7f7f7; }
     .product-location-badge { position: absolute; bottom: 8px; left: 8px; background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-radius: 100px; padding: 2px 9px; font-size: .66rem; font-weight: 600; color: var(--forest); }
     .product-body { padding: 12px 14px; flex: 1; display: flex; flex-direction: column; }
     .product-name { font-size: .92rem; font-weight: 600; margin-bottom: 5px; }
     .product-meta-row { display: flex; justify-content: space-between; font-size: .71rem; color: var(--muted); margin-bottom: 8px; }
-    .product-price { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 700; color: var(--forest); margin-top: auto; }
+    .product-price { font-family: 'Playfair Display', serif; font-size: clamp(.82rem, 2.2vw, 1rem); font-weight: 700; color: var(--forest); margin-top: auto; line-height: 1.2; word-break: break-word; }
     .product-price sub { font-size: .62rem; font-family: 'DM Sans', sans-serif; color: var(--muted); font-weight: 400; }
     .product-footer { padding: 8px 14px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--cream); }
     .product-views { font-size: .68rem; color: var(--muted); }
@@ -655,7 +655,7 @@
       const c = p.category || 'Other';
       (byCategory[c] = byCategory[c] || []).push(p);
     });
-    const order = ['Vegetables','Fruits','Cereals','Livestock','Dairy','Tea','Nuts','Legumes','Herbs','Potatoes','Other'];
+    const order = ['Vegetables','Seeds','Seedlings','Fertilizer','Fertilizers','Pesticides','Herbicides','Insecticides','Machinery','Rent a Machinery','Farm Equipment','Irrigation','Animal Feed','Veterinary','Agro Chemicals','Fruits','Cereals','Livestock','Dairy','Tea','Nuts','Legumes','Herbs','Potatoes','Other'];
     const cats = [
       ...order.filter(c => byCategory[c]),
       ...Object.keys(byCategory).filter(c => !order.includes(c) && byCategory[c])

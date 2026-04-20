@@ -10,8 +10,12 @@ from auth.admin_auth import decode_token_if_admin
 from models.verification_audit import VerificationAudit, AdminImpersonationLog, AuthLoginAudit
 from services.admin_verification_service import apply_verification_change
 from utils.profile_verification_display import effective_verification_badge
+from utils.cloudinary_service import delete_image
 import logging
 import uuid
+import re
+from urllib.parse import urlparse
+from database import execute_query
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +25,73 @@ def _client_ip():
     if xff:
         return xff.split(',')[0].strip()
     return request.remote_addr
+
+
+def _cloudinary_public_id_from_url(url):
+    """Extract Cloudinary public_id from a delivery URL."""
+    if not url or 'res.cloudinary.com' not in str(url):
+        return None
+    try:
+        parsed = urlparse(str(url))
+        parts = [p for p in parsed.path.split('/') if p]
+        if 'upload' not in parts:
+            return None
+        upload_idx = parts.index('upload')
+        public_parts = parts[upload_idx + 1:]
+        if public_parts and re.match(r'^v\d+$', public_parts[0]):
+            public_parts = public_parts[1:]
+        if not public_parts:
+            return None
+        filename = public_parts[-1]
+        if '.' in filename:
+            filename = filename.rsplit('.', 1)[0]
+        public_parts[-1] = filename
+        return '/'.join(public_parts)
+    except Exception:
+        return None
+
+
+def _purge_user_cloudinary_assets(user_id):
+    """Delete known user-linked Cloudinary assets before hard delete."""
+    rows = execute_query(
+        """
+        SELECT image_url AS url FROM products p
+        INNER JOIN farmer_profiles fp ON fp.id = p.farmer_profile_id
+        WHERE fp.user_id = %s::uuid
+        UNION ALL
+        SELECT profile_image_url AS url FROM farmer_profiles WHERE user_id = %s::uuid
+        UNION ALL
+        SELECT id_front_url AS url FROM farmer_profiles WHERE user_id = %s::uuid
+        UNION ALL
+        SELECT id_back_url AS url FROM farmer_profiles WHERE user_id = %s::uuid
+        UNION ALL
+        SELECT profile_selfie_url AS url FROM farmer_profiles WHERE user_id = %s::uuid
+        UNION ALL
+        SELECT profile_image_url AS url FROM buyer_profiles WHERE user_id = %s::uuid
+        UNION ALL
+        SELECT id_front_url AS url FROM buyer_profiles WHERE user_id = %s::uuid
+        UNION ALL
+        SELECT id_back_url AS url FROM buyer_profiles WHERE user_id = %s::uuid
+        """,
+        (
+            str(user_id), str(user_id), str(user_id), str(user_id),
+            str(user_id), str(user_id), str(user_id), str(user_id)
+        ),
+        fetch_all=True,
+    )
+    deleted = 0
+    failed = 0
+    seen = set()
+    for row in rows or []:
+        public_id = _cloudinary_public_id_from_url((row or {}).get('url'))
+        if not public_id or public_id in seen:
+            continue
+        seen.add(public_id)
+        if delete_image(public_id):
+            deleted += 1
+        else:
+            failed += 1
+    return {'deleted': deleted, 'failed': failed}
 
 
 def extract_user_id(user):
@@ -644,6 +715,39 @@ def admin_verification_history(user_id):
         return jsonify({'success': True, 'history': history}), 200
     except Exception as e:
         logger.error(f"admin_verification_history: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@auth_bp.route('/admin/users/<user_id>/permanent-delete', methods=['DELETE'])
+def admin_permanent_delete_user(user_id):
+    """Admin-only hard delete of user + cascaded relational data."""
+    try:
+        _decoded, err = decode_token_if_admin()
+        if err:
+            resp, code = err
+            return resp, code
+
+        target = User.get_user_by_id(user_id)
+        if not target:
+            return jsonify({'error': 'User not found'}), 404
+
+        cloudinary_summary = _purge_user_cloudinary_assets(user_id)
+        deleted_row = execute_query(
+            "DELETE FROM users WHERE id = %s::uuid RETURNING id, email",
+            (str(user_id),),
+            fetch_one=True,
+        )
+        if not deleted_row:
+            return jsonify({'error': 'User delete failed'}), 500
+
+        return jsonify({
+            'success': True,
+            'deleted_user_id': str(deleted_row.get('id')),
+            'deleted_email': deleted_row.get('email'),
+            'cloudinary': cloudinary_summary,
+        }), 200
+    except Exception as e:
+        logger.error(f"admin_permanent_delete_user: {e}")
         return jsonify({'error': str(e)}), 500
 
 

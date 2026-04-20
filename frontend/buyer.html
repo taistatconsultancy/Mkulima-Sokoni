@@ -308,7 +308,7 @@
       height: 140px; background: linear-gradient(135deg, var(--forest), var(--leaf));
       position: relative; overflow: hidden; display: grid; place-items: center; font-size: 44px;
     }
-    .product-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .product-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background:#f7f7f7; }
     .product-badge {
       position: absolute; top: 10px; left: 10px;
       background: rgba(255,255,255,.93); backdrop-filter: blur(6px);
@@ -317,7 +317,7 @@
     .product-body { padding: 12px 14px; flex: 1; display: flex; flex-direction: column; }
     .product-title { font-size: .92rem; font-weight: 700; margin-bottom: 6px; }
     .product-meta { display: flex; justify-content: space-between; font-size: .7rem; color: var(--muted); margin-bottom: 6px; }
-    .product-price { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; color: var(--forest); margin-top: auto; }
+    .product-price { font-family: 'Playfair Display', serif; font-size: clamp(.82rem, 2.2vw, 1rem); font-weight: 700; color: var(--forest); margin-top: auto; line-height: 1.2; word-break: break-word; }
     .product-price sub { font-size: .6rem; font-family: 'DM Sans', sans-serif; color: var(--muted); font-weight: 400; }
     .product-footer {
       padding: 9px 14px; border-top: 1px solid var(--border);
@@ -1403,6 +1403,15 @@ function exitSuperUser() {
   const BUYER_GATE_STATUS_KEY = 'soko_gate_buyer_verify';
 
   let buyerAccountRejected = false;
+  function enforceRejectedModeUi() {
+    var allow = { messages: true, support: true };
+    document.querySelectorAll('.topbar-nav-link').forEach(function(btn) {
+      var onclick = btn.getAttribute('onclick') || '';
+      var m = onclick.match(/showPage\('([^']+)'/);
+      if (!m) return;
+      btn.style.display = allow[m[1]] ? '' : 'none';
+    });
+  }
   function applyBuyerAccountStatusUi(rawStatus, silentRejectedAlert) {
     const status = String(rawStatus || 'pending').toLowerCase();
     const badge = document.getElementById('buyerAccountStatusBadge');
@@ -1415,11 +1424,13 @@ function exitSuperUser() {
       icon.textContent = '✔';
       icon.style.color = '#1DA1F2';
       label.textContent = 'Verified';
+      document.querySelectorAll('.topbar-nav-link').forEach(function(btn){ btn.style.display = ''; });
     } else if (status === 'rejected') {
       badge.style.background = '#ef4444';
       icon.textContent = '!';
       icon.style.color = '#ef4444';
       label.textContent = 'Rejected';
+      enforceRejectedModeUi();
       if (!silentRejectedAlert) {
         showAlert('Your account is rejected. You can view support, but some actions may be disabled.', 'error');
       }
@@ -1428,6 +1439,7 @@ function exitSuperUser() {
       icon.textContent = '⏳';
       icon.style.color = '#F4A261';
       label.textContent = 'Pending';
+      document.querySelectorAll('.topbar-nav-link').forEach(function(btn){ btn.style.display = ''; });
     }
   }
 
@@ -1450,6 +1462,10 @@ function exitSuperUser() {
 
   function showPage(pageName, el) {
     document.getElementById('topbarNav')?.classList.remove('mobile-open');
+    if (buyerAccountRejected) {
+      var allowed = { messages: true, support: true };
+      if (!allowed[pageName]) pageName = 'support';
+    }
     if (profileLocked && pageName !== 'profile') {
       pageName = 'profile';
       window.SokoUI?.toast('Complete your profile first to continue.', 'warning');
@@ -1583,7 +1599,7 @@ function exitSuperUser() {
     }
   }
 
-  const categoryOrder = ['Vegetables','Fruits','Cereals','Livestock','Dairy','Tea','Nuts','Legumes','Herbs','Potatoes','Other'];
+  const categoryOrder = ['Vegetables','Seeds','Seedlings','Fertilizer','Fertilizers','Pesticides','Herbicides','Insecticides','Machinery','Rent a Machinery','Farm Equipment','Irrigation','Animal Feed','Veterinary','Agro Chemicals','Fruits','Cereals','Livestock','Dairy','Tea','Nuts','Legumes','Herbs','Potatoes','Other'];
   const categoryEmoji = { Vegetables:'🥬', Fruits:'🍋', Cereals:'🌾', Livestock:'🐄', Dairy:'🥛', Tea:'🍵', Nuts:'🥜', Legumes:'🫘', Herbs:'🌿', Potatoes:'🥔', Other:'📦' };
 
   async function loadProducts() {
@@ -2346,8 +2362,8 @@ function exitSuperUser() {
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || 'Failed');
       showAlert('✅ Profile saved successfully!','success');
-      loadBuyerProfile();
-      setTimeout(() => showPage('dashboard'), 500);
+      await loadBuyerProfile();
+      setTimeout(function(){ window.location.reload(); }, 350);
     } catch(err) {
       showAlert(err.message || 'Failed to save profile','error');
     } finally {
