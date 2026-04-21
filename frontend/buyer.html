@@ -2458,6 +2458,7 @@ function exitSuperUser() {
       sessionStorage.removeItem('showSupport');
       showPage('support');
     }
+    await loadBuyerProfile();
     enforceBuyerProfileCompletion(false);
     updateProfilePrimaryAction();
   });

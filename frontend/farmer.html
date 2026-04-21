@@ -3246,6 +3246,7 @@ function exitSuperUser() {
     }
     const action = new URLSearchParams(window.location.search).get('action');
     if (action === 'list-produce') addProduct();
+    await loadFarmerProfile();
     enforceFarmerProfileCompletion(false);
     updateProfilePrimaryAction();
   });

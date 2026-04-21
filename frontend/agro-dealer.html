@@ -914,7 +914,7 @@ async function init() {
       loadFeaturedTickerRows().then(() => renderTicker(featuredTickerProducts));
     });
   }
-  loadProfile();
+  await loadProfile();
   if (window.SokoSupportCenter) {
     window.SokoSupportCenter.initUserSupport({
       rootId: 'agroDealerSupportCenterRoot',
