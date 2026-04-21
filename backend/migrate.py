@@ -42,6 +42,8 @@ def run_migration(phase='all'):
             migrations.append('010_create_commerce_tables.sql')
         if phase == 'all' or phase == '11':
             migrations.append('011_add_featured_flag_to_products.sql')
+        if phase == 'all' or phase == '12':
+            migrations.append('012_normalize_profile_verification_statuses.sql')
         
         # Connect to database
         print("Connecting to Neon Database...")
@@ -123,6 +125,8 @@ if __name__ == '__main__':
         print("Phase 10: Commerce tables (carts, orders, tenders)")
     elif phase == '11':
         print("Phase 11: Add products featured flag")
+    elif phase == '12':
+        print("Phase 12: Normalize profile verification statuses")
     else:
         print("All Phases")
     print("=" * 50)

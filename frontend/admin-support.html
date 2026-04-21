@@ -618,12 +618,12 @@
       function rank(s) {
         if (s === 'rejected') return 3;
         if (s === 'pending') return 2;
-        if (s === 'verified' || s === 'approved') return 1;
+        if (s === 'verified') return 1;
         return 0;
       }
       var worst = cs;
       if (rank(bs) > rank(cs)) worst = bs;
-      if (worst === 'verified' || worst === 'approved') return 'verified';
+      if (worst === 'verified') return 'verified';
       if (worst === 'rejected') return 'rejected';
       if (worst === 'pending') return 'pending';
       return u.is_active !== false ? 'active' : 'inactive';
@@ -669,12 +669,12 @@
       function rank(s) {
         if (s === 'rejected') return 3;
         if (s === 'pending') return 2;
-        if (s === 'verified' || s === 'approved') return 1;
+        if (s === 'verified') return 1;
         return 0;
       }
       var best = cs;
       if (rank(bs) > rank(cs)) best = bs;
-      if (best === 'verified' || best === 'approved') return '<span class="badge verified">Verified</span>';
+      if (best === 'verified') return '<span class="badge verified">Verified</span>';
       if (best === 'pending') return '<span class="badge pending">Pending</span>';
       if (best === 'rejected') return '<span class="badge rejected">Rejected</span>';
       return u.is_active !== false ? '<span class="badge verified">Active</span>' : '<span class="badge rejected">Inactive</span>';
@@ -870,6 +870,7 @@
         var cs = (u.certification_status_db || u.certification_status || '').toLowerCase();
         var bs = (u.buyer_verification_status_db || u.buyer_verification_status || '').toLowerCase();
         var rowStatus = (cs === 'rejected' || bs === 'rejected') ? 'rejected' : 'pending';
+        if (cs === 'verified' || bs === 'verified') rowStatus = 'verified';
         var emailQ = (document.getElementById('verification-search-email')?.value || '').trim().toLowerCase();
         if (emailQ && String(u.email || '').toLowerCase().indexOf(emailQ) === -1) return false;
         if (statusVal && statusVal !== rowStatus) return false;
@@ -898,7 +899,7 @@
         var cs = (u.certification_status_db || u.certification_status || '').toLowerCase();
         var bs = (u.buyer_verification_status_db || u.buyer_verification_status || '').toLowerCase();
         var isRejected = cs === 'rejected' || bs === 'rejected';
-        var isVerified = (cs === 'verified' || cs === 'approved' || bs === 'verified' || bs === 'approved');
+        var isVerified = (cs === 'verified' || bs === 'verified');
         var statusLabel = isRejected
           ? '<span class="badge rejected">Rejected</span>'
           : (isVerified ? '<span class="badge verified">Verified</span>' : '<span class="badge pending">Pending Review</span>');

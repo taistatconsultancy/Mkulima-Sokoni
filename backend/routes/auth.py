@@ -9,7 +9,6 @@ from auth.firebase_auth import verify_firebase_token, get_firebase_user
 from auth.admin_auth import decode_token_if_admin
 from models.verification_audit import VerificationAudit, AdminImpersonationLog, AuthLoginAudit
 from services.admin_verification_service import apply_verification_change
-from utils.profile_verification_display import effective_verification_badge
 from utils.cloudinary_service import delete_image
 import logging
 import uuid
@@ -549,7 +548,7 @@ def admin_stats():
                 SELECT DISTINCT u.id
                 FROM users u
                 INNER JOIN farmer_profiles fp ON fp.user_id = u.id
-                    AND fp.certification_status IN ('verified', 'approved')
+                    AND fp.certification_status = 'verified'
                 WHERE EXISTS (
                     SELECT 1 FROM user_roles ur
                     WHERE ur.user_id = u.id AND ur.role IN ('farmer', 'agro-dealer')
@@ -560,7 +559,7 @@ def admin_stats():
                 SELECT DISTINCT u.id
                 FROM users u
                 INNER JOIN buyer_profiles bp ON bp.user_id = u.id
-                    AND bp.verification_status IN ('verified', 'approved')
+                    AND bp.verification_status = 'verified'
                 WHERE EXISTS (
                     SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'buyer'
                 )
@@ -617,25 +616,13 @@ def admin_users():
         users = []
         for r in rows:
             d = dict(r)
-            farmer_complete = bool(
-                str(d.get('farm_name') or '').strip() and
-                str(d.get('farmer_location') or '').strip() and
-                str(d.get('farmer_county') or '').strip() and
-                str(d.get('farmer_national_id') or '').strip()
-            )
-            buyer_complete = bool(
-                str(d.get('company_name') or '').strip() and
-                str(d.get('buyer_location') or '').strip() and
-                str(d.get('buyer_county') or '').strip() and
-                str(d.get('buyer_national_id') or '').strip()
-            )
             farmer_db = str(d.get('certification_status') or 'pending').strip().lower()
-            d['certification_status_db'] = farmer_db
-            d['certification_status'] = effective_verification_badge(farmer_db, farmer_complete)
-
             buyer_db = str(d.get('buyer_verification_status') or 'pending').strip().lower()
+            d['certification_status_db'] = farmer_db
             d['buyer_verification_status_db'] = buyer_db
-            d['buyer_verification_status'] = effective_verification_badge(buyer_db, buyer_complete)
+            # Admin screens must use exact DB values (no derived display badge).
+            d['certification_status'] = farmer_db
+            d['buyer_verification_status'] = buyer_db
             d.pop('farm_name', None)
             d.pop('farmer_location', None)
             d.pop('farmer_county', None)
