@@ -1422,7 +1422,7 @@ function exitSuperUser() {
     const label = document.getElementById('buyerAccountStatusBadgeLabel');
     if (!badge || !icon || !label) return;
     buyerAccountRejected = status === 'rejected';
-    if (status === 'verified' || status === 'approved') {
+    if (status === 'verified') {
       badge.style.background = '#1DA1F2';
       icon.textContent = '✔';
       icon.style.color = '#1DA1F2';
@@ -1450,7 +1450,7 @@ function exitSuperUser() {
   function applyBuyerVerificationTransition(prevStored, verificationStatus, hasRequired) {
     const vs = String(verificationStatus || 'pending').toLowerCase();
     const prev = String(prevStored || '').toLowerCase();
-    const nowVerified = vs === 'verified' || vs === 'approved';
+    const nowVerified = vs === 'verified';
     const upgraded =
       hasRequired &&
       nowVerified &&
@@ -2266,7 +2266,7 @@ function exitSuperUser() {
       warning.style.display = 'none';
       return;
     }
-    const verified = status === 'verified' || status === 'approved';
+    const verified = status === 'verified';
     const complete = Boolean(
       String(profile?.company_name || '').trim() &&
       String(profile?.location || '').trim() &&
@@ -2316,13 +2316,12 @@ function exitSuperUser() {
         set('national-id', p.national_id);
         set('business-type', p.business_type);
         set('business-registration', p.business_registration_number);
-        const vsEffective = (p.verification_status || 'pending').toString();
-        const vsDb = (p.verification_status_db || vsEffective).toString();
+        const vsDb = (p.verification_status_db || p.verification_status || 'pending').toString();
         applyBuyerVerificationTransition(prevGate, vsDb, hasReq);
         const vsEl = document.getElementById('verification-status-display');
-        if (vsEl) vsEl.textContent = vsEffective.charAt(0).toUpperCase() + vsEffective.slice(1).toLowerCase();
-        applyBuyerAccountStatusUi(vsEffective, false);
-        updateProfileCompletionWarning(p, vsEffective);
+        if (vsEl) vsEl.textContent = vsDb.charAt(0).toUpperCase() + vsDb.slice(1).toLowerCase();
+        applyBuyerAccountStatusUi(vsDb, false);
+        updateProfileCompletionWarning(p, vsDb);
         set('bio', p.bio);
         if (p.referral_source) {
           set('referral-source', p.referral_source);
