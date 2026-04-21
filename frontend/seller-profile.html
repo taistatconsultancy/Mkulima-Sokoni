@@ -309,8 +309,8 @@ function renderBanner(p, u) {
   }
 
   var badges = '<span class="role-badge">🌾 Farmer</span>';
-  var status = (p.certification_status || 'pending').toLowerCase();
-  if (status === 'verified' || status === 'approved') {
+  var status = (p.certification_status_db || p.certification_status || 'pending').toLowerCase();
+  if (status === 'verified') {
     badges += '<span class="verify-badge verified"><span class="verify-badge-icon">✔</span>Verified</span>';
   } else if (status === 'rejected') {
     badges += '<span class="verify-badge rejected"><span class="verify-badge-icon">!</span>Rejected</span>';

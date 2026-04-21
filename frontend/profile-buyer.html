@@ -420,10 +420,11 @@
           document.getElementById('national-id').value = profile.national_id || '';
           document.getElementById('business-type').value = profile.business_type || '';
           document.getElementById('business-registration').value = profile.business_registration_number || '';
-          document.getElementById('verification-status').value = profile.verification_status || 'pending';
+          var verificationStatus = profile.verification_status_db || profile.verification_status || 'pending';
+          document.getElementById('verification-status').value = verificationStatus;
           document.getElementById('bio').value = profile.bio || '';
           document.getElementById('profile-image').value = profile.profile_image_url || '';
-          updateAccountStatus(profile.verification_status || 'pending');
+          updateAccountStatus(verificationStatus);
           
           // Populate referral source
           if (profile.referral_source) {
@@ -470,7 +471,7 @@
       const card = document.getElementById('account-status-card');
       if (!badge || !icon || !text || !card) return;
 
-      if (status === 'verified' || status === 'approved') {
+      if (status === 'verified') {
         badge.style.background = '#1DA1F2';
         badge.style.color = '#fff';
         icon.textContent = '✔';
