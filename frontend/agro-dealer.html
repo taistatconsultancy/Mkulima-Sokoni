@@ -427,6 +427,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
             <label>Product Image *</label>
             <input type="file" id="ap-image" accept="image/*" required onchange="previewImg(this)" />
             <img id="ap-preview" class="img-preview" alt="Preview" />
+            <p style="font-size:.74rem;color:var(--muted);margin-top:6px;">Tip: use landscape photos so cards render cleanly across marketplace pages.</p>
           </div>
           <div class="form-full" style="display:flex;gap:10px;">
             <button type="submit" class="form-submit" id="ap-submit-btn">Publish to Marketplace</button>
@@ -664,6 +665,7 @@ const AGRO_PROFILE_REQUIRED_FIELDS = {
 let profileLocked = false;
 const AGRO_GATE_STATUS_KEY = 'soko_gate_agro_cert';
 let agroAccountRejected = false;
+let agroStatusResolved = false;
 
 async function loadFeaturedTickerRows() {
   try {
@@ -682,6 +684,7 @@ function applyAgroAccountStatusUi(rawStatus, silentRejectedAlert) {
   var icon = document.getElementById('agroAccountStatusBadgeIcon');
   var label = document.getElementById('agroAccountStatusBadgeLabel');
   if (!badge || !icon || !label) return;
+  agroStatusResolved = true;
   agroAccountRejected = status === 'rejected';
   if (status === 'verified' || status === 'approved') {
     badge.style.background = '#1DA1F2';
@@ -701,6 +704,7 @@ function applyAgroAccountStatusUi(rawStatus, silentRejectedAlert) {
       if (!m) return;
       btn.style.display = allow[m[1]] ? '' : 'none';
     });
+    showPage('support', document.querySelector('.topbar-nav-link[onclick*="support"]'));
     if (!silentRejectedAlert) {
       window.SokoUI?.toast('Your account is rejected. You can use support; some actions may be limited.', 'warning');
     }
@@ -883,6 +887,8 @@ window.addEventListener('resize', () => {
 /* ── Init ── */
 async function init() {
   wireAgroRequiredFieldValidation();
+  var statusLabel = document.getElementById('agroAccountStatusBadgeLabel');
+  if (statusLabel) statusLabel.textContent = 'Checking…';
   try {
     const user = JSON.parse(localStorage.getItem('user'));
     if (user) {
@@ -943,7 +949,6 @@ async function enforceAgroProfileCompletion(silent) {
       return;
     }
     applyAgroVerificationTransition(prevStored, p.certification_status_db || p.certification_status || 'pending', hasRequired);
-    applyAgroAccountStatusUi(p.certification_status || 'pending', true);
   } catch (e) {}
 }
 
@@ -1260,6 +1265,7 @@ async function loadProfile() {
     applyAgroVerificationTransition(prevGate, stDb, hasReq);
     var stEl = document.getElementById('profile-verification-status');
     if (stEl) stEl.textContent = stEffective.charAt(0).toUpperCase() + stEffective.slice(1).toLowerCase();
+    await new Promise(function(resolve){ setTimeout(resolve, 280); });
     applyAgroAccountStatusUi(stEffective, false);
     updateAgroProfileWarning(prof, stEffective);
   } catch(e) {}

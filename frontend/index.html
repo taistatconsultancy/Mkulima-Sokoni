@@ -147,6 +147,7 @@
     .cat-section { margin-bottom: 32px; }
     .cat-title { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
     .cat-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .cat-subtitle { font-size: .72rem; font-weight: 600; color: var(--muted); margin: 8px 0 10px; }
     .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 14px; }
 
     /* ── PRODUCT CARD ── */
@@ -655,16 +656,28 @@
       const c = p.category || 'Other';
       (byCategory[c] = byCategory[c] || []).push(p);
     });
-    const order = ['Vegetables','Seeds','Seedlings','Fertilizer','Fertilizers','Pesticides','Herbicides','Insecticides','Machinery','Rent a Machinery','Farm Equipment','Irrigation','Animal Feed','Veterinary','Agro Chemicals','Fruits','Cereals','Livestock','Dairy','Tea','Nuts','Legumes','Herbs','Potatoes','Other'];
+    const agroCats = ['Seeds','Seedlings','Fertilizer','Pesticides','Herbicides','Insecticides','Machinery','Rent a Machinery','Farm Equipment','Irrigation','Animal Feed','Veterinary','Agro Chemicals'];
+    const order = ['Vegetables', ...agroCats, 'Fruits','Cereals','Livestock','Dairy','Tea','Nuts','Legumes','Herbs','Potatoes','Other'];
     const cats = [
       ...order.filter(c => byCategory[c]),
       ...Object.keys(byCategory).filter(c => !order.includes(c) && byCategory[c])
     ];
-    container.innerHTML = cats.map(cat => `
+    const normalCats = cats.filter(c => agroCats.indexOf(c) === -1);
+    const presentAgroCats = cats.filter(c => agroCats.indexOf(c) !== -1);
+    const normalHtml = normalCats.map(cat => `
       <div class="cat-section">
         <div class="cat-title">${EMOJI[cat] || '📦'} ${cat}</div>
         <div class="products-grid">${byCategory[cat].map(p => productCardHTML(p)).join('')}</div>
       </div>`).join('');
+    const agroHtml = presentAgroCats.length ? `
+      <div class="cat-section">
+        <div class="cat-title">🏪 Agro-Dealers</div>
+        ${presentAgroCats.map(cat => `
+          <div class="cat-subtitle">${EMOJI[cat] || '📦'} ${cat}</div>
+          <div class="products-grid">${byCategory[cat].map(p => productCardHTML(p)).join('')}</div>
+        `).join('')}
+      </div>` : '';
+    container.innerHTML = normalHtml + agroHtml;
   }
 
   function goToProduct(p) {

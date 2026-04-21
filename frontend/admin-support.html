@@ -276,6 +276,10 @@
             <h2 class="section-title">All Users 👥</h2>
             <p style="color:var(--muted);margin-bottom:18px;">Manage all registered users - farmers, buyers, and agro-dealers</p>
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
+              <div style="min-width:220px;">
+                <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Search Email</label>
+                <input id="users-search-email" type="text" placeholder="user@example.com" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;width:100%;" />
+              </div>
               <div>
                 <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Status</label>
                 <select id="users-filter-status" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;min-width:140px;">
@@ -330,6 +334,10 @@
             <h2 class="section-title">Verification Queue ⏳</h2>
             <p style="color:var(--muted);margin-bottom:18px;">Review pending accounts and re-approve rejected accounts</p>
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px;">
+              <div style="min-width:220px;">
+                <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Search Email</label>
+                <input id="verification-search-email" type="text" placeholder="user@example.com" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;width:100%;" />
+              </div>
               <div>
                 <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Role</label>
                 <select id="verification-filter-role" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;min-width:140px;">
@@ -382,6 +390,10 @@
           <div class="section-card">
             <h2 class="section-title">Featured / Top Moving Items ⭐</h2>
             <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;">
+              <div style="min-width:220px;">
+                <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Search Email</label>
+                <input id="featured-search-email" type="text" placeholder="seller@example.com" style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;background:#fff;width:100%;" />
+              </div>
               <button type="button" class="btn btn-primary btn-sm" id="featured-save-btn">Save</button>
               <button type="button" class="btn btn-outline-on-light btn-sm" id="featured-unselect-all-btn">Unselect all</button>
             </div>
@@ -671,9 +683,11 @@
     function filteredUsers(users) {
       var statusVal = (document.getElementById('users-filter-status')?.value || '').toLowerCase();
       var roleVal = (document.getElementById('users-filter-role')?.value || '').toLowerCase();
+      var emailQ = (document.getElementById('users-search-email')?.value || '').trim().toLowerCase();
       var monthVal = document.getElementById('users-filter-month')?.value || '';
       var yearVal = document.getElementById('users-filter-year')?.value || '';
       return (users || []).filter(function(u) {
+        if (emailQ && String(u.email || '').toLowerCase().indexOf(emailQ) === -1) return false;
         var role = String(u.role || '').toLowerCase();
         if (roleVal) {
           if (roleVal === 'agro-dealer') {
@@ -794,7 +808,11 @@
     function renderFeaturedTable() {
       var tbody = document.getElementById('featured-products-table-body');
       if (!tbody) return;
-      var products = allFeaturedCatalog;
+      var emailQ = (document.getElementById('featured-search-email')?.value || '').trim().toLowerCase();
+      var products = allFeaturedCatalog.filter(function(p) {
+        if (!emailQ) return true;
+        return String(p.seller_email || '').toLowerCase().indexOf(emailQ) !== -1;
+      });
       if (!products.length) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:28px;">No active products found</td></tr>';
         document.getElementById('featured-page-label').textContent = 'Page 1';
@@ -852,6 +870,8 @@
         var cs = (u.certification_status_db || u.certification_status || '').toLowerCase();
         var bs = (u.buyer_verification_status_db || u.buyer_verification_status || '').toLowerCase();
         var rowStatus = (cs === 'rejected' || bs === 'rejected') ? 'rejected' : 'pending';
+        var emailQ = (document.getElementById('verification-search-email')?.value || '').trim().toLowerCase();
+        if (emailQ && String(u.email || '').toLowerCase().indexOf(emailQ) === -1) return false;
         if (statusVal && statusVal !== rowStatus) return false;
         if (!monthVal && !yearVal) return true;
         if (!u.created_at) return false;
@@ -878,7 +898,10 @@
         var cs = (u.certification_status_db || u.certification_status || '').toLowerCase();
         var bs = (u.buyer_verification_status_db || u.buyer_verification_status || '').toLowerCase();
         var isRejected = cs === 'rejected' || bs === 'rejected';
-        var statusLabel = isRejected ? '<span class="badge rejected">Rejected</span>' : '<span class="badge pending">Pending Review</span>';
+        var isVerified = (cs === 'verified' || cs === 'approved' || bs === 'verified' || bs === 'approved');
+        var statusLabel = isRejected
+          ? '<span class="badge rejected">Rejected</span>'
+          : (isVerified ? '<span class="badge verified">Verified</span>' : '<span class="badge pending">Pending Review</span>');
         var approveLabel = isRejected ? 'Re-approve' : 'Approve';
         return '<tr>' +
           '<td>' + (start + idx + 1) + '</td>' +
@@ -1327,6 +1350,10 @@
       usersPage = 0;
       renderUsersTable(allAdminUsers);
     });
+    document.getElementById('users-search-email').addEventListener('input', function() {
+      usersPage = 0;
+      renderUsersTable(allAdminUsers);
+    });
     document.getElementById('users-filter-role').addEventListener('change', function() {
       usersPage = 0;
       renderUsersTable(allAdminUsers);
@@ -1348,6 +1375,10 @@
         renderVerificationTable();
       });
     });
+    document.getElementById('verification-search-email').addEventListener('input', function() {
+      verificationPage = 0;
+      renderVerificationTable();
+    });
 
     document.getElementById('featured-prev-btn').addEventListener('click', function() {
       featuredPage -= 1;
@@ -1355,6 +1386,10 @@
     });
     document.getElementById('featured-next-btn').addEventListener('click', function() {
       featuredPage += 1;
+      renderFeaturedTable();
+    });
+    document.getElementById('featured-search-email').addEventListener('input', function() {
+      featuredPage = 0;
       renderFeaturedTable();
     });
 

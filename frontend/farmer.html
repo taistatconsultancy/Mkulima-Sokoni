@@ -1295,6 +1295,7 @@ function exitSuperUser() {
           <label class="file-label" for="product-image">📷 Click to upload or drag and drop<br><span style="font-size:.72rem;">PNG, JPG up to 5MB</span></label>
           <input type="file" id="product-image" name="image" accept="image/*" required style="display:none;" />
           <img id="image-preview" class="img-preview" alt="Preview" />
+          <div class="form-hint">Tip: capture/upload landscape photos for the best marketplace card display.</div>
         </div>
       </form>
     </div>
@@ -1373,7 +1374,7 @@ function exitSuperUser() {
           <label class="file-label" for="edit-product-image">📷 Click to upload a new image<br><span style="font-size:.72rem;">PNG, JPG up to 5MB</span></label>
           <input type="file" id="edit-product-image" accept="image/*" style="display:none;" />
           <img id="edit-image-preview" class="img-preview" alt="Preview" />
-          <div class="form-hint">Leave empty to keep the current image.</div>
+          <div class="form-hint">Leave empty to keep the current image. Landscape photos render best in cards.</div>
         </div>
       </form>
     </div>
@@ -2609,6 +2610,7 @@ function exitSuperUser() {
   /* ── Farmer profile form ── */
   let currentImageUrl = '';
   let accountRejected = false;
+  let accountStatusResolved = false;
   function enforceRejectedModeUi() {
     var allow = { messages: true, support: true };
     document.querySelectorAll('.topbar-nav-link').forEach(function(btn) {
@@ -2627,6 +2629,7 @@ function exitSuperUser() {
   };
 
   function applyAccountStatusUi(rawStatus, silentRejectedAlert) {
+    accountStatusResolved = true;
     const status = String(rawStatus || 'pending').toLowerCase();
     const badge = document.getElementById('accountStatusBadge');
     const icon = document.getElementById('accountStatusBadgeIcon');
@@ -2645,6 +2648,7 @@ function exitSuperUser() {
       icon.style.color = '#ef4444';
       label.textContent = 'Rejected';
       enforceRejectedModeUi();
+      showPage('support', document.querySelector('.topbar-nav-link[onclick*="support"]'));
       if (!silentRejectedAlert) {
         showAlert('Your account is rejected. You can view support, but listing and product updates are disabled.', 'error');
       }
@@ -2693,6 +2697,7 @@ function exitSuperUser() {
         applyFarmerVerificationTransition(prevGate, csDb, hasReq);
         const csDisp = document.getElementById('certification-status-display');
         if (csDisp) csDisp.textContent = csEffective.charAt(0).toUpperCase() + csEffective.slice(1).toLowerCase();
+        await new Promise(function(resolve){ setTimeout(resolve, 280); });
         applyAccountStatusUi(csEffective, false);
         updateProfileCompletionWarning(p, csEffective);
         set('bio', p.bio);
@@ -3224,6 +3229,8 @@ function exitSuperUser() {
 
   window.addEventListener('DOMContentLoaded', () => {
     showPage('dashboard');
+    var statusLabel = document.getElementById('accountStatusBadgeLabel');
+    if (statusLabel) statusLabel.textContent = 'Checking…';
     applyProductTypeOptions('product');
     applyProductTypeOptions('edit');
     loadUserProfile();
@@ -3278,7 +3285,6 @@ function exitSuperUser() {
         return;
       }
       applyFarmerVerificationTransition(prevStored, p.certification_status_db || p.certification_status || 'pending', hasRequired);
-      applyAccountStatusUi(p.certification_status || 'pending', true);
     } catch (e) {}
   }
 

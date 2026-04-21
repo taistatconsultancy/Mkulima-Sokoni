@@ -981,6 +981,7 @@ function exitSuperUser() {
                 <div style="flex:1;">
                   <input type="file" id="profile-image-file" accept="image/*" />
                   <div class="form-hint">JPG, PNG, WEBP — max 5MB</div>
+                  <div class="form-hint">Landscape orientation is recommended for cleaner image display.</div>
                   <div style="margin:10px 0; font-size:.75rem; color:var(--muted);">— OR —</div>
                   <input type="url" id="profile-image-url" name="profile_image_url" placeholder="https://example.com/image.jpg" style="width:100%; padding:10px 13px; border:1.5px solid var(--border); border-radius:9px; font-family:'DM Sans',sans-serif; font-size:.86rem; background:var(--cream);" />
                   <div class="form-hint">Paste an image URL</div>
@@ -1403,6 +1404,7 @@ function exitSuperUser() {
   const BUYER_GATE_STATUS_KEY = 'soko_gate_buyer_verify';
 
   let buyerAccountRejected = false;
+  let buyerStatusResolved = false;
   function enforceRejectedModeUi() {
     var allow = { messages: true, support: true };
     document.querySelectorAll('.topbar-nav-link').forEach(function(btn) {
@@ -1413,6 +1415,7 @@ function exitSuperUser() {
     });
   }
   function applyBuyerAccountStatusUi(rawStatus, silentRejectedAlert) {
+    buyerStatusResolved = true;
     const status = String(rawStatus || 'pending').toLowerCase();
     const badge = document.getElementById('buyerAccountStatusBadge');
     const icon = document.getElementById('buyerAccountStatusBadgeIcon');
@@ -1431,6 +1434,7 @@ function exitSuperUser() {
       icon.style.color = '#ef4444';
       label.textContent = 'Rejected';
       enforceRejectedModeUi();
+      showPage('support', document.querySelector('.topbar-nav-link[onclick*="support"]'));
       if (!silentRejectedAlert) {
         showAlert('Your account is rejected. You can view support, but some actions may be disabled.', 'error');
       }
@@ -1599,7 +1603,8 @@ function exitSuperUser() {
     }
   }
 
-  const categoryOrder = ['Vegetables','Seeds','Seedlings','Fertilizer','Fertilizers','Pesticides','Herbicides','Insecticides','Machinery','Rent a Machinery','Farm Equipment','Irrigation','Animal Feed','Veterinary','Agro Chemicals','Fruits','Cereals','Livestock','Dairy','Tea','Nuts','Legumes','Herbs','Potatoes','Other'];
+  const agroDealerCategories = ['Seeds','Seedlings','Fertilizer','Pesticides','Herbicides','Insecticides','Machinery','Rent a Machinery','Farm Equipment','Irrigation','Animal Feed','Veterinary','Agro Chemicals'];
+  const categoryOrder = ['Vegetables', ...agroDealerCategories, 'Fruits','Cereals','Livestock','Dairy','Tea','Nuts','Legumes','Herbs','Potatoes','Other'];
   const categoryEmoji = { Vegetables:'🥬', Fruits:'🍋', Cereals:'🌾', Livestock:'🐄', Dairy:'🥛', Tea:'🍵', Nuts:'🥜', Legumes:'🫘', Herbs:'🌿', Potatoes:'🥔', Other:'📦' };
 
   async function loadProducts() {
@@ -1660,7 +1665,7 @@ function exitSuperUser() {
 
     const ordered = [...categoryOrder.filter(c => byCategory[c]), ...Object.keys(byCategory).filter(c => !categoryOrder.includes(c))];
 
-    ordered.forEach(cat => {
+    ordered.filter(cat => agroDealerCategories.indexOf(cat) === -1).forEach(cat => {
       if (!byCategory[cat] || !byCategory[cat].length) return;
       const section = document.createElement('div');
       section.className = 'category-section';
@@ -1671,6 +1676,24 @@ function exitSuperUser() {
       section.appendChild(grid);
       container.appendChild(section);
     });
+
+    const presentAgro = ordered.filter(cat => agroDealerCategories.indexOf(cat) !== -1);
+    if (presentAgro.length) {
+      const section = document.createElement('div');
+      section.className = 'category-section';
+      section.innerHTML = `<div class="category-label">🏪 Agro-Dealers</div>`;
+      presentAgro.forEach(cat => {
+        const subtitle = document.createElement('div');
+        subtitle.style.cssText = 'font-size:.78rem;color:var(--muted);font-weight:600;margin:8px 0 10px;';
+        subtitle.textContent = `${categoryEmoji[cat]||'📦'} ${cat}`;
+        const grid = document.createElement('div');
+        grid.className = 'products-grid';
+        byCategory[cat].forEach(p => grid.appendChild(buildProductCard(p)));
+        section.appendChild(subtitle);
+        section.appendChild(grid);
+      });
+      container.appendChild(section);
+    }
   }
 
   function buildProductCard(p) {
@@ -2298,6 +2321,7 @@ function exitSuperUser() {
         applyBuyerVerificationTransition(prevGate, vsDb, hasReq);
         const vsEl = document.getElementById('verification-status-display');
         if (vsEl) vsEl.textContent = vsEffective.charAt(0).toUpperCase() + vsEffective.slice(1).toLowerCase();
+        await new Promise(function(resolve){ setTimeout(resolve, 280); });
         applyBuyerAccountStatusUi(vsEffective, false);
         updateProfileCompletionWarning(p, vsEffective);
         set('bio', p.bio);
@@ -2417,6 +2441,8 @@ function exitSuperUser() {
 
   /* ── Init ── */
   window.addEventListener('DOMContentLoaded', () => {
+    var statusLabel = document.getElementById('buyerAccountStatusBadgeLabel');
+    if (statusLabel) statusLabel.textContent = 'Checking…';
     // If URL has hash, open that tab (e.g., #cart)
     showPage(location.hash ? location.hash.replace('#','') : 'dashboard');
     loadUserProfile();
@@ -2466,7 +2492,6 @@ function exitSuperUser() {
         return;
       }
       applyBuyerVerificationTransition(prevStored, p.verification_status_db || p.verification_status || 'pending', hasRequired);
-      applyBuyerAccountStatusUi(p.verification_status || 'pending', true);
     } catch (e) {}
   }
 
