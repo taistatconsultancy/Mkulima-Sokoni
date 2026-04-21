@@ -330,7 +330,7 @@
       height: 140px; background: linear-gradient(135deg, var(--forest), var(--leaf));
       position: relative; overflow: hidden; display: grid; place-items: center; font-size: 48px;
     }
-    .product-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background:#f7f7f7; }
+    .product-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
     .product-badge {
       position: absolute; top: 10px; left: 10px;
       background: rgba(255,255,255,.93); backdrop-filter: blur(6px);
@@ -2697,7 +2697,6 @@ function exitSuperUser() {
         applyFarmerVerificationTransition(prevGate, csDb, hasReq);
         const csDisp = document.getElementById('certification-status-display');
         if (csDisp) csDisp.textContent = csEffective.charAt(0).toUpperCase() + csEffective.slice(1).toLowerCase();
-        await new Promise(function(resolve){ setTimeout(resolve, 280); });
         applyAccountStatusUi(csEffective, false);
         updateProfileCompletionWarning(p, csEffective);
         set('bio', p.bio);
@@ -3229,8 +3228,6 @@ function exitSuperUser() {
 
   window.addEventListener('DOMContentLoaded', () => {
     showPage('dashboard');
-    var statusLabel = document.getElementById('accountStatusBadgeLabel');
-    if (statusLabel) statusLabel.textContent = 'Checking…';
     applyProductTypeOptions('product');
     applyProductTypeOptions('edit');
     loadUserProfile();

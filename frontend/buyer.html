@@ -308,7 +308,7 @@
       height: 140px; background: linear-gradient(135deg, var(--forest), var(--leaf));
       position: relative; overflow: hidden; display: grid; place-items: center; font-size: 44px;
     }
-    .product-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background:#f7f7f7; }
+    .product-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
     .product-badge {
       position: absolute; top: 10px; left: 10px;
       background: rgba(255,255,255,.93); backdrop-filter: blur(6px);
@@ -2321,7 +2321,6 @@ function exitSuperUser() {
         applyBuyerVerificationTransition(prevGate, vsDb, hasReq);
         const vsEl = document.getElementById('verification-status-display');
         if (vsEl) vsEl.textContent = vsEffective.charAt(0).toUpperCase() + vsEffective.slice(1).toLowerCase();
-        await new Promise(function(resolve){ setTimeout(resolve, 280); });
         applyBuyerAccountStatusUi(vsEffective, false);
         updateProfileCompletionWarning(p, vsEffective);
         set('bio', p.bio);
@@ -2441,8 +2440,6 @@ function exitSuperUser() {
 
   /* ── Init ── */
   window.addEventListener('DOMContentLoaded', () => {
-    var statusLabel = document.getElementById('buyerAccountStatusBadgeLabel');
-    if (statusLabel) statusLabel.textContent = 'Checking…';
     // If URL has hash, open that tab (e.g., #cart)
     showPage(location.hash ? location.hash.replace('#','') : 'dashboard');
     loadUserProfile();

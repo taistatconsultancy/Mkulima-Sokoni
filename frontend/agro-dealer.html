@@ -156,7 +156,7 @@
     .inv-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;overflow:hidden;transition:all .2s;}
     .inv-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--lime);}
     .inv-card-img{height:140px;background:var(--cream);display:grid;place-items:center;overflow:hidden;}
-    .inv-card-img img{width:100%;height:100%;object-fit:contain;background:#f7f7f7;}
+    .inv-card-img img{width:100%;height:100%;object-fit:cover;}
     .inv-card-body{padding:14px;}
     .inv-card-name{font-weight:700;font-size:.9rem;margin-bottom:4px;}
     .inv-card-price{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--forest);margin-bottom:4px;}
@@ -168,7 +168,7 @@
     .mk-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;overflow:hidden;transition:all .2s;cursor:pointer;}
     .mk-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--lime);}
     .mk-card-img{height:130px;background:var(--cream);display:grid;place-items:center;overflow:hidden;font-size:32px;}
-    .mk-card-img img{width:100%;height:100%;object-fit:contain;background:#f7f7f7;}
+    .mk-card-img img{width:100%;height:100%;object-fit:cover;}
     .mk-card-body{padding:12px;}
     .mk-card-name{font-weight:700;font-size:.85rem;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .mk-card-price{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;color:var(--forest);margin-bottom:2px;}
@@ -887,8 +887,6 @@ window.addEventListener('resize', () => {
 /* ── Init ── */
 async function init() {
   wireAgroRequiredFieldValidation();
-  var statusLabel = document.getElementById('agroAccountStatusBadgeLabel');
-  if (statusLabel) statusLabel.textContent = 'Checking…';
   try {
     const user = JSON.parse(localStorage.getItem('user'));
     if (user) {
@@ -1265,7 +1263,6 @@ async function loadProfile() {
     applyAgroVerificationTransition(prevGate, stDb, hasReq);
     var stEl = document.getElementById('profile-verification-status');
     if (stEl) stEl.textContent = stEffective.charAt(0).toUpperCase() + stEffective.slice(1).toLowerCase();
-    await new Promise(function(resolve){ setTimeout(resolve, 280); });
     applyAgroAccountStatusUi(stEffective, false);
     updateAgroProfileWarning(prof, stEffective);
   } catch(e) {}
