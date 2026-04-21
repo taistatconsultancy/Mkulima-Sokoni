@@ -2692,7 +2692,7 @@ function exitSuperUser() {
         set('farm-name', p.farm_name); set('location', p.location); set('county', p.county);
         set('national-id', p.national_id); set('ward', p.ward);
         set('farm-size', p.farm_size_acres); set('farming-experience', p.farming_experience_years);
-        const csDb = (p.certification_status_db || p.certification_status || 'pending').toString();
+        const csDb = (p.certification_status_db || 'pending').toString();
         applyFarmerVerificationTransition(prevGate, csDb, hasReq);
         const csDisp = document.getElementById('certification-status-display');
         if (csDisp) csDisp.textContent = csDb.charAt(0).toUpperCase() + csDb.slice(1).toLowerCase();
@@ -3225,7 +3225,7 @@ function exitSuperUser() {
     });
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('DOMContentLoaded', async () => {
     showPage('dashboard');
     applyProductTypeOptions('product');
     applyProductTypeOptions('edit');
@@ -3276,12 +3276,12 @@ function exitSuperUser() {
       );
       profileLocked = !hasRequired;
       if (profileLocked) {
-        sessionStorage.setItem(FARMER_GATE_STATUS_KEY, String(p.certification_status_db || p.certification_status || 'pending').toLowerCase());
+        sessionStorage.setItem(FARMER_GATE_STATUS_KEY, String(p.certification_status_db || 'pending').toLowerCase());
         showPage('profile');
         if (!silent) showAlert('Complete your profile details to continue using the platform.', 'error');
         return;
       }
-      applyFarmerVerificationTransition(prevStored, p.certification_status_db || p.certification_status || 'pending', hasRequired);
+      applyFarmerVerificationTransition(prevStored, p.certification_status_db || 'pending', hasRequired);
     } catch (e) {}
   }
 

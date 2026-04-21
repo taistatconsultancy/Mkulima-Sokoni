@@ -941,12 +941,12 @@ async function enforceAgroProfileCompletion(silent) {
     );
     profileLocked = !hasRequired;
     if (profileLocked) {
-      sessionStorage.setItem(AGRO_GATE_STATUS_KEY, String(p.certification_status_db || p.certification_status || 'pending').toLowerCase());
+      sessionStorage.setItem(AGRO_GATE_STATUS_KEY, String(p.certification_status_db || 'pending').toLowerCase());
       showPage('profile');
       if (!silent) window.SokoUI?.toast('Complete your profile details (company name, location, county, national ID) to continue.', 'warning');
       return;
     }
-    applyAgroVerificationTransition(prevStored, p.certification_status_db || p.certification_status || 'pending', hasRequired);
+    applyAgroVerificationTransition(prevStored, p.certification_status_db || 'pending', hasRequired);
   } catch (e) {}
 }
 
@@ -1258,7 +1258,7 @@ async function loadProfile() {
     if (prof.county) document.getElementById('profile-county').value = prof.county;
     if (prof.national_id) document.getElementById('profile-national-id').value = prof.national_id;
     if (prof.bio) document.getElementById('profile-about').value = prof.bio;
-    var stDb = (prof.certification_status_db || prof.certification_status || 'pending').toString();
+    var stDb = (prof.certification_status_db || 'pending').toString();
     applyAgroVerificationTransition(prevGate, stDb, hasReq);
     var stEl = document.getElementById('profile-verification-status');
     if (stEl) stEl.textContent = stDb.charAt(0).toUpperCase() + stDb.slice(1).toLowerCase();

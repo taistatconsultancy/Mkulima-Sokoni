@@ -2316,7 +2316,7 @@ function exitSuperUser() {
         set('national-id', p.national_id);
         set('business-type', p.business_type);
         set('business-registration', p.business_registration_number);
-        const vsDb = (p.verification_status_db || p.verification_status || 'pending').toString();
+        const vsDb = (p.verification_status_db || 'pending').toString();
         applyBuyerVerificationTransition(prevGate, vsDb, hasReq);
         const vsEl = document.getElementById('verification-status-display');
         if (vsEl) vsEl.textContent = vsDb.charAt(0).toUpperCase() + vsDb.slice(1).toLowerCase();
@@ -2438,7 +2438,7 @@ function exitSuperUser() {
   resetSession();
 
   /* ── Init ── */
-  window.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('DOMContentLoaded', async () => {
     // If URL has hash, open that tab (e.g., #cart)
     showPage(location.hash ? location.hash.replace('#','') : 'dashboard');
     loadUserProfile();
@@ -2483,12 +2483,12 @@ function exitSuperUser() {
       );
       profileLocked = !hasRequired;
       if (profileLocked) {
-        sessionStorage.setItem(BUYER_GATE_STATUS_KEY, String(p.verification_status_db || p.verification_status || 'pending').toLowerCase());
+        sessionStorage.setItem(BUYER_GATE_STATUS_KEY, String(p.verification_status_db || 'pending').toLowerCase());
         showPage('profile');
         if (!silent) showAlert('Complete your profile details to continue using the platform.', 'error');
         return;
       }
-      applyBuyerVerificationTransition(prevStored, p.verification_status_db || p.verification_status || 'pending', hasRequired);
+      applyBuyerVerificationTransition(prevStored, p.verification_status_db || 'pending', hasRequired);
     } catch (e) {}
   }
 
