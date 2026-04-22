@@ -126,6 +126,7 @@
     .btn-sm.solid{background:var(--forest);color:#fff;border-color:var(--forest);}
     .btn-sm.solid:hover{background:var(--leaf);border-color:var(--leaf);}
     .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;background:#fff;}
+    .table-scroll table{min-width:640px;}
     table{width:100%;border-collapse:collapse;min-width:700px;}
     thead{background:var(--forest);color:#fff;}
     th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:.82rem;}
@@ -239,8 +240,9 @@
     .footer-badge{font-size:.68rem;color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:3px 10px;}
 
     @media(max-width:1000px){.footer-grid{grid-template-columns:1fr 1fr 1fr;}.footer-brand-col{grid-column:1/-1;}}
-    @media(max-width:768px){.mobile-nav-btn{display:inline-flex;}.topbar-nav{display:none;position:absolute;top:60px;left:0;right:0;background:var(--forest);flex-direction:column;align-items:stretch;gap:6px;padding:10px 14px 14px;border-top:1px solid rgba(255,255,255,.12);}.topbar-nav.mobile-open{display:flex;}.topbar-nav-link{justify-content:flex-start;}.wrap{padding:18px 14px;}.form-grid{grid-template-columns:1fr;}.form-full{grid-column:1;}.stats-grid{grid-template-columns:1fr 1fr;}.mk-grid{grid-template-columns:1fr 1fr;}.chat-mobile-btn{display:inline-flex;align-items:center;}.chat-shell{grid-template-columns:1fr;gap:10px;min-height:auto;}.chat-list{max-height:72vh;}.chat-thread{min-height:56vh;display:none;}.chat-shell.mobile-thread-open .chat-list{display:none;}.chat-shell.mobile-thread-open .chat-thread{display:flex;}.chat-thread-body{max-height:42vh;}.chat-bubble{max-width:90%;}.chat-input-row{flex-direction:column;align-items:stretch;}.chat-send-btn{width:100%;}.footer-grid{grid-template-columns:1fr 1fr;gap:24px;}.footer-grid>div:first-child{grid-column:1/-1;}}
-    @media(max-width:480px){.stats-grid{grid-template-columns:1fr;}.mk-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.chat-list-head,.chat-thread-head,.chat-thread-foot{padding:10px;}.chat-thread-body{padding:10px;}.chat-item{padding:10px;}.chat-avatar{width:30px;height:30px;font-size:.75rem;}.chat-item-name{font-size:.8rem;}.chat-item-snippet{font-size:.74rem;}.chat-bubble{font-size:.8rem;}.chat-thread{min-height:52vh;}.footer-grid{grid-template-columns:1fr;}}
+    @media(max-width:768px){.mobile-nav-btn{display:inline-flex;}.topbar-nav{display:none;position:absolute;top:60px;left:0;right:0;background:var(--forest);flex-direction:column;align-items:stretch;gap:6px;padding:10px 14px 14px;border-top:1px solid rgba(255,255,255,.12);}.topbar-nav.mobile-open{display:flex;}.topbar-nav-link{justify-content:flex-start;}.wrap{padding:18px 14px;}.form-grid{grid-template-columns:1fr;}.form-full{grid-column:1;}.stats-grid{grid-template-columns:1fr 1fr;}.inv-grid{grid-template-columns:1fr 1fr;}.mk-grid{grid-template-columns:1fr 1fr;}.chat-mobile-btn{display:inline-flex;align-items:center;}.chat-shell{grid-template-columns:1fr;gap:10px;min-height:auto;}.chat-list{max-height:72vh;}.chat-thread{min-height:56vh;display:none;}.chat-shell.mobile-thread-open .chat-list{display:none;}.chat-shell.mobile-thread-open .chat-thread{display:flex;}.chat-thread-body{max-height:42vh;}.chat-bubble{max-width:90%;}.chat-input-row{flex-direction:column;align-items:stretch;}.chat-send-btn{width:100%;}.footer-grid{grid-template-columns:1fr 1fr;gap:24px;}.footer-grid>div:first-child{grid-column:1/-1;}}
+    @media(max-width:480px){.stats-grid{grid-template-columns:1fr;}.inv-grid{grid-template-columns:1fr;}.mk-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.chat-list-head,.chat-thread-head,.chat-thread-foot{padding:10px;}.chat-thread-body{padding:10px;}.chat-item{padding:10px;}.chat-avatar{width:40px;height:40px;font-size:.8rem;}.chat-item-name{font-size:.8rem;}.chat-item-snippet{font-size:.74rem;}.chat-bubble{font-size:.8rem;}.chat-thread{min-height:52vh;}.footer-grid{grid-template-columns:1fr;}}
+    @media(max-width:360px){.topbar{padding:0 10px;}.topbar-right{gap:6px;}#agroAccountStatusBadgeLabel{display:none;}.user-menu-btn{padding-right:6px;}.user-menu-btn .name{display:none;}}
   </style>
 </head>
 <body>
@@ -462,7 +464,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
     <div class="section-card">
       <h2>🛒 Orders</h2>
       <p class="sub">Manage incoming orders from buyers (live updates)</p>
-      <div class="table-wrap">
+      <div class="table-wrap table-scroll">
         <table>
           <thead>
             <tr><th>Order</th><th>Buyer</th><th>Items</th><th>Total</th><th>Status</th><th>Actions</th></tr>
@@ -480,7 +482,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
     <div class="section-card">
       <h2>📋 Tenders</h2>
       <p class="sub">Browse open tenders posted by buyers and submit bids (live updates)</p>
-      <div class="table-wrap">
+      <div class="table-wrap table-scroll">
         <table>
           <thead>
             <tr><th>Tender</th><th>Category</th><th>Quantity</th><th>Deadline</th><th>Status</th><th>Actions</th></tr>
@@ -640,6 +642,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
 <script src="js/marketplace-sync.js"></script>
 <script src="js/featured-ticker-sync.js"></script>
 <script src="js/ui-feedback.js"></script>
+<script src="js/status-utils.js"></script>
 <script>
 document.getElementById('yr').textContent = new Date().getFullYear();
 
@@ -878,6 +881,29 @@ document.addEventListener('click', e => {
     document.getElementById('userDropdown').classList.remove('open');
   }
 });
+
+function primeTopbarIdentityFromCache() {
+  try {
+    var raw = localStorage.getItem('sokoUser') || localStorage.getItem('user');
+    if (!raw) return;
+    var user = JSON.parse(raw);
+    var firstName = String(user.first_name || '').trim();
+    var lastName = String(user.last_name || '').trim();
+    var fullName = [firstName, lastName].filter(Boolean).join(' ') || user.email || 'Agro-Dealer';
+    var shortName = firstName || 'Dealer';
+    var initials = fullName.charAt(0).toUpperCase() || 'A';
+    var avatar = document.getElementById('userAvatar');
+    var shortEl = document.getElementById('userNameShort');
+    var nameEl = document.getElementById('userDisplayName');
+    var emailEl = document.getElementById('userDisplayEmail');
+    if (avatar) avatar.textContent = initials;
+    if (shortEl) shortEl.textContent = shortName;
+    if (nameEl) nameEl.textContent = fullName;
+    if (emailEl) emailEl.textContent = user.email || '';
+  } catch (_) {}
+}
+primeTopbarIdentityFromCache();
+
 window.addEventListener('resize', () => {
   if (!window.matchMedia('(max-width: 768px)').matches) {
     document.getElementById('dealerChatShell')?.classList.remove('mobile-thread-open');
@@ -941,12 +967,18 @@ async function enforceAgroProfileCompletion(silent) {
     );
     profileLocked = !hasRequired;
     if (profileLocked) {
-      sessionStorage.setItem(AGRO_GATE_STATUS_KEY, String(p.certification_status_db || 'pending').toLowerCase());
+      var lockStatus = window.SokoStatus && window.SokoStatus.read
+        ? window.SokoStatus.read(p, 'farmer')
+        : 'pending';
+      sessionStorage.setItem(AGRO_GATE_STATUS_KEY, String(lockStatus).toLowerCase());
       showPage('profile');
       if (!silent) window.SokoUI?.toast('Complete your profile details (company name, location, county, national ID) to continue.', 'warning');
       return;
     }
-    applyAgroVerificationTransition(prevStored, p.certification_status_db || 'pending', hasRequired);
+    var resolvedStatus = window.SokoStatus && window.SokoStatus.read
+      ? window.SokoStatus.read(p, 'farmer')
+      : 'pending';
+    applyAgroVerificationTransition(prevStored, resolvedStatus, hasRequired);
   } catch (e) {}
 }
 
@@ -963,50 +995,67 @@ document.addEventListener('visibilitychange', function() {
 async function loadMyProducts() {
   if (!firebaseUid) return;
   const grid = document.getElementById('inv-grid');
+  const cacheKey = 'dealerMyProductsCache:' + firebaseUid;
   try {
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(cacheKey) || '[]');
+      if (Array.isArray(cached) && cached.length) {
+        renderDealerProducts(grid, cached);
+      }
+    } catch (_) {}
+
     const res = await fetch(`${API}/products/farmer/${firebaseUid}`);
     if (!res.ok) throw new Error('Failed');
     const products = await res.json();
-    myProducts = products;
-
-    const active = products.filter(p => p.status === 'active').length;
-    const drafts = products.filter(p => p.status === 'draft').length;
-    const views = products.reduce((s, p) => s + (p.views || 0), 0);
-    document.getElementById('stat-listings').textContent = active;
-    document.getElementById('stat-drafts').textContent = drafts;
-    document.getElementById('stat-views').textContent = views;
-
-    if (!products.length) {
-      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🌱</div><h4>No products yet</h4><p>Add your first product to start selling</p></div>';
-      return;
-    }
-
-    grid.innerHTML = products.sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).map(p => {
-      const emoji = EMOJI[p.category] || '📦';
-      const price = p.price ? `KSh ${Number(p.price).toLocaleString()}` : (p.price_min && p.price_max ? `KSh ${Number(p.price_min).toLocaleString()} – ${Number(p.price_max).toLocaleString()}` : '—');
-      return `<div class="inv-card">
-        <div class="inv-card-img">${p.image_url ? `<img src="${p.image_url}" alt="${p.name}"/>` : `<span style="font-size:48px;">${emoji}</span>`}</div>
-        <div class="inv-card-body">
-          <div class="inv-card-name">${p.name}</div>
-          <div class="inv-card-price">${price}</div>
-          <div class="inv-card-meta">
-            <span>${p.category||''}</span>
-            <span>•</span>
-            <span>${p.quantity||0} ${p.measurement_metric||'units'}</span>
-            <span>•</span>
-            <span class="badge ${p.status==='active'?'badge-active':'badge-draft'}">${p.status}</span>
-          </div>
-          <div class="inv-card-meta"><span>👁 ${p.views||0} views</span><span>•</span><span>📍 ${p.location||'—'}</span></div>
-          <div class="inv-card-actions">
-            ${p.status==='draft'?`<button class="btn-sm" onclick="activateProduct('${p.id}')">Publish</button>`:''}
-            <a href="product-detail.html?id=${p.id}" class="btn-sm" style="text-decoration:none;">View</a>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
+    myProducts = products || [];
+    try {
+      sessionStorage.setItem(cacheKey, JSON.stringify(myProducts));
+    } catch (_) {}
+    renderDealerProducts(grid, myProducts);
   } catch(e) {
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🌱</div><h4>No products yet</h4><p>Add your first product to start selling</p></div>';
+    if (!myProducts || !myProducts.length) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🌱</div><h4>No products yet</h4><p>Add your first product to start selling</p></div>';
+    }
   }
+}
+
+function renderDealerProducts(grid, products) {
+  myProducts = products || [];
+  const active = myProducts.filter(p => p.status === 'active').length;
+  const drafts = myProducts.filter(p => p.status === 'draft').length;
+  const views = myProducts.reduce((s, p) => s + (p.views || 0), 0);
+  document.getElementById('stat-listings').textContent = active;
+  document.getElementById('stat-drafts').textContent = drafts;
+  document.getElementById('stat-views').textContent = views;
+
+  if (!myProducts.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🌱</div><h4>No products yet</h4><p>Add your first product to start selling</p></div>';
+    return;
+  }
+
+  grid.innerHTML = myProducts.slice().sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).map(function(p) {
+    const emoji = EMOJI[p.category] || '📦';
+    const price = p.price ? `KSh ${Number(p.price).toLocaleString()}` : (p.price_min && p.price_max ? `KSh ${Number(p.price_min).toLocaleString()} – ${Number(p.price_max).toLocaleString()}` : '—');
+    return `<div class="inv-card">
+      <div class="inv-card-img">${p.image_url ? `<img src="${p.image_url}" alt="${p.name}"/>` : `<span style="font-size:48px;">${emoji}</span>`}</div>
+      <div class="inv-card-body">
+        <div class="inv-card-name">${p.name}</div>
+        <div class="inv-card-price">${price}</div>
+        <div class="inv-card-meta">
+          <span>${p.category||''}</span>
+          <span>•</span>
+          <span>${p.quantity||0} ${p.measurement_metric||'units'}</span>
+          <span>•</span>
+          <span class="badge ${p.status==='active'?'badge-active':'badge-draft'}">${p.status}</span>
+        </div>
+        <div class="inv-card-meta"><span>👁 ${p.views||0} views</span><span>•</span><span>📍 ${p.location||'—'}</span></div>
+        <div class="inv-card-actions">
+          ${p.status==='draft'?`<button class="btn-sm" onclick="activateProduct('${p.id}')">Publish</button>`:''}
+          <a href="product-detail.html?id=${p.id}" class="btn-sm" style="text-decoration:none;">View</a>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 async function activateProduct(pid) {
@@ -1258,7 +1307,9 @@ async function loadProfile() {
     if (prof.county) document.getElementById('profile-county').value = prof.county;
     if (prof.national_id) document.getElementById('profile-national-id').value = prof.national_id;
     if (prof.bio) document.getElementById('profile-about').value = prof.bio;
-    var stDb = (prof.certification_status_db || 'pending').toString();
+    var stDb = window.SokoStatus && window.SokoStatus.read
+      ? window.SokoStatus.read(prof, 'farmer')
+      : 'pending';
     applyAgroVerificationTransition(prevGate, stDb, hasReq);
     var stEl = document.getElementById('profile-verification-status');
     if (stEl) stEl.textContent = stDb.charAt(0).toUpperCase() + stDb.slice(1).toLowerCase();

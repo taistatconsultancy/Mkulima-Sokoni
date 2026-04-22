@@ -243,6 +243,7 @@
 </footer>
 
 <script src="js/ui-feedback.js"></script>
+<script src="js/status-utils.js"></script>
 <script>
 document.getElementById('yr').textContent = new Date().getFullYear();
 
@@ -309,7 +310,9 @@ function renderBanner(p, u) {
   }
 
   var badges = '<span class="role-badge">🌾 Farmer</span>';
-  var status = (p.certification_status_db || p.certification_status || 'pending').toLowerCase();
+  var status = window.SokoStatus && window.SokoStatus.read
+    ? window.SokoStatus.read(p, 'farmer')
+    : 'pending';
   if (status === 'verified') {
     badges += '<span class="verify-badge verified"><span class="verify-badge-icon">✔</span>Verified</span>';
   } else if (status === 'rejected') {

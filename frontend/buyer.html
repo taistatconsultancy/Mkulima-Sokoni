@@ -328,6 +328,7 @@
 
     /* ── Table ── */
     .table-wrap { overflow-x: auto; }
+    .table-scroll table { min-width: 640px; }
     table { width: 100%; border-collapse: collapse; }
     thead { background: var(--forest); }
     th { padding: 11px 14px; text-align: left; font-size: .75rem; font-weight: 700; color: #fff; white-space: nowrap; }
@@ -536,20 +537,29 @@
       .chat-send-btn { width: 100%; }
       .form-grid { grid-template-columns: 1fr; }
       .form-full { grid-column: 1; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
       footer { padding: 36px 16px 0; }
       .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
       .footer-bottom { flex-direction: column; align-items: flex-start; }
     }
     @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr; }
       .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .chat-list-head, .chat-thread-head, .chat-thread-foot { padding: 10px; }
       .chat-thread-body { padding: 10px; }
       .chat-item { padding: 10px; }
-      .chat-avatar { width: 30px; height: 30px; font-size: .75rem; }
+      .chat-avatar { width: 40px; height: 40px; font-size: .8rem; }
       .chat-item-name { font-size: .8rem; }
       .chat-item-snippet { font-size: .74rem; }
       .chat-bubble { font-size: .8rem; }
       .chat-thread { min-height: 52vh; }
+    }
+    @media (max-width: 360px) {
+      .topbar { padding: 0 10px; }
+      .topbar-right { gap: 6px; }
+      #buyerAccountStatusBadgeLabel { display: none; }
+      .user-menu-btn { padding-right: 6px; }
+      .user-menu-btn .name { display: none; }
     }
   </style>
 </head>
@@ -716,7 +726,7 @@ function exitSuperUser() {
       <button class="btn btn-white" onclick="createTender()">+ Create New Tender</button>
     </div>
     <div class="panel">
-      <div class="table-wrap">
+      <div class="table-wrap table-scroll">
         <table>
           <thead>
             <tr><th>Tender Title</th><th>Product Required</th><th>Quantity</th><th>Deadline</th><th>Bids</th><th>Status</th><th>Actions</th></tr>
@@ -736,7 +746,7 @@ function exitSuperUser() {
       </div>
     </div>
     <div class="panel">
-      <div class="table-wrap">
+      <div class="table-wrap table-scroll">
         <table>
           <thead>
             <tr><th>Product</th><th>Farmer</th><th>Quantity</th><th>Unit Price</th><th>Total</th><th>Actions</th></tr>
@@ -763,7 +773,7 @@ function exitSuperUser() {
       </div>
     </div>
     <div class="panel">
-      <div class="table-wrap">
+      <div class="table-wrap table-scroll">
         <table>
           <thead>
             <tr><th>Order</th><th>Seller</th><th>Items</th><th>Total</th><th>Status</th><th>Last update</th></tr>
@@ -1089,6 +1099,7 @@ function exitSuperUser() {
 <script src="js/marketplace-sync.js"></script>
 <script src="js/featured-ticker-sync.js"></script>
 <script src="js/ui-feedback.js"></script>
+<script src="js/status-utils.js"></script>
 <script>
   /* ── Init ── */
   document.getElementById('yr').textContent = new Date().getFullYear();
@@ -1551,6 +1562,28 @@ function exitSuperUser() {
     document.body.style.overflow = '';
   }
 
+  function primeTopbarIdentityFromCache() {
+    try {
+      var raw = localStorage.getItem('sokoUser') || localStorage.getItem('user');
+      if (!raw) return;
+      var user = JSON.parse(raw);
+      var firstName = String(user.first_name || '').trim();
+      var lastName = String(user.last_name || '').trim();
+      var fullName = [firstName, lastName].filter(Boolean).join(' ') || user.email || 'Buyer';
+      var shortName = firstName || 'Buyer';
+      var initials = fullName.charAt(0).toUpperCase() || 'B';
+      var avatar = document.getElementById('userAvatar');
+      var shortEl = document.getElementById('userNameShort');
+      var nameEl = document.getElementById('userDisplayName');
+      var emailEl = document.getElementById('userDisplayEmail');
+      if (avatar) avatar.textContent = initials;
+      if (shortEl) shortEl.textContent = shortName;
+      if (nameEl) nameEl.textContent = fullName;
+      if (emailEl) emailEl.textContent = user.email || '';
+    } catch (_) {}
+  }
+  primeTopbarIdentityFromCache();
+
   /* ── User profile ── */
   async function loadUserProfile() {
     try {
@@ -1913,17 +1946,23 @@ function exitSuperUser() {
   async function loadBuyerCart(silent=false) {
     const uid = getFirebaseUid();
     const body = document.getElementById('buyerCartBody');
+    const cacheKey = uid ? ('buyerCartCache:' + uid) : '';
     if (!uid) return;
     if (cartLoading) return;
     cartLoading = true;
-    if (!silent && body && !body.querySelector('tr')) {
-      body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading cart…</div></td></tr>';
-    } else {
-      setRefreshing('cart', true);
+    if (!silent && cacheKey) {
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null');
+        if (cached) renderBuyerCart(cached);
+      } catch (_) {}
     }
+    setRefreshing('cart', true);
     try {
       const d = await apiJson(`${API_BASE_URL}/cart?firebase_uid=${encodeURIComponent(uid)}`);
       renderBuyerCart(d);
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(d || {}));
+      } catch (_) {}
       stampLastUpdated('cart');
     } catch (e) {
       if (!silent) await uiAlert(e.message || 'Failed to load cart', 'Cart error');
@@ -2030,17 +2069,24 @@ function exitSuperUser() {
   async function loadBuyerTenders(silent=false) {
     const uid = getFirebaseUid();
     const body = document.getElementById('buyerTendersBody');
+    const cacheKey = uid ? ('buyerTendersCache:' + uid) : '';
     if (!uid) return;
     if (tendersLoading) return;
     tendersLoading = true;
-    if (!silent && body && !body.querySelector('tr')) {
-      body.innerHTML = '<tr><td colspan="7"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading tenders…</div></td></tr>';
-    } else {
-      setRefreshing('tenders', true);
+    if (!silent && body && cacheKey) {
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(cacheKey) || '[]');
+        if (Array.isArray(cached) && cached.length) renderBuyerTenders(cached);
+      } catch (_) {}
     }
+    setRefreshing('tenders', true);
     try {
       const d = await apiJson(`${API_BASE_URL}/tenders?firebase_uid=${encodeURIComponent(uid)}`);
-      renderBuyerTenders(d?.tenders || []);
+      const tenders = d?.tenders || [];
+      renderBuyerTenders(tenders);
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(tenders));
+      } catch (_) {}
       stampLastUpdated('tenders');
     } catch (e) {
       if (!silent) await uiAlert(e.message || 'Failed to load tenders', 'Tender error');
@@ -2163,17 +2209,24 @@ function exitSuperUser() {
   async function loadBuyerOrders(silent=false) {
     const uid = getFirebaseUid();
     const body = document.getElementById('buyerOrdersBody');
+    const cacheKey = uid ? ('buyerOrdersCache:' + uid) : '';
     if (!uid) return;
     if (ordersLoading) return;
     ordersLoading = true;
-    if (!silent && body && !body.querySelector('tr')) {
-      body.innerHTML = '<tr><td colspan="6"><div style="padding:18px;color:var(--muted);font-weight:700;">Loading orders…</div></td></tr>';
-    } else {
-      setRefreshing('orders', true);
+    if (!silent && body && cacheKey) {
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(cacheKey) || '[]');
+        if (Array.isArray(cached) && cached.length) renderBuyerOrders(cached);
+      } catch (_) {}
     }
+    setRefreshing('orders', true);
     try {
       const d = await apiJson(`${API_BASE_URL}/orders/buyer?firebase_uid=${encodeURIComponent(uid)}`);
-      renderBuyerOrders(d?.orders || []);
+      const orders = d?.orders || [];
+      renderBuyerOrders(orders);
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(orders));
+      } catch (_) {}
       stampLastUpdated('orders');
     } catch (e) {
       if (!silent) await uiAlert(e.message || 'Failed to load orders', 'Order error');
@@ -2316,7 +2369,9 @@ function exitSuperUser() {
         set('national-id', p.national_id);
         set('business-type', p.business_type);
         set('business-registration', p.business_registration_number);
-        const vsDb = (p.verification_status_db || 'pending').toString();
+        const vsDb = window.SokoStatus && window.SokoStatus.read
+          ? window.SokoStatus.read(p, 'buyer')
+          : 'pending';
         applyBuyerVerificationTransition(prevGate, vsDb, hasReq);
         const vsEl = document.getElementById('verification-status-display');
         if (vsEl) vsEl.textContent = vsDb.charAt(0).toUpperCase() + vsDb.slice(1).toLowerCase();
@@ -2483,12 +2538,18 @@ function exitSuperUser() {
       );
       profileLocked = !hasRequired;
       if (profileLocked) {
-        sessionStorage.setItem(BUYER_GATE_STATUS_KEY, String(p.verification_status_db || 'pending').toLowerCase());
+        var lockStatus = window.SokoStatus && window.SokoStatus.read
+          ? window.SokoStatus.read(p, 'buyer')
+          : 'pending';
+        sessionStorage.setItem(BUYER_GATE_STATUS_KEY, String(lockStatus).toLowerCase());
         showPage('profile');
         if (!silent) showAlert('Complete your profile details to continue using the platform.', 'error');
         return;
       }
-      applyBuyerVerificationTransition(prevStored, p.verification_status_db || 'pending', hasRequired);
+      var resolvedStatus = window.SokoStatus && window.SokoStatus.read
+        ? window.SokoStatus.read(p, 'buyer')
+        : 'pending';
+      applyBuyerVerificationTransition(prevStored, resolvedStatus, hasRequired);
     } catch (e) {}
   }
 

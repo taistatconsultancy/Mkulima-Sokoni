@@ -378,6 +378,7 @@
   </div>
   
   <script src="js/profile.js"></script>
+  <script src="js/status-utils.js"></script>
   <script>
     // Helper function to convert file to base64
     function fileToBase64(file) {
@@ -420,7 +421,9 @@
           document.getElementById('national-id').value = profile.national_id || '';
           document.getElementById('business-type').value = profile.business_type || '';
           document.getElementById('business-registration').value = profile.business_registration_number || '';
-          var verificationStatus = profile.verification_status_db || profile.verification_status || 'pending';
+          var verificationStatus = window.SokoStatus && window.SokoStatus.read
+            ? window.SokoStatus.read(profile, 'buyer')
+            : 'pending';
           document.getElementById('verification-status').value = verificationStatus;
           document.getElementById('bio').value = profile.bio || '';
           document.getElementById('profile-image').value = profile.profile_image_url || '';

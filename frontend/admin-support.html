@@ -533,6 +533,7 @@
   <script type="module" src="js/admin-support-firebase.js"></script>
   <script src="js/support-center.js"></script>
   <script src="js/featured-ticker-sync.js"></script>
+  <script src="js/status-utils.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
 
@@ -569,32 +570,64 @@
     };
 
     /* ── Live Stats ── */
-    async function loadAdminStats() {
+    function setStatsErrorState(msg) {
+      var valueIds = [
+        'stat-total-users', 'stat-pending', 'stat-products', 'stat-verified',
+        'an-total-users', 'an-pending', 'an-total-products', 'an-verified'
+      ];
+      valueIds.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = msg;
+      });
+    }
+
+    function applyAdminStats(s) {
+      var fmt = function(n) { return Number(n || 0).toLocaleString(); };
+      var totalUsers = Number(s && s.total_users || 0);
+      var verifiedUsers = Number(s && s.verified_users || 0);
+      var pct = totalUsers > 0 ? ((verifiedUsers / totalUsers) * 100).toFixed(1) : '0.0';
+
+      document.getElementById('stat-total-users').textContent = fmt(totalUsers);
+      document.getElementById('stat-new-week').textContent = '+' + fmt(s && s.new_this_week) + ' new this week';
+      document.getElementById('stat-pending').textContent = fmt(s && s.pending_verification);
+      document.getElementById('stat-products').textContent = fmt(s && s.total_products);
+      document.getElementById('stat-active-products').textContent = fmt(s && s.active_products) + ' active';
+      document.getElementById('stat-verified').textContent = fmt(verifiedUsers);
+      document.getElementById('stat-verified-pct').textContent = pct + '% verified';
+
+      document.getElementById('an-total-users').textContent = fmt(totalUsers);
+      document.getElementById('an-new-week').textContent = '+' + fmt(s && s.new_this_week) + ' this week';
+      document.getElementById('an-total-products').textContent = fmt(s && s.total_products);
+      document.getElementById('an-active-products').textContent = fmt(s && s.active_products) + ' active';
+      document.getElementById('an-verified').textContent = fmt(verifiedUsers);
+      document.getElementById('an-verified-pct').textContent = pct + '% verified';
+      document.getElementById('an-pending').textContent = fmt(s && s.pending_verification);
+    }
+
+    async function loadAdminStats(retryCount) {
+      if (typeof retryCount !== 'number') retryCount = 0;
       try {
+        var cached = null;
+        try {
+          cached = JSON.parse(localStorage.getItem('adminStatsCache') || 'null');
+        } catch (_) {}
+        if (cached) applyAdminStats(cached);
+
         var res = await authFetch(API_BASE + '/auth/admin/stats');
-        if (!res.ok) throw new Error();
+        if (!res.ok) throw new Error('stats_' + res.status);
         var s = await res.json();
-
-        var fmt = function(n) { return (n || 0).toLocaleString(); };
-        var pct = (s.total_users > 0) ? ((s.verified_users / s.total_users) * 100).toFixed(1) : '0';
-
-        document.getElementById('stat-total-users').textContent = fmt(s.total_users);
-        document.getElementById('stat-new-week').textContent = '+' + fmt(s.new_this_week) + ' new this week';
-        document.getElementById('stat-pending').textContent = fmt(s.pending_verification);
-        document.getElementById('stat-products').textContent = fmt(s.total_products);
-        document.getElementById('stat-active-products').textContent = fmt(s.active_products) + ' active';
-        document.getElementById('stat-verified').textContent = fmt(s.verified_users);
-        document.getElementById('stat-verified-pct').textContent = pct + '% verified';
-
-        document.getElementById('an-total-users').textContent = fmt(s.total_users);
-        document.getElementById('an-new-week').textContent = '+' + fmt(s.new_this_week) + ' this week';
-        document.getElementById('an-total-products').textContent = fmt(s.total_products);
-        document.getElementById('an-active-products').textContent = fmt(s.active_products) + ' active';
-        document.getElementById('an-verified').textContent = fmt(s.verified_users);
-        document.getElementById('an-verified-pct').textContent = pct + '% verified';
-        document.getElementById('an-pending').textContent = fmt(s.pending_verification);
+        applyAdminStats(s);
+        try {
+          localStorage.setItem('adminStatsCache', JSON.stringify(s));
+        } catch (_) {}
       } catch (e) {
         console.error('Failed to load admin stats:', e);
+        setStatsErrorState('Retrying...');
+        if (retryCount < 1) {
+          setTimeout(function() { loadAdminStats(retryCount + 1); }, 2000);
+        } else {
+          setStatsErrorState('Retry failed');
+        }
       }
     }
 
@@ -613,19 +646,18 @@
     var ACCESS_LOG_PER_PAGE = 10;
 
     function userCombinedStatus(u) {
-      var cs = (u.certification_status_db || u.certification_status || '').toLowerCase();
-      var bs = (u.buyer_verification_status_db || u.buyer_verification_status || '').toLowerCase();
-      if (cs === 'rejected' || bs === 'rejected') return 'rejected';
-      if (cs === 'verified' || bs === 'verified') return 'verified';
-      if (cs === 'pending' || bs === 'pending') return 'pending';
-      return u.is_active !== false ? 'active' : 'inactive';
+      var st = window.SokoStatus && window.SokoStatus.readAdminCombined
+        ? window.SokoStatus.readAdminCombined(u)
+        : 'pending';
+      if (st === 'pending' || st === 'verified' || st === 'rejected') return st;
+      return u && u.is_active !== false ? 'active' : 'inactive';
     }
 
     function isVerificationActionable(u) {
-      /* Use DB columns so verified-in-DB users with incomplete profiles do not re-queue */
-      var a = (u.certification_status_db || u.certification_status || '').toLowerCase();
-      var b = (u.buyer_verification_status_db || u.buyer_verification_status || '').toLowerCase();
-      return a === 'pending' || b === 'pending' || a === 'rejected' || b === 'rejected';
+      var st = window.SokoStatus && window.SokoStatus.readAdminCombined
+        ? window.SokoStatus.readAdminCombined(u)
+        : 'pending';
+      return st === 'pending' || st === 'rejected';
     }
 
     async function loadAdminUsers() {
@@ -852,10 +884,9 @@
             return false;
           }
         }
-        var cs = (u.certification_status_db || u.certification_status || '').toLowerCase();
-        var bs = (u.buyer_verification_status_db || u.buyer_verification_status || '').toLowerCase();
-        var rowStatus = (cs === 'rejected' || bs === 'rejected') ? 'rejected' : 'pending';
-        if (cs === 'verified' || bs === 'verified') rowStatus = 'verified';
+        var rowStatus = window.SokoStatus && window.SokoStatus.readAdminCombined
+          ? window.SokoStatus.readAdminCombined(u)
+          : 'pending';
         var emailQ = (document.getElementById('verification-search-email')?.value || '').trim().toLowerCase();
         if (emailQ && String(u.email || '').toLowerCase().indexOf(emailQ) === -1) return false;
         if (statusVal && statusVal !== rowStatus) return false;
@@ -881,10 +912,11 @@
       var pageUsers = users.slice(start, start + VERIFY_PER_PAGE);
       tbody.innerHTML = pageUsers.map(function(u, idx) {
         var name = esc((u.first_name || '') + ' ' + (u.last_name || '')).trim() || esc(u.email);
-        var cs = (u.certification_status_db || u.certification_status || '').toLowerCase();
-        var bs = (u.buyer_verification_status_db || u.buyer_verification_status || '').toLowerCase();
-        var isRejected = cs === 'rejected' || bs === 'rejected';
-        var isVerified = (cs === 'verified' || bs === 'verified');
+        var combinedStatus = window.SokoStatus && window.SokoStatus.readAdminCombined
+          ? window.SokoStatus.readAdminCombined(u)
+          : 'pending';
+        var isRejected = combinedStatus === 'rejected';
+        var isVerified = combinedStatus === 'verified';
         var statusLabel = isRejected
           ? '<span class="badge rejected">Rejected</span>'
           : (isVerified ? '<span class="badge verified">Verified</span>' : '<span class="badge pending">Pending Review</span>');
@@ -914,6 +946,9 @@
       document.querySelectorAll('.tab-content').forEach(function(content) { content.classList.remove('active'); });
       if (btn && btn.classList) btn.classList.add('active');
       document.getElementById(tabName).classList.add('active');
+      if (tabName === 'analytics') {
+        loadAdminStats();
+      }
     }
 
     /* ── User / Verification Actions ── */

@@ -157,8 +157,8 @@ class Product:
                 conditions.append("p.product_type = %s")
                 params.append(product_type)
 
-            # Marketplace policy: only verified/approved sellers are visible in listings.
-            conditions.append("COALESCE(fp.certification_status, 'pending') IN ('verified', 'approved')")
+            # Marketplace policy: only verified sellers are visible in listings.
+            conditions.append("COALESCE(fp.certification_status, 'pending') = 'verified'")
             # Incomplete profiles are always treated as pending (not market-visible).
             conditions.append("NULLIF(TRIM(COALESCE(fp.farm_name, '')), '') IS NOT NULL")
             conditions.append("NULLIF(TRIM(COALESCE(fp.location, '')), '') IS NOT NULL")
@@ -232,7 +232,7 @@ class Product:
         try:
             conditions = [
                 'p.status = %s',
-                "COALESCE(fp.certification_status, 'pending') IN ('verified', 'approved')",
+                "COALESCE(fp.certification_status, 'pending') = 'verified'",
                 "NULLIF(TRIM(COALESCE(fp.farm_name, '')), '') IS NOT NULL",
                 "NULLIF(TRIM(COALESCE(fp.location, '')), '') IS NOT NULL",
                 "NULLIF(TRIM(COALESCE(fp.county, '')), '') IS NOT NULL",

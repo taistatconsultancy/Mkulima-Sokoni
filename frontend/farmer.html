@@ -361,6 +361,7 @@
 
     /* ── Table ── */
     .table-wrap { overflow-x: auto; }
+    .table-scroll table { min-width: 640px; }
     table { width: 100%; border-collapse: collapse; }
     thead { background: var(--forest); }
     th { padding: 11px 14px; text-align: left; font-size: .75rem; font-weight: 700; color: #fff; white-space: nowrap; }
@@ -591,6 +592,7 @@
       font-weight: 800;
       flex-shrink: 0;
     }
+    .agro-dealer-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; margin-bottom:30px; }
     .chat-item-main { flex: 1; min-width: 0; }
     .chat-item-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .chat-item-name { font-weight: 800; font-size: .84rem; color: var(--ink); }
@@ -805,11 +807,20 @@
       .chat-list-head, .chat-thread-head, .chat-thread-foot { padding: 10px; }
       .chat-thread-body { padding: 10px; }
       .chat-item { padding: 10px; }
-      .chat-avatar { width: 30px; height: 30px; font-size: .75rem; }
+      .chat-avatar { width: 40px; height: 40px; font-size: .8rem; }
       .chat-item-name { font-size: .8rem; }
       .chat-item-snippet { font-size: .74rem; }
       .chat-bubble { font-size: .8rem; }
       .chat-thread { min-height: 52vh; }
+    }
+    @media (max-width: 360px) {
+      .topbar { padding: 0 10px; }
+      .topbar-right { gap: 6px; }
+      #accountStatusBadgeLabel { display: none; }
+      .user-menu-btn { padding-right: 6px; }
+      .user-menu-btn .name { display: none; }
+      .agro-dealer-grid { grid-template-columns: 1fr; }
+      #marketGrid { grid-template-columns: 1fr !important; }
     }
   </style>
 </head>
@@ -921,10 +932,7 @@ function exitSuperUser() {
     </div>
 
     <div class="products-grid" id="products-grid">
-      <div id="products-loading" style="grid-column:1/-1; display:flex; flex-direction:column; align-items:center; padding:52px 20px; gap:14px;">
-        <div class="spinner"></div>
-        <p style="color:var(--muted); font-weight:600;">Loading your products…</p>
-      </div>
+      <div id="products-loading" style="display:none;"></div>
     </div>
 
     <!-- Agro-Dealer Listings -->
@@ -935,7 +943,7 @@ function exitSuperUser() {
       </div>
       <a href="market.html" class="btn btn-white" style="text-decoration:none;">View Marketplace →</a>
     </div>
-    <div id="agroDealerGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px;">
+    <div id="agroDealerGrid" class="agro-dealer-grid">
       <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);"><div style="font-size:32px;margin-bottom:8px;">🏪</div><p style="font-weight:600;">Loading agro-dealer products…</p></div>
     </div>
 
@@ -963,7 +971,7 @@ function exitSuperUser() {
       </div>
     </div>
     <div class="panel">
-      <div class="table-wrap">
+      <div class="table-wrap table-scroll">
         <table>
           <thead><tr><th>Product & Buyer</th><th>Quantity</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="sellerOrdersBody"></tbody>
@@ -1037,7 +1045,7 @@ function exitSuperUser() {
       </div>
     </div>
     <div class="panel">
-      <div class="table-wrap">
+      <div class="table-wrap table-scroll">
         <table>
           <thead><tr><th>Tender & Buyer</th><th>Product Required</th><th>Quantity</th><th>Deadline</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="sellerTendersBody"></tbody>
@@ -1477,6 +1485,7 @@ function exitSuperUser() {
 <script src="js/marketplace-sync.js"></script>
 <script src="js/featured-ticker-sync.js"></script>
 <script src="js/ui-feedback.js"></script>
+<script src="js/status-utils.js"></script>
 <script>
   /* ── Init ── */
   document.getElementById('yr').textContent = new Date().getFullYear();
@@ -1877,6 +1886,28 @@ function exitSuperUser() {
     document.body.style.overflow = '';
   }
 
+  function primeTopbarIdentityFromCache() {
+    try {
+      var raw = localStorage.getItem('sokoUser') || localStorage.getItem('user');
+      if (!raw) return;
+      var user = JSON.parse(raw);
+      var firstName = String(user.first_name || '').trim();
+      var lastName = String(user.last_name || '').trim();
+      var fullName = [firstName, lastName].filter(Boolean).join(' ') || user.email || 'Farmer';
+      var shortName = firstName || 'Farmer';
+      var initials = fullName.charAt(0).toUpperCase() || 'F';
+      var avatar = document.getElementById('userAvatar');
+      var shortEl = document.getElementById('userNameShort');
+      var nameEl = document.getElementById('userDisplayName');
+      var emailEl = document.getElementById('userDisplayEmail');
+      if (avatar) avatar.textContent = initials;
+      if (shortEl) shortEl.textContent = shortName;
+      if (nameEl) nameEl.textContent = fullName;
+      if (emailEl) emailEl.textContent = user.email || '';
+    } catch (_) {}
+  }
+  primeTopbarIdentityFromCache();
+
   /* ── Product modal ── */
   function addProduct() {
     document.getElementById('addProductModal').classList.add('active');
@@ -2041,7 +2072,7 @@ function exitSuperUser() {
     const grid = document.getElementById('products-grid');
     const loading = document.getElementById('products-loading');
     if (!grid) return;
-    if (loading) loading.style.display = 'flex';
+    if (loading) loading.style.display = 'none';
 
     try {
       const userStr = localStorage.getItem('user');
@@ -2049,31 +2080,42 @@ function exitSuperUser() {
       const user = JSON.parse(userStr);
       const uid = user.firebase_uid || user.id;
       if (!uid) { showProductsEmpty(grid, loading, 'Please log in to view your products'); return; }
+      const cacheKey = 'farmerMyProductsCache:' + uid;
+
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(cacheKey) || '[]');
+        if (Array.isArray(cached) && cached.length) {
+          renderMyProducts(grid, cached);
+        }
+      } catch (_) {}
 
       const res = await fetch(`${API_BASE_URL}/products/farmer/${uid}`);
       if (!res.ok) throw new Error('Failed');
       const products = await res.json();
       myProducts = products || [];
-
-      if (loading) loading.style.display = 'none';
-      grid.querySelectorAll('.product-card,[data-empty]').forEach(el => el.remove());
-
-      if (!products || !products.length) {
-        showProductsEmpty(grid, null, 'No products yet — click "+ Add New Product" to get started!');
-        return;
-      }
-
-      const sorted = products.sort((a,b) => {
-        if (a.status==='draft' && b.status!=='draft') return -1;
-        if (a.status!=='draft' && b.status==='draft') return 1;
-        return new Date(b.created_at||0) - new Date(a.created_at||0);
-      });
-      sorted.forEach(p => grid.insertAdjacentHTML('beforeend', buildProductCard(p)));
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(myProducts));
+      } catch (_) {}
+      renderMyProducts(grid, myProducts);
     } catch {
       if (loading) loading.style.display = 'none';
       grid.querySelectorAll('.product-card,[data-empty]').forEach(el => el.remove());
       showProductsEmpty(grid, null, 'Error loading products — please refresh the page.');
     }
+  }
+
+  function renderMyProducts(grid, products) {
+    grid.querySelectorAll('.product-card,[data-empty]').forEach(el => el.remove());
+    if (!products || !products.length) {
+      showProductsEmpty(grid, null, 'No products yet — click "+ Add New Product" to get started!');
+      return;
+    }
+    const sorted = products.slice().sort((a,b) => {
+      if (a.status==='draft' && b.status!=='draft') return -1;
+      if (a.status!=='draft' && b.status==='draft') return 1;
+      return new Date(b.created_at||0) - new Date(a.created_at||0);
+    });
+    sorted.forEach(p => grid.insertAdjacentHTML('beforeend', buildProductCard(p)));
   }
 
   function getMyProductById(id) {
@@ -2692,7 +2734,9 @@ function exitSuperUser() {
         set('farm-name', p.farm_name); set('location', p.location); set('county', p.county);
         set('national-id', p.national_id); set('ward', p.ward);
         set('farm-size', p.farm_size_acres); set('farming-experience', p.farming_experience_years);
-        const csDb = (p.certification_status_db || 'pending').toString();
+        const csDb = window.SokoStatus && window.SokoStatus.read
+          ? window.SokoStatus.read(p, 'farmer')
+          : 'pending';
         applyFarmerVerificationTransition(prevGate, csDb, hasReq);
         const csDisp = document.getElementById('certification-status-display');
         if (csDisp) csDisp.textContent = csDb.charAt(0).toUpperCase() + csDb.slice(1).toLowerCase();
@@ -3276,12 +3320,18 @@ function exitSuperUser() {
       );
       profileLocked = !hasRequired;
       if (profileLocked) {
-        sessionStorage.setItem(FARMER_GATE_STATUS_KEY, String(p.certification_status_db || 'pending').toLowerCase());
+        var lockStatus = window.SokoStatus && window.SokoStatus.read
+          ? window.SokoStatus.read(p, 'farmer')
+          : 'pending';
+        sessionStorage.setItem(FARMER_GATE_STATUS_KEY, String(lockStatus).toLowerCase());
         showPage('profile');
         if (!silent) showAlert('Complete your profile details to continue using the platform.', 'error');
         return;
       }
-      applyFarmerVerificationTransition(prevStored, p.certification_status_db || 'pending', hasRequired);
+      var resolvedStatus = window.SokoStatus && window.SokoStatus.read
+        ? window.SokoStatus.read(p, 'farmer')
+        : 'pending';
+      applyFarmerVerificationTransition(prevStored, resolvedStatus, hasRequired);
     } catch (e) {}
   }
 
