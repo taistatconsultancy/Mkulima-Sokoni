@@ -127,6 +127,8 @@ def create_tender():
         user_id = str(user["id"])
         if is_rejected_user(user.get("firebase_uid")):
             return jsonify({"error": "Your account is rejected. You cannot create tenders."}), 403
+        if not user.get("email_verified", False):
+            return jsonify({"error": "Please verify your email address to continue."}), 403
         if not _has_any_role(user_id, user, ["buyer"]):
             return jsonify({"error": "Buyer role required"}), 403
 
@@ -174,6 +176,8 @@ def submit_bid(tender_id):
         user_id = str(user["id"])
         if is_rejected_user(user.get("firebase_uid")):
             return jsonify({"error": "Your account is rejected. You cannot submit bids."}), 403
+        if not user.get("email_verified", False):
+            return jsonify({"error": "Please verify your email address to continue."}), 403
         if not _has_any_role(user_id, user, ["farmer", "agro-dealer"]):
             return jsonify({"error": "Seller role required"}), 403
 

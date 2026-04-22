@@ -7,8 +7,10 @@ from models.farmer_profile import FarmerProfile
 from models.buyer_profile import BuyerProfile
 from auth.firebase_auth import verify_firebase_token
 from utils.cloudinary_service import upload_image_from_url
+from utils.mailer import resolve_support_team_emails, send_support_verification_request_email
 import logging
 import uuid
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +44,53 @@ def _buyer_profile_complete(data):
         str(data.get('county') or '').strip() and
         str(data.get('national_id') or '').strip()
     )
+
+
+def _maybe_notify_support_profile_submitted(
+    *,
+    firebase_uid: str,
+    user_id: str,
+    profile_kind: str,
+    submitted_pending: bool,
+    prev_status: Optional[str],
+    new_status: Optional[str],
+    profile_complete: bool,
+) -> None:
+    """
+    Best-effort support email when a user submits a complete profile for review.
+    Sends only on transition into 'pending' to avoid repeats.
+    """
+    try:
+        if not submitted_pending:
+            return
+        if not profile_complete:
+            return
+        prev_s = (prev_status or "").strip().lower() or None
+        new_s = (new_status or "").strip().lower() or None
+        if new_s != "pending":
+            return
+        if prev_s == "pending":
+            return
+
+        recipients = resolve_support_team_emails()
+        if not recipients:
+            return
+
+        user = User.get_user_by_firebase_uid(firebase_uid) or {}
+        try:
+            roles = User.get_user_roles(user_id) or []
+        except Exception:
+            roles = []
+        user_summary = {
+            "first_name": user.get("first_name"),
+            "last_name": user.get("last_name"),
+            "email": user.get("email"),
+            "phone_number": user.get("phone_number"),
+            "roles": roles or (user.get("role") or ""),
+        }
+        send_support_verification_request_email(recipients, user_summary, profile_kind=profile_kind)
+    except Exception as e:
+        logger.warning("Support verification email skipped/failed: %s", e)
 
 
 def extract_user_id(user):
@@ -270,6 +319,8 @@ def create_farmer_profile():
         if not _farmer_profile_complete(data):
             cert_status = 'pending'
         if FarmerProfile.profile_exists(user_id):
+            prev_profile = FarmerProfile.get_profile_by_user_id(user_id)
+            prev_status = (prev_profile or {}).get('certification_status')
             # Update existing profile (omit certification_status unless submitting pending)
             fp_kwargs = dict(
                 farm_name=data.get('farm_name'),
@@ -293,6 +344,7 @@ def create_farmer_profile():
                 fp_kwargs['certification_status'] = cert_status
             profile = FarmerProfile.update_profile(user_id, **fp_kwargs)
         else:
+            prev_status = None
             # Create new profile
             profile = FarmerProfile.create_profile(
                 user_id,
@@ -314,6 +366,23 @@ def create_farmer_profile():
                 referral_source=data.get('referral_source'),
                 referral_other=data.get('referral_other')
             )
+
+        # Support notification when user submits for verification (best-effort)
+        submitted_pending = str(data.get('certification_status') or '').strip().lower() == 'pending'
+        new_status = None
+        try:
+            new_status = (profile or {}).get('certification_status')
+        except Exception:
+            new_status = None
+        _maybe_notify_support_profile_submitted(
+            firebase_uid=firebase_uid,
+            user_id=str(user_id),
+            profile_kind='farmer',
+            submitted_pending=submitted_pending,
+            prev_status=prev_status,
+            new_status=new_status,
+            profile_complete=_farmer_profile_complete(data),
+        )
         
         return jsonify({
             'success': True,
@@ -446,6 +515,8 @@ def create_buyer_profile():
             buyer_vstatus = 'pending'
         # Check if profile exists
         if BuyerProfile.profile_exists(user_id):
+            prev_profile = BuyerProfile.get_profile_by_user_id(user_id)
+            prev_status = (prev_profile or {}).get('verification_status')
             # Update existing profile
             bp_kwargs = dict(
                 company_name=data.get('company_name'),
@@ -465,6 +536,7 @@ def create_buyer_profile():
                 bp_kwargs['verification_status'] = buyer_vstatus
             profile = BuyerProfile.update_profile(user_id, **bp_kwargs)
         else:
+            prev_status = None
             # Create new profile
             profile = BuyerProfile.create_profile(
                 user_id,
@@ -482,6 +554,23 @@ def create_buyer_profile():
                 referral_source=data.get('referral_source'),
                 referral_other=data.get('referral_other')
             )
+
+        # Support notification when user submits for verification (best-effort)
+        submitted_pending = str(data.get('verification_status') or '').strip().lower() == 'pending'
+        new_status = None
+        try:
+            new_status = (profile or {}).get('verification_status')
+        except Exception:
+            new_status = None
+        _maybe_notify_support_profile_submitted(
+            firebase_uid=firebase_uid,
+            user_id=str(user_id),
+            profile_kind='buyer',
+            submitted_pending=submitted_pending,
+            prev_status=prev_status,
+            new_status=new_status,
+            profile_complete=_buyer_profile_complete(data),
+        )
         
         return jsonify({
             'success': True,

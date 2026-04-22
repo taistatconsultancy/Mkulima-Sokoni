@@ -296,6 +296,8 @@ def checkout():
     user_id = str(user["id"])
     if is_rejected_user(user.get("firebase_uid")):
         return jsonify({"error": "Your account is rejected. You cannot perform checkout."}), 403
+    if not user.get("email_verified", False):
+        return jsonify({"error": "Please verify your email address to continue."}), 403
     if not _has_role(user_id, user, "buyer"):
         return jsonify({"error": "Buyer role required"}), 403
 

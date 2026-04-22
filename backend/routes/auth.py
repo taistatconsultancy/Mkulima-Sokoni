@@ -10,6 +10,7 @@ from auth.admin_auth import decode_token_if_admin
 from models.verification_audit import VerificationAudit, AdminImpersonationLog, AuthLoginAudit
 from services.admin_verification_service import apply_verification_change
 from utils.cloudinary_service import delete_image
+from utils.mailer import send_welcome_email, send_account_verified_email
 import logging
 import uuid
 import re
@@ -208,6 +209,12 @@ def register():
                     )
         except Exception as e:
             logger.warning(f"Could not auto-create profiles: {str(e)}")
+
+        # Send welcome email (best-effort)
+        try:
+            send_welcome_email(email, first_name=first_name)
+        except Exception as e:
+            logger.warning("Welcome email skipped/failed: %s", e)
         
         return jsonify({
             'success': True,
@@ -421,6 +428,13 @@ def complete_registration():
                     )
         except Exception as e:
             logger.warning(f"Could not auto-create profiles: {str(e)}")
+
+        # Send welcome email for newly created accounts (best-effort)
+        # If the user already existed, this will still be best-effort but harmless.
+        try:
+            send_welcome_email(email, first_name=first_name)
+        except Exception as e:
+            logger.warning("Welcome email skipped/failed: %s", e)
         
         # Get all roles
         user_roles = User.get_user_roles(user_id)
@@ -652,6 +666,20 @@ def admin_patch_verification(user_id):
                 )
         except Exception as sms_exc:
             logger.warning('Verification SMS notification failed (non-fatal): %s', sms_exc)
+
+        # Email user on approval (best-effort)
+        try:
+            if (result.get('new_status') or '').lower() == 'verified':
+                user_row = User.get_user_by_id(user_id)
+                if user_row:
+                    to_email = (user_row.get('email') or '').strip()
+                    if to_email:
+                        send_account_verified_email(
+                            to_email,
+                            first_name=user_row.get('first_name'),
+                        )
+        except Exception as e:
+            logger.warning('Verification approval email skipped/failed (non-fatal): %s', e)
 
         return jsonify({'success': True, **result}), 200
     except ValueError as exc:

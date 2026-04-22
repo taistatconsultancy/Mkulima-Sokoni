@@ -7,11 +7,82 @@ from models.product import Product
 from models.user import User
 from models.farmer_profile import FarmerProfile
 from utils.account_access import is_rejected_user
+from utils.mailer import send_new_message_email
+from database import execute_query
 import logging
+import os
+import time
 
 logger = logging.getLogger(__name__)
 
 chat_bp = Blueprint("chat", __name__, url_prefix="/api/chat")
+
+_chat_email_last_sent = {}
+
+
+def _chat_email_throttle_seconds() -> int:
+    try:
+        minutes = int(os.getenv("CHAT_EMAIL_THROTTLE_MINUTES", "15"))
+    except Exception:
+        minutes = 15
+    return max(60, minutes * 60)
+
+
+def _maybe_email_other_party(convo, sender_user_id: str, message_body: str) -> None:
+    """
+    Best-effort email notification to the other participant in a conversation.
+    Throttled per (conversation_id, recipient_user_id).
+    """
+    try:
+        convo_id = str(convo.get("id"))
+        buyer_user_id = str(convo.get("buyer_user_id"))
+        farmer_profile_id = str(convo.get("farmer_profile_id"))
+
+        # Determine recipient user id
+        if str(sender_user_id) == buyer_user_id:
+            # Sender is buyer -> recipient is farmer (profile owner)
+            row = execute_query(
+                "SELECT user_id FROM farmer_profiles WHERE id = %s::uuid",
+                (farmer_profile_id,),
+                fetch_one=True,
+            )
+            recipient_user_id = str(row.get("user_id")) if row else None
+            from_label = "Buyer"
+        else:
+            # Sender is farmer/agro-dealer -> recipient is buyer
+            recipient_user_id = buyer_user_id
+            from_label = "Seller"
+
+        if not recipient_user_id:
+            return
+
+        key = f"{convo_id}:{recipient_user_id}"
+        now = time.time()
+        last = _chat_email_last_sent.get(key, 0)
+        if now - last < _chat_email_throttle_seconds():
+            return
+
+        recipient = User.get_user_by_id(recipient_user_id)
+        if not recipient:
+            return
+        to_email = (recipient.get("email") or "").strip()
+        if not to_email:
+            return
+
+        # Only email verified accounts by default (avoid sending to mistyped emails)
+        if not recipient.get("email_verified", False):
+            return
+
+        sent = send_new_message_email(
+            to_email=to_email,
+            from_label=from_label,
+            preview_text=message_body,
+            deep_link=None,
+        )
+        if sent:
+            _chat_email_last_sent[key] = now
+    except Exception as e:
+        logger.warning("Chat email notification skipped/failed: %s", e)
 
 
 def _get_current_user():
@@ -143,6 +214,8 @@ def send_message(conversation_id):
         return jsonify({"error": err}), status
     if is_rejected_user(user.get("firebase_uid")):
         return jsonify({"error": "Your account is rejected. You can view messages but cannot send."}), 403
+    if not user.get("email_verified", False):
+        return jsonify({"error": "Please verify your email address to continue."}), 403
 
     data = request.get_json() or {}
     body = (data.get("body") or "").strip()
@@ -157,6 +230,14 @@ def send_message(conversation_id):
         msg = Message.create(conversation_id, str(user["id"]), body)
         if not msg:
             return jsonify({"error": "Could not send message"}), 500
+
+        # Best-effort email notification to the other party (throttled)
+        try:
+            convo = Conversation.get_by_id_for_user(conversation_id, str(user["id"]))
+            if convo:
+                _maybe_email_other_party(convo, str(user["id"]), body)
+        except Exception:
+            pass
 
         return jsonify({"success": True, "message": msg}), 201
     except Exception as e:
