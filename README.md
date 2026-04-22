@@ -1,6 +1,6 @@
 # Mkulima Sokoni
 
-**From Farm to Market, Fairly.**
+**From Farm to Market, Fair Pricing**
 
 Soko Safi is a digital agricultural marketplace connecting Kenyan farmers to buyers, agro-dealers, and support services. The platform provides transparent pricing, real-time product listings, and direct deals across all 47 counties.
 
