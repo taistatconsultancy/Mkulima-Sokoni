@@ -521,23 +521,13 @@ def admin_stats():
         pending_verification = execute_query(
             """
             SELECT COUNT(*) AS c FROM (
-                SELECT DISTINCT u.id
-                FROM users u
-                INNER JOIN farmer_profiles fp ON fp.user_id = u.id AND fp.certification_status = 'pending'
-                WHERE EXISTS (
-                    SELECT 1 FROM user_roles ur
-                    WHERE ur.user_id = u.id AND ur.role IN ('farmer', 'agro-dealer')
-                )
-                OR (COALESCE(u.role, '') ILIKE '%farmer%' OR COALESCE(u.role, '') ILIKE '%agro-dealer%'
-                    OR COALESCE(u.role, '') ILIKE '%agro%')
+                SELECT DISTINCT fp.user_id AS id
+                FROM farmer_profiles fp
+                WHERE COALESCE(fp.certification_status, 'pending') = 'pending'
                 UNION
-                SELECT DISTINCT u.id
-                FROM users u
-                INNER JOIN buyer_profiles bp ON bp.user_id = u.id AND bp.verification_status = 'pending'
-                WHERE EXISTS (
-                    SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'buyer'
-                )
-                OR COALESCE(u.role, '') ILIKE '%buyer%'
+                SELECT DISTINCT bp.user_id AS id
+                FROM buyer_profiles bp
+                WHERE COALESCE(bp.verification_status, 'pending') = 'pending'
             ) pending_users
             """,
             fetch_one=True,
@@ -545,25 +535,13 @@ def admin_stats():
         verified_users = execute_query(
             """
             SELECT COUNT(*) AS c FROM (
-                SELECT DISTINCT u.id
-                FROM users u
-                INNER JOIN farmer_profiles fp ON fp.user_id = u.id
-                    AND fp.certification_status = 'verified'
-                WHERE EXISTS (
-                    SELECT 1 FROM user_roles ur
-                    WHERE ur.user_id = u.id AND ur.role IN ('farmer', 'agro-dealer')
-                )
-                OR (COALESCE(u.role, '') ILIKE '%farmer%' OR COALESCE(u.role, '') ILIKE '%agro-dealer%'
-                    OR COALESCE(u.role, '') ILIKE '%agro%')
+                SELECT DISTINCT fp.user_id AS id
+                FROM farmer_profiles fp
+                WHERE COALESCE(fp.certification_status, 'pending') = 'verified'
                 UNION
-                SELECT DISTINCT u.id
-                FROM users u
-                INNER JOIN buyer_profiles bp ON bp.user_id = u.id
-                    AND bp.verification_status = 'verified'
-                WHERE EXISTS (
-                    SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role = 'buyer'
-                )
-                OR COALESCE(u.role, '') ILIKE '%buyer%'
+                SELECT DISTINCT bp.user_id AS id
+                FROM buyer_profiles bp
+                WHERE COALESCE(bp.verification_status, 'pending') = 'verified'
             ) verified_users
             """,
             fetch_one=True,
