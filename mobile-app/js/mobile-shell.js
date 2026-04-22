@@ -14,6 +14,11 @@
     return `KSh ${Number(n || 0).toLocaleString()}`;
   }
 
+  function cardMedia(url, alt) {
+    if (!url) return "";
+    return `<div class="card-media"><img src="${url}" alt="${alt || "Image"}" loading="lazy" /></div>`;
+  }
+
   function card(title, body, meta) {
     return `<article class="card">
       <div class="row"><strong>${title}</strong>${meta ? `<span class="meta">${meta}</span>` : ""}</div>
@@ -94,9 +99,13 @@
         panel("Marketplace", getLastUpdated("buyer"), `<div class="stack">
           ${(products || []).slice(0, 6).map((p) => card(
             p.name || "Product",
-            `<div class="meta">${p.category || "Category"} • ${p.location || "Kenya"}</div>
-             <div class="row"><span class="amount">${formatKsh(p.price || p.price_min || 0)}</span>
-             <button class="btn" data-add="${p.id}">Add to cart</button></div>`
+            `${cardMedia(p.image_url, p.name)}
+             <div class="meta">${p.category || "Category"} • ${p.location || "Kenya"}</div>
+             <div class="row"><span class="amount">${formatKsh(p.price || p.price_min || 0)}</span></div>
+             <div class="actions">
+               <button class="btn primary" data-add="${p.id}">Add</button>
+               <a class="btn" href="../frontend/product-detail.html?id=${encodeURIComponent(p.id)}">View →</a>
+             </div>`
           )).join("") || `<div class="notice">No products available.</div>`}
         </div>`) +
         panel("Cart", `Items: ${cart?.summary?.item_count || 0}`, `<div class="stack">
@@ -154,7 +163,11 @@
         panel("Products", getLastUpdated("farmer"), `<div class="stack">
           ${(products || []).slice(0, 6).map((p) => card(
             p.name || "Product",
-            `<div class="row"><span>${p.status || "draft"}</span><span class="amount">${formatKsh(p.price || p.price_min || 0)}</span></div>`
+            `${cardMedia(p.image_url, p.name)}
+             <div class="row"><span>${p.status || "draft"}</span><span class="amount">${formatKsh(p.price || p.price_min || 0)}</span></div>
+             <div class="actions">
+               <a class="btn" href="../frontend/product-detail.html?id=${encodeURIComponent(p.id)}">View →</a>
+             </div>`
           )).join("") || `<div class="notice">No products yet.</div>`}
         </div>`) +
         panel("Orders", `Total: ${(orders?.orders || []).length}`, `<div class="stack">
@@ -196,7 +209,11 @@
         panel("Inventory", getLastUpdated("dealer"), `<div class="stack">
           ${(products || []).slice(0, 6).map((p) => card(
             p.name || "Product",
-            `<div class="row"><span>${p.quantity || 0} ${p.measurement_metric || ""}</span><span>${p.status || "draft"}</span></div>`
+            `${cardMedia(p.image_url, p.name)}
+             <div class="row"><span>${p.quantity || 0} ${p.measurement_metric || ""}</span><span>${p.status || "draft"}</span></div>
+             <div class="actions">
+               <a class="btn" href="../frontend/product-detail.html?id=${encodeURIComponent(p.id)}">View →</a>
+             </div>`
           )).join("") || `<div class="notice">No products yet.</div>`}
         </div>`) +
         panel("Orders", "", `<div class="stack">
