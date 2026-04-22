@@ -505,7 +505,8 @@
             errEl.style.display = 'block';
             return;
           }
-          overlay.remove();
+          // Keep the overlay visible until the *entire* login flow succeeds.
+          // If the backend call fails, we still want to show the error inside this modal.
           showSuccess('Email verified. Redirecting...');
           const idToken = await firebaseUser.getIdToken(true);
           const res = await fetch(`${API}/auth/login`, {
@@ -516,8 +517,10 @@
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Login failed');
           if (data.new_user) {
+            overlay.remove();
             showRoleSelectionForm(data.firebase_uid, data.email, data.first_name, data.last_name);
           } else {
+            overlay.remove();
             saveAndRedirect(data.user, data.user?.role);
           }
         } catch (err) {
