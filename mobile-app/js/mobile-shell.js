@@ -13,6 +13,7 @@
   let chatPollTimer = null;
   let prevTotalUnread = 0;
   let PUBLIC_CONFIG = { gps_enabled: true };
+  let profileGateLocked = false;
 
   function formatKsh(n) {
     return `KSh ${Number(n || 0).toLocaleString()}`;
@@ -75,6 +76,153 @@
       root.prepend(el);
     }
     el.classList.toggle("show", !!show);
+  }
+
+  function ensureGateDom() {
+    const id = "profileGate";
+    let el = document.getElementById(id);
+    if (el) return el;
+    el = document.createElement("div");
+    el.id = id;
+    el.className = "gate";
+    el.innerHTML = `
+      <div class="gate-card">
+        <div class="gate-title" id="gateTitle">Checking your profile…</div>
+        <div class="gate-sub" id="gateSub">Please wait while we verify your account details.</div>
+        <div class="gate-row" id="gateRow"><span class="gate-spin" aria-hidden="true"></span><div style="font-weight:700;color:var(--text);">Loading</div></div>
+        <div class="gate-actions" id="gateActions" style="display:none;">
+          <button class="btn primary" id="gatePrimaryBtn" type="button">Complete profile</button>
+          <button class="btn" id="gateRetryBtn" type="button">Retry</button>
+          <a class="btn" id="gateAuthLink" href=\"../frontend/auth.html\" style=\"text-align:center;display:none;\">Sign in</a>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function showGate(opts) {
+    const el = ensureGateDom();
+    const title = document.getElementById("gateTitle");
+    const sub = document.getElementById("gateSub");
+    const actions = document.getElementById("gateActions");
+    const row = document.getElementById("gateRow");
+    const primary = document.getElementById("gatePrimaryBtn");
+    const retry = document.getElementById("gateRetryBtn");
+    const auth = document.getElementById("gateAuthLink");
+    if (title) title.textContent = opts?.title || "Checking your profile…";
+    if (sub) sub.textContent = opts?.sub || "Please wait while we verify your account details.";
+    if (row) row.style.display = opts?.loading ? "" : "none";
+    if (actions) actions.style.display = opts?.actions ? "" : "none";
+    if (auth) auth.style.display = opts?.showAuth ? "" : "none";
+    if (primary) {
+      primary.textContent = opts?.primaryLabel || "Complete profile";
+      primary.onclick = opts?.onPrimary || null;
+    }
+    if (retry) retry.onclick = opts?.onRetry || null;
+    el.classList.add("show");
+  }
+
+  function hideGate() {
+    const el = document.getElementById("profileGate");
+    if (el) el.classList.remove("show");
+  }
+
+  function dashboardProfileUrlForRole(role) {
+    // Send users to the full web dashboards where profile editing exists.
+    if (role === "buyer") return "../frontend/buyer.html";
+    if (role === "agro-dealer") return "../frontend/agro-dealer.html";
+    return "../frontend/farmer.html";
+  }
+
+  async function fetchProfileForRole(role) {
+    const uid = MobileAPI.getFirebaseUid();
+    if (!uid) return { ok: false, profile: null };
+    const base = MobileAPI.base || (MobileAPI.apiJson ? "" : "");
+    const apiBase = MobileAPI.base || "/api";
+    const url =
+      role === "buyer"
+        ? `${apiBase}/profiles/buyer/${encodeURIComponent(uid)}`
+        : `${apiBase}/profiles/farmer/${encodeURIComponent(uid)}`;
+    const res = await fetch(url);
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok, profile: data.profile || data || null };
+  }
+
+  function isProfileComplete(role, p) {
+    const prof = p || {};
+    if (role === "buyer") {
+      return Boolean(
+        String(prof.company_name || "").trim() &&
+        String(prof.location || "").trim() &&
+        String(prof.county || "").trim() &&
+        String(prof.national_id || "").trim()
+      );
+    }
+    // farmer + agro-dealer use farmer profile
+    return Boolean(
+      String(prof.farm_name || "").trim() &&
+      String(prof.location || "").trim() &&
+      String(prof.county || "").trim() &&
+      String(prof.national_id || "").trim()
+    );
+  }
+
+  async function ensureProfileGate(role) {
+    profileGateLocked = true;
+    showGate({ title: "Checking your profile…", sub: "Please wait while we verify your account details.", loading: true, actions: false });
+
+    try {
+      const user = MobileAPI.getUser ? MobileAPI.getUser() : {};
+      const uid = MobileAPI.getFirebaseUid ? MobileAPI.getFirebaseUid() : "";
+      if (!uid || !user) {
+        showGate({
+          title: "Sign in required",
+          sub: "Please sign in to continue.",
+          loading: false,
+          actions: true,
+          showAuth: true,
+          primaryLabel: "Open sign in",
+          onPrimary: () => (window.location.href = "../frontend/auth.html"),
+          onRetry: () => ensureProfileGate(role),
+        });
+        return false;
+      }
+
+      const { ok, profile } = await fetchProfileForRole(role);
+      const complete = ok && isProfileComplete(role, profile);
+      if (complete) {
+        profileGateLocked = false;
+        hideGate();
+        return true;
+      }
+
+      const dashUrl = dashboardProfileUrlForRole(role);
+      showGate({
+        title: "Complete your profile to continue",
+        sub:
+          role === "buyer"
+            ? "Required: company name, location, county, and national ID."
+            : "Required: farm name/company name, location, county, and national ID.",
+        loading: false,
+        actions: true,
+        primaryLabel: "Complete profile on dashboard",
+        onPrimary: () => (window.location.href = dashUrl),
+        onRetry: () => ensureProfileGate(role),
+      });
+      return false;
+    } catch (e) {
+      showGate({
+        title: "Could not verify your profile",
+        sub: "Check your connection and retry.",
+        loading: false,
+        actions: true,
+        primaryLabel: "Retry",
+        onPrimary: () => ensureProfileGate(role),
+        onRetry: () => ensureProfileGate(role),
+      });
+      return false;
+    }
   }
 
   function installGuidance() {
@@ -453,7 +601,7 @@
       currentRole = btn.dataset.role;
       localStorage.setItem("userRole", currentRole);
       setRoleUnreadBadge(0);
-      renderRole();
+      ensureProfileGate(currentRole).then((ok) => { if (ok) renderRole(); });
     });
   }
 
@@ -487,7 +635,7 @@
         stopChatPolling();
         return;
       }
-      renderRole();
+      ensureProfileGate(currentRole).then((ok) => { if (ok) renderRole(); });
       startChatPolling();
     });
   }
@@ -496,9 +644,9 @@
   wireConnectivity();
   wireVisibilityRefresh();
   registerPWA();
-  loadPublicConfig().then(() => {
-    // In future GPS-related mobile features should check PUBLIC_CONFIG.gps_enabled.
+  loadPublicConfig().then(() => {});
+  ensureProfileGate(currentRole).then((ok) => {
+    if (ok) renderRole();
   });
-  renderRole();
   startChatPolling();
 })();
