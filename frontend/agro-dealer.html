@@ -26,18 +26,19 @@
     body{font-family:'DM Sans',system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;min-height:100vh;overflow-x:hidden;}
     a{color:inherit;text-decoration:none;}
 
-    .topbar{position:sticky;top:0;z-index:200;background:var(--forest);display:flex;align-items:center;padding:0 28px;height:60px;gap:20px;box-shadow:0 2px 16px rgba(0,0,0,.25);}
+    .topbar{position:sticky;top:0;z-index:200;background:var(--forest);display:flex;align-items:center;padding:0 calc(28px + env(safe-area-inset-right)) 0 calc(28px + env(safe-area-inset-left));height:60px;gap:20px;box-shadow:0 2px 16px rgba(0,0,0,.25);overflow:hidden;}
     .mobile-nav-btn{display:none;width:36px;height:36px;border-radius:10px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:#fff;font-size:1rem;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;}
-    .logo{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+    .logo{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:1;}
     .logo-mark{width:36px;height:36px;border-radius:9px;overflow:hidden;display:grid;place-items:center;background:#fff;flex-shrink:0;box-shadow:0 3px 12px rgba(116,198,157,.4);}
     .logo-mark img{width:100%;height:100%;object-fit:contain;display:block;}
-    .logo-label strong{display:block;font-size:.9rem;font-weight:600;color:#fff;line-height:1.2;}
-    .logo-label span{font-size:.67rem;color:var(--lime);font-weight:300;}
+    .logo-label{min-width:0;}
+    .logo-label strong{display:block;font-size:.9rem;font-weight:600;color:#fff;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .logo-label span{font-size:.67rem;color:var(--lime);font-weight:300;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .topbar-nav{flex:1;display:flex;justify-content:center;align-items:center;gap:4px;}
     .topbar-nav-link{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.65);font-size:.82rem;font-weight:500;padding:6px 12px;border-radius:8px;transition:all .2s;cursor:pointer;border:none;background:transparent;font-family:'DM Sans',sans-serif;white-space:nowrap;}
     .topbar-nav-link:hover{color:#fff;background:rgba(255,255,255,.08);}
     .topbar-nav-link.active{color:var(--lime);background:rgba(116,198,157,.12);font-weight:600;}
-    .topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
+    .topbar-right{display:flex;align-items:center;gap:10px;margin-left:auto;flex-shrink:0;}
     .topbar-btn{height:33px;padding:0 15px;border-radius:100px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:#fff;font-size:.78rem;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
     .topbar-btn:hover{background:rgba(255,255,255,.1);}
     .topbar-btn.danger{border-color:rgba(239,68,68,.4);color:#fca5a5;}
@@ -247,9 +248,9 @@
     .footer-badge{font-size:.68rem;color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:3px 10px;}
 
     @media(max-width:1000px){.footer-grid{grid-template-columns:1fr 1fr 1fr;}.footer-brand-col{grid-column:1/-1;}}
-    @media(max-width:768px){.mobile-nav-btn{display:inline-flex;}.topbar-nav{display:none;position:absolute;top:60px;left:0;right:0;background:var(--forest);flex-direction:column;align-items:stretch;gap:6px;padding:10px 14px 14px;border-top:1px solid rgba(255,255,255,.12);}.topbar-nav.mobile-open{display:flex;}.topbar-nav-link{justify-content:flex-start;}.wrap{padding:18px 14px;}.form-grid{grid-template-columns:1fr;}.form-full{grid-column:1;}.stats-grid{grid-template-columns:1fr 1fr;}.inv-grid{grid-template-columns:1fr 1fr;}.mk-grid{grid-template-columns:1fr 1fr;}.chat-mobile-btn{display:inline-flex;align-items:center;}.chat-shell{grid-template-columns:1fr;gap:10px;min-height:auto;}.chat-list{max-height:72vh;}.chat-thread{min-height:56vh;display:none;}.chat-shell.mobile-thread-open .chat-list{display:none;}.chat-shell.mobile-thread-open .chat-thread{display:flex;}.chat-thread-body{max-height:42vh;}.chat-bubble{max-width:90%;}.chat-input-row{flex-direction:column;align-items:stretch;}.chat-send-btn{width:100%;}.footer-grid{grid-template-columns:1fr 1fr;gap:24px;}.footer-grid>div:first-child{grid-column:1/-1;}}
+    @media(max-width:768px){.mobile-nav-btn{display:inline-flex;}.topbar{padding:0 calc(14px + env(safe-area-inset-right)) 0 calc(14px + env(safe-area-inset-left));gap:14px;}.logo-label span{display:none;}.topbar-nav{display:none;position:absolute;top:60px;left:0;right:0;background:var(--forest);flex-direction:column;align-items:stretch;gap:6px;padding:10px 14px 14px;border-top:1px solid rgba(255,255,255,.12);}.topbar-nav.mobile-open{display:flex;}.topbar-nav-link{justify-content:flex-start;}.wrap{padding:18px 14px;}.form-grid{grid-template-columns:1fr;}.form-full{grid-column:1;}.stats-grid{grid-template-columns:1fr 1fr;}.inv-grid{grid-template-columns:1fr 1fr;}.mk-grid{grid-template-columns:1fr 1fr;}.chat-mobile-btn{display:inline-flex;align-items:center;}.chat-shell{grid-template-columns:1fr;gap:10px;min-height:auto;}.chat-list{max-height:72vh;}.chat-thread{min-height:56vh;display:none;}.chat-shell.mobile-thread-open .chat-list{display:none;}.chat-shell.mobile-thread-open .chat-thread{display:flex;}.chat-thread-body{max-height:42vh;}.chat-bubble{max-width:90%;}.chat-input-row{flex-direction:column;align-items:stretch;}.chat-send-btn{width:100%;}.footer-grid{grid-template-columns:1fr 1fr;gap:24px;}.footer-grid>div:first-child{grid-column:1/-1;}}
     @media(max-width:480px){.stats-grid{grid-template-columns:1fr;}.inv-grid{grid-template-columns:1fr;}.mk-grid{grid-template-columns:1fr;}.inv-card-actions{flex-direction:column;}.inv-card-actions .btn-sm,.inv-card-actions a{width:100%;text-align:center;}.chat-list-head,.chat-thread-head,.chat-thread-foot{padding:10px;}.chat-thread-body{padding:10px;}.chat-item{padding:10px;}.chat-avatar{width:40px;height:40px;font-size:.8rem;}.chat-item-name{font-size:.8rem;}.chat-item-snippet{font-size:.74rem;}.chat-bubble{font-size:.8rem;}.chat-thread{min-height:52vh;}.footer-grid{grid-template-columns:1fr;}}
-    @media(max-width:360px){.topbar{padding:0 10px;}.topbar-right{gap:6px;}#agroAccountStatusBadgeLabel{display:none;}.user-menu-btn{padding-right:6px;}.user-menu-btn .name{display:none;}}
+    @media(max-width:360px){.topbar{padding:0 calc(10px + env(safe-area-inset-right)) 0 calc(10px + env(safe-area-inset-left));gap:10px;}.logo-label{display:none;}.topbar-right{gap:6px;}#agroAccountStatusBadgeLabel{display:none;}.user-menu-btn{padding-right:6px;}.user-menu-btn .name{display:none;}}
 
     /* ── Bootstrap gate (first-time routing, no flicker) ── */
     .bootstrap-gate{position:fixed;inset:0;z-index:10000;display:none;place-items:center;padding:22px 16px;background:radial-gradient(ellipse 80% 70% at 20% 100%,rgba(116,198,157,.16) 0%,transparent 55%),radial-gradient(ellipse 70% 60% at 90% 0%,rgba(233,196,106,.14) 0%,transparent 55%),var(--cream);}
@@ -701,6 +702,17 @@ const AGRO_PROFILE_REQUIRED_FIELDS = {
 };
 let profileLocked = false;
 const AGRO_GATE_STATUS_KEY = 'soko_gate_agro_cert';
+const AGRO_PROFILE_OK_KEY_PREFIX = 'mk_profile_required_ok:agro-dealer:';
+
+function agroProfileOkCacheKey(uid) {
+  return AGRO_PROFILE_OK_KEY_PREFIX + String(uid || '');
+}
+function agroHasProfileOkCached(uid) {
+  try { return localStorage.getItem(agroProfileOkCacheKey(uid)) === '1'; } catch (_) { return false; }
+}
+function agroSetProfileOkCached(uid) {
+  try { localStorage.setItem(agroProfileOkCacheKey(uid), '1'); } catch (_) {}
+}
 let agroAccountRejected = false;
 let agroStatusResolved = false;
 
@@ -1037,6 +1049,16 @@ async function bootstrapAndRouteAgro(){
       _mkGateHide();
       return;
     }
+
+    // Once a user has completed required profile fields, never re-check again.
+    if (agroHasProfileOkCached(firebaseUid)) {
+      profileLocked = false;
+      showPage('dashboard');
+      await loadProfile();
+      _mkGateHide();
+      return;
+    }
+
     var res = await fetch(`${API}/profiles/farmer/${firebaseUid}`);
     var data = await res.json().catch(() => ({}));
     var p = data.profile || {};
@@ -1047,6 +1069,7 @@ async function bootstrapAndRouteAgro(){
       String(p.national_id || '').trim()
     );
     profileLocked = !res.ok || !hasRequired;
+    if (hasRequired) agroSetProfileOkCached(firebaseUid);
     showPage(profileLocked ? 'profile' : 'dashboard');
     await loadProfile();
     enforceAgroProfileCompletion(true);
@@ -1060,6 +1083,7 @@ async function bootstrapAndRouteAgro(){
 async function enforceAgroProfileCompletion(silent) {
   try {
     if (!firebaseUid) return;
+    if (agroHasProfileOkCached(firebaseUid)) return;
     const res = await fetch(`${API}/profiles/farmer/${firebaseUid}`);
     if (!res.ok) { profileLocked = true; showPage('profile'); return; }
     const data = await res.json();
@@ -1081,6 +1105,7 @@ async function enforceAgroProfileCompletion(silent) {
       if (!silent) window.SokoUI?.toast('Complete your profile details (company name, location, county, national ID) to continue.', 'warning');
       return;
     }
+    agroSetProfileOkCached(firebaseUid);
     var resolvedStatus = window.SokoStatus && window.SokoStatus.read
       ? window.SokoStatus.read(p, 'farmer')
       : 'pending';
@@ -1090,6 +1115,7 @@ async function enforceAgroProfileCompletion(silent) {
 
 document.addEventListener('visibilitychange', function() {
   if (document.hidden) return;
+  if (firebaseUid && agroHasProfileOkCached(firebaseUid)) return;
   enforceAgroProfileCompletion(true);
   var sec = document.getElementById('profile');
   if (sec && sec.classList.contains('active') && firebaseUid) loadProfile();
@@ -1561,7 +1587,13 @@ async function saveProfile(e) {
       window.SokoUI?.toast('Profile saved successfully!', 'success');
       await loadProfile();
       await enforceAgroProfileCompletion(true);
-      setTimeout(function(){ window.location.reload(); }, 350);
+      agroSetProfileOkCached(firebaseUid);
+      profileLocked = false;
+      showPage('dashboard', document.querySelector('.topbar-nav-link[onclick*="dashboard"]'));
+      // Always refresh dashboard data without reloading the page.
+      loadMyProducts();
+      loadMarketplace();
+      startMarketplacePolling();
     }
     else { const d = await res.json(); await uiAlert(d.error || 'Save failed', 'Profile save failed'); }
   } catch(e) { await uiAlert(e.message || 'Save failed', 'Error'); }
@@ -2007,6 +2039,20 @@ window.addEventListener('DOMContentLoaded', init);
     }
   }catch(e){}
 })();
+
+// Prevent full reload when footer "Dashboard" points to this page.
+document.addEventListener('click', function(e) {
+  var a = e.target && e.target.closest ? e.target.closest('footer a') : null;
+  if (!a) return;
+  if ((a.textContent || '').trim() !== 'Dashboard') return;
+  var href = a.getAttribute('href') || '';
+  if (!href) return;
+  var current = (location.pathname || '').split('/').pop();
+  if (href === current || href.endsWith('/' + current)) {
+    e.preventDefault();
+    showPage('dashboard', document.querySelector('.topbar-nav-link[onclick*="dashboard"]'));
+  }
+}, true);
 </script>
 </body>
 </html>

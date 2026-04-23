@@ -53,8 +53,10 @@
       position: sticky; top: 0; z-index: 200;
       background: var(--forest);
       display: flex; align-items: center;
-      padding: 0 28px; height: 60px; gap: 20px;
+      padding: 0 calc(28px + env(safe-area-inset-right)) 0 calc(28px + env(safe-area-inset-left));
+      height: 60px; gap: 20px;
       box-shadow: 0 2px 16px rgba(0,0,0,.25);
+      overflow: hidden;
     }
     .mobile-nav-btn {
       display: none;
@@ -70,7 +72,7 @@
       justify-content: center;
       flex-shrink: 0;
     }
-    .logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .logo { display: flex; align-items: center; gap: 10px; min-width: 0; flex-shrink: 1; }
     .logo-mark {
       width: 36px; height: 36px; border-radius: 9px;
       overflow: hidden; display: grid; place-items: center;
@@ -78,8 +80,9 @@
       box-shadow: 0 3px 12px rgba(116,198,157,.4);
     }
     .logo-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
-    .logo-label strong { display: block; font-size: .9rem; font-weight: 600; color: #fff; line-height: 1.2; }
-    .logo-label span   { font-size: .67rem; color: var(--lime); font-weight: 300; }
+    .logo-label { min-width: 0; }
+    .logo-label strong { display: block; font-size: .9rem; font-weight: 600; color: #fff; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .logo-label span   { font-size: .67rem; color: var(--lime); font-weight: 300; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* Nav links in topbar */
     .topbar-nav {
@@ -109,7 +112,7 @@
     .nav-unread-dot.show { display: inline-block; }
 
     /* Right side of topbar */
-    .topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-shrink: 0; }
     .verified-badge {
       display: inline-flex;
       align-items: center;
@@ -775,8 +778,9 @@
     }
     @media (max-width: 768px) {
       main { padding: 20px 14px; }
-      .topbar { padding: 0 14px; }
+      .topbar { padding: 0 calc(14px + env(safe-area-inset-right)) 0 calc(14px + env(safe-area-inset-left)); gap: 14px; }
       .mobile-nav-btn { display: inline-flex; }
+      .logo-label span { display: none; }
       .topbar-nav {
         display: none;
         position: absolute;
@@ -825,7 +829,8 @@
       .chat-thread { min-height: 52vh; }
     }
     @media (max-width: 360px) {
-      .topbar { padding: 0 10px; }
+      .topbar { padding: 0 calc(10px + env(safe-area-inset-right)) 0 calc(10px + env(safe-area-inset-left)); gap: 10px; }
+      .logo-label { display: none; }
       .topbar-right { gap: 6px; }
       #accountStatusBadgeLabel { display: none; }
       .user-menu-btn { padding-right: 6px; }
@@ -1661,6 +1666,17 @@ function exitSuperUser() {
   /* ── Navigation ── */
   let profileLocked = false;
   const FARMER_GATE_STATUS_KEY = 'soko_gate_farmer_cert';
+  const FARMER_PROFILE_OK_KEY_PREFIX = 'mk_profile_required_ok:farmer:';
+
+  function farmerProfileOkCacheKey(uid) {
+    return FARMER_PROFILE_OK_KEY_PREFIX + String(uid || '');
+  }
+  function farmerHasProfileOkCached(uid) {
+    try { return localStorage.getItem(farmerProfileOkCacheKey(uid)) === '1'; } catch (_) { return false; }
+  }
+  function farmerSetProfileOkCached(uid) {
+    try { localStorage.setItem(farmerProfileOkCacheKey(uid), '1'); } catch (_) {}
+  }
 
   /** When admin verifies the account, send user to dashboard and unlock all tabs (gate is only incomplete mandatory fields). */
   function applyFarmerVerificationTransition(prevStored, certificationStatus, hasRequired) {
@@ -3244,7 +3260,12 @@ function exitSuperUser() {
       if (!res.ok) throw new Error(d.error || 'Failed');
       showAlert('✅ Profile saved successfully!','success');
       await loadFarmerProfile();
-      setTimeout(function(){ window.location.reload(); }, 350);
+      farmerSetProfileOkCached(uid);
+      profileLocked = false;
+      showPage('dashboard', document.querySelector('.topbar-nav-link[onclick*="dashboard"]'));
+      // Always refresh dashboard data without reloading the page.
+      loadProducts();
+      updateMarketplacePollingState();
     } catch(err) {
       showAlert(err.message || 'Failed to save profile','error');
     } finally {
@@ -3820,6 +3841,35 @@ function exitSuperUser() {
       const uid = user.firebase_uid || user.id;
       if (!uid) { showPage('dashboard'); _mkGateHide(); return; }
 
+      // Once a user has completed required profile fields, never re-check again.
+      if (farmerHasProfileOkCached(uid)) {
+        profileLocked = false;
+        showPage('dashboard');
+        await loadFarmerProfile();
+        updateProfilePrimaryAction();
+
+        applyProductTypeOptions('product');
+        applyProductTypeOptions('edit');
+        loadUserProfile();
+        loadProducts();
+        setTimeout(() => {
+          loadMarketplaceListings();
+          updateMarketplacePollingState();
+        }, 250);
+        if (typeof onFeaturedTickerChanged === 'function') {
+          onFeaturedTickerChanged(function () {
+            loadFeaturedTickerRows().then(function () { renderAgroDealerTicker(featuredTickerProducts); });
+          });
+        }
+        if (window.SokoSupportCenter) {
+          window.SokoSupportCenter.initUserSupport({ rootId: 'farmerSupportCenterRoot', roleLabel: 'Farmer' });
+        }
+        const action = new URLSearchParams(window.location.search).get('action');
+        if (action === 'list-produce') addProduct();
+        _mkGateHide();
+        return;
+      }
+
       const res = await fetch(`${API_BASE_URL}/profiles/farmer/${uid}`);
       const data = await res.json().catch(() => ({}));
       const p = data.profile || {};
@@ -3830,6 +3880,7 @@ function exitSuperUser() {
         String(p.national_id || '').trim()
       );
       profileLocked = !res.ok || !hasRequired;
+      if (hasRequired) farmerSetProfileOkCached(uid);
       showPage(profileLocked ? 'profile' : 'dashboard');
       await loadFarmerProfile();
       enforceFarmerProfileCompletion(true);
@@ -3887,6 +3938,7 @@ function exitSuperUser() {
       const user = JSON.parse(userStr);
       const uid = user.firebase_uid || user.id;
       if (!uid) return;
+      if (farmerHasProfileOkCached(uid)) return;
       const res = await fetch(`${API_BASE_URL}/profiles/farmer/${uid}`);
       if (!res.ok) { profileLocked = true; showPage('profile'); return; }
       const data = await res.json();
@@ -3908,6 +3960,7 @@ function exitSuperUser() {
         if (!silent) showAlert('Complete your profile details to continue using the platform.', 'error');
         return;
       }
+      farmerSetProfileOkCached(uid);
       var resolvedStatus = window.SokoStatus && window.SokoStatus.read
         ? window.SokoStatus.read(p, 'farmer')
         : 'pending';
@@ -3918,6 +3971,11 @@ function exitSuperUser() {
   document.addEventListener('visibilitychange', () => {
     updateMarketplacePollingState();
     if (document.hidden) return;
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || 'null');
+      const uid = u && (u.firebase_uid || u.id);
+      if (uid && farmerHasProfileOkCached(uid)) return;
+    } catch (_) {}
     enforceFarmerProfileCompletion(true);
     const prof = document.getElementById('profile');
     if (prof && prof.classList.contains('active')) loadFarmerProfile();
@@ -3934,6 +3992,20 @@ function exitSuperUser() {
       }
     }catch(e){}
   })();
+
+  // Prevent full reload when footer "Dashboard" points to this page.
+  document.addEventListener('click', function(e) {
+    var a = e.target && e.target.closest ? e.target.closest('footer a') : null;
+    if (!a) return;
+    if ((a.textContent || '').trim() !== 'Dashboard') return;
+    var href = a.getAttribute('href') || '';
+    if (!href) return;
+    var current = (location.pathname || '').split('/').pop();
+    if (href === current || href.endsWith('/' + current)) {
+      e.preventDefault();
+      showPage('dashboard', document.querySelector('.topbar-nav-link[onclick*="dashboard"]'));
+    }
+  }, true);
 </script>
 </body>
 </html>

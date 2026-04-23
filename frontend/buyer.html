@@ -56,8 +56,10 @@
       position: sticky; top: 0; z-index: 200;
       background: var(--forest);
       display: flex; align-items: center;
-      padding: 0 28px; height: 60px; gap: 20px;
+      padding: 0 calc(28px + env(safe-area-inset-right)) 0 calc(28px + env(safe-area-inset-left));
+      height: 60px; gap: 20px;
       box-shadow: 0 2px 16px rgba(0,0,0,.25);
+      overflow: hidden;
     }
     .mobile-nav-btn {
       display: none;
@@ -73,7 +75,7 @@
       justify-content: center;
       flex-shrink: 0;
     }
-    .logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .logo { display: flex; align-items: center; gap: 10px; min-width: 0; flex-shrink: 1; }
     .logo-mark {
       width: 36px; height: 36px; border-radius: 9px;
       overflow: hidden; display: grid; place-items: center;
@@ -81,8 +83,9 @@
       box-shadow: 0 3px 12px rgba(116,198,157,.4);
     }
     .logo-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
-    .logo-label strong { display: block; font-size: .9rem; font-weight: 600; color: #fff; line-height: 1.2; }
-    .logo-label span   { font-size: .67rem; color: var(--lime); font-weight: 300; }
+    .logo-label { min-width: 0; }
+    .logo-label strong { display: block; font-size: .9rem; font-weight: 600; color: #fff; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .logo-label span   { font-size: .67rem; color: var(--lime); font-weight: 300; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* Nav links */
     .topbar-nav {
@@ -99,7 +102,7 @@
     .topbar-nav-link.active { color: var(--lime); background: rgba(116,198,157,.12); font-weight: 600; }
 
     /* Right side */
-    .topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-shrink: 0; }
     .verified-badge {
       display: inline-flex;
       align-items: center;
@@ -516,8 +519,9 @@
     @media (max-width: 1000px) { .footer-grid { grid-template-columns: 1fr 1fr 1fr; } }
     @media (max-width: 768px) {
       main { padding: 20px 14px; }
-      .topbar { padding: 0 14px; }
+      .topbar { padding: 0 calc(14px + env(safe-area-inset-right)) 0 calc(14px + env(safe-area-inset-left)); gap: 14px; }
       .mobile-nav-btn { display: inline-flex; }
+      .logo-label span { display: none; }
       .topbar-nav {
         display: none;
         position: absolute;
@@ -566,7 +570,8 @@
       .chat-thread { min-height: 52vh; }
     }
     @media (max-width: 360px) {
-      .topbar { padding: 0 10px; }
+      .topbar { padding: 0 calc(10px + env(safe-area-inset-right)) 0 calc(10px + env(safe-area-inset-left)); gap: 10px; }
+      .logo-label { display: none; }
       .topbar-right { gap: 6px; }
       #buyerAccountStatusBadgeLabel { display: none; }
       .user-menu-btn { padding-right: 6px; }
@@ -1566,6 +1571,17 @@ function exitSuperUser() {
   /* ── Navigation ── */
   let profileLocked = false;
   const BUYER_GATE_STATUS_KEY = 'soko_gate_buyer_verify';
+  const BUYER_PROFILE_OK_KEY_PREFIX = 'mk_profile_required_ok:buyer:';
+
+  function buyerProfileOkCacheKey(uid) {
+    return BUYER_PROFILE_OK_KEY_PREFIX + String(uid || '');
+  }
+  function buyerHasProfileOkCached(uid) {
+    try { return localStorage.getItem(buyerProfileOkCacheKey(uid)) === '1'; } catch (_) { return false; }
+  }
+  function buyerSetProfileOkCached(uid) {
+    try { localStorage.setItem(buyerProfileOkCacheKey(uid), '1'); } catch (_) {}
+  }
 
   let buyerAccountRejected = false;
   let buyerStatusResolved = false;
@@ -2601,7 +2617,13 @@ function exitSuperUser() {
       if (!res.ok) throw new Error(d.error || 'Failed');
       showAlert('✅ Profile saved successfully!','success');
       await loadBuyerProfile();
-      setTimeout(function(){ window.location.reload(); }, 350);
+      buyerSetProfileOkCached(uid);
+      profileLocked = false;
+      showPage('dashboard', document.querySelector('.topbar-nav-link[onclick*="dashboard"]'));
+      // Always refresh dashboard data without reloading the page.
+      loadProducts();
+      startProductPolling();
+      refreshCartBadge();
     } catch(err) {
       showAlert(err.message || 'Failed to save profile','error');
     } finally {
@@ -2691,6 +2713,31 @@ function exitSuperUser() {
       const uid = user.firebase_uid || user.id;
       if (!uid) { showPage('dashboard'); _mkGateHide(); return; }
 
+      // Once a user has completed required profile fields, never re-check again.
+      if (buyerHasProfileOkCached(uid)) {
+        profileLocked = false;
+        const preferred = location.hash ? location.hash.replace('#','') : 'dashboard';
+        showPage(preferred);
+        loadUserProfile();
+        loadProducts();
+        startProductPolling();
+        if (typeof onFeaturedTickerChanged === 'function') {
+          onFeaturedTickerChanged(() => { loadFeaturedTickerRows().then(() => renderLiveTicker(featuredTickerProducts)); });
+        }
+        refreshCartBadge();
+        if (window.SokoSupportCenter) {
+          window.SokoSupportCenter.initUserSupport({ rootId: 'buyerSupportCenterRoot', roleLabel: 'Buyer' });
+        }
+        if (sessionStorage.getItem('showSupport') === 'true') {
+          sessionStorage.removeItem('showSupport');
+          showPage('support');
+        }
+        await loadBuyerProfile();
+        updateProfilePrimaryAction();
+        _mkGateHide();
+        return;
+      }
+
       const res = await fetch(`${API_BASE_URL}/profiles/buyer/${uid}`);
       const data = await res.json().catch(() => ({}));
       const p = data.profile || {};
@@ -2701,6 +2748,7 @@ function exitSuperUser() {
         String(p.national_id || '').trim()
       );
       profileLocked = !res.ok || !hasRequired;
+      if (hasRequired) buyerSetProfileOkCached(uid);
       const preferred = location.hash ? location.hash.replace('#','') : 'dashboard';
       showPage(profileLocked ? 'profile' : preferred);
 
@@ -2740,6 +2788,7 @@ function exitSuperUser() {
       const user = JSON.parse(userStr);
       const uid = user.firebase_uid || user.id;
       if (!uid) return;
+      if (buyerHasProfileOkCached(uid)) return;
       const res = await fetch(`${API_BASE_URL}/profiles/buyer/${uid}`);
       if (!res.ok) { profileLocked = true; showPage('profile'); return; }
       const data = await res.json();
@@ -2761,6 +2810,7 @@ function exitSuperUser() {
         if (!silent) showAlert('Complete your profile details to continue using the platform.', 'error');
         return;
       }
+      buyerSetProfileOkCached(uid);
       var resolvedStatus = window.SokoStatus && window.SokoStatus.read
         ? window.SokoStatus.read(p, 'buyer')
         : 'pending';
@@ -2770,6 +2820,11 @@ function exitSuperUser() {
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) return;
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || 'null');
+      const uid = u && (u.firebase_uid || u.id);
+      if (uid && buyerHasProfileOkCached(uid)) return;
+    } catch (_) {}
     enforceBuyerProfileCompletion(true);
     const prof = document.getElementById('profile');
     if (prof && prof.classList.contains('active')) loadBuyerProfile();
@@ -2786,6 +2841,20 @@ function exitSuperUser() {
       }
     }catch(e){}
   })();
+
+  // Prevent full reload when footer "Dashboard" points to this page.
+  document.addEventListener('click', function(e) {
+    var a = e.target && e.target.closest ? e.target.closest('footer a') : null;
+    if (!a) return;
+    if ((a.textContent || '').trim() !== 'Dashboard') return;
+    var href = a.getAttribute('href') || '';
+    if (!href) return;
+    var current = (location.pathname || '').split('/').pop();
+    if (href === current || href.endsWith('/' + current)) {
+      e.preventDefault();
+      showPage('dashboard', document.querySelector('.topbar-nav-link[onclick*="dashboard"]'));
+    }
+  }, true);
 </script>
 </body>
 </html>

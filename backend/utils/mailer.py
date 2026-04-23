@@ -84,11 +84,21 @@ def _app_public_url() -> str:
     return url[:-1] if url.endswith("/") else url
 
 
+def _landing_url() -> str:
+    """
+    Landing page for emails (marketing/home). Kept as index.html for static hosting compatibility.
+    """
+    app = _app_public_url()
+    return f"{app}/index.html" if app else ""
+
+
 def _email_base_html(title: str, preheader: str, body_html: str) -> str:
     """
     Simple, modern HTML email wrapper. Keep inline styles for broad client support.
     """
     brand = os.getenv("SMTP_FROM_NAME", "Mkulima Sokoni").strip() or "Mkulima Sokoni"
+    landing = _landing_url()
+    support_href = f"{landing}#support" if landing else ""
     pre = (preheader or "").strip()
     safe_pre = pre.replace("<", "&lt;").replace(">", "&gt;")
     return f"""\
@@ -110,7 +120,10 @@ def _email_base_html(title: str, preheader: str, body_html: str) -> str:
         {body_html}
       </div>
       <div style="padding:16px 22px;border-top:1px solid #e5e7eb;background:#f9fafb;color:#6b7280;font-size:12px;line-height:1.5;">
-        <div>Need help? Reply to this email or visit the app support section.</div>
+        <div>
+          Need help? Reply to this email
+          {('or visit the <a href=\"' + support_href + '\" style=\"color:#1B4332;font-weight:700;text-decoration:none;\">support page</a>.') if support_href else 'or visit the app support section.'}
+        </div>
       </div>
     </div>
     <div style="max-width:640px;margin:10px auto 0;color:#9ca3af;font-size:12px;text-align:center;">
@@ -131,6 +144,18 @@ def _button_html(label: str, href: str) -> str:
 """
 
 
+def _plain_link_html(label: str, href: str) -> str:
+    h = (href or "").strip()
+    if not h:
+        return ""
+    return f"""\
+<div style="margin-top:12px;color:#6b7280;font-size:13px;line-height:1.6;">
+  <span style="font-weight:700;color:#111827;">{label}:</span>
+  <a href="{h}" style="color:#1B4332;font-weight:700;text-decoration:none;word-break:break-word;">{h}</a>
+</div>
+"""
+
+
 def send_welcome_email(to_email: str, first_name: Optional[str] = None) -> bool:
     name = (first_name or "").strip()
     greet = f"Hi {name}," if name else "Hi,"
@@ -148,13 +173,16 @@ def send_welcome_email(to_email: str, first_name: Optional[str] = None) -> bool:
             "Mkulima Sokoni Team",
         ]
     )
+    landing = _landing_url()
     app = _app_public_url()
     action = f"{app}/auth.html" if app else ""
     html_body = f"""\
 <h1 style="margin:0 0 10px;font-size:20px;color:#111827;">Welcome{(' ' + name) if name else ''}.</h1>
 <p style="margin:0 0 14px;color:#374151;line-height:1.6;">Your account has been created successfully.</p>
 <p style="margin:0 0 16px;color:#374151;line-height:1.6;">Verify your email to unlock all features, then choose your user type inside the app.</p>
-{(_button_html('Open the app', action) if action else '')}
+{(_button_html('Visit Mkulima Sokoni', landing) if landing else '')}
+{(_plain_link_html('Sign in / verify email', action) if action else '')}
+{(_plain_link_html('Landing page', landing) if landing else '')}
 <div style="margin-top:18px;color:#6b7280;font-size:13px;">Thanks,<br /><strong>Mkulima Sokoni Team</strong></div>
 """
     html = _email_base_html("Welcome", "Welcome to the app.", html_body)
@@ -181,6 +209,7 @@ def send_new_message_email(
     if deep_link:
         lines += ["", f"Open: {deep_link}"]
     lines += ["", "Mkulima Sokoni Team"]
+    landing = _landing_url()
     app = _app_public_url()
     action = deep_link or (f"{app}/buyer.html#messages" if app else "")
     html_body = f"""\
@@ -189,7 +218,9 @@ def send_new_message_email(
 <div style="margin:0 0 16px;padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;background:#f9fafb;color:#111827;line-height:1.6;">
   {preview.replace('<','&lt;').replace('>','&gt;') or '—'}
 </div>
-{(_button_html('Open messages', action) if action else '')}
+{(_button_html('Visit Mkulima Sokoni', landing) if landing else '')}
+{(_plain_link_html('Open messages', action) if action else '')}
+{(_plain_link_html('Landing page', landing) if landing else '')}
 <div style="margin-top:18px;color:#6b7280;font-size:13px;">Thanks,<br /><strong>Mkulima Sokoni Team</strong></div>
 """
     html = _email_base_html("New message", "You have a new message.", html_body)
@@ -301,6 +332,7 @@ def send_support_verification_request_email(
             "Mkulima Sokoni System",
         ]
     )
+    landing = _landing_url()
     app = _app_public_url()
     action = f"{app}/admin-support.html" if app else ""
     safe_name = (name or "—").replace("<", "&lt;").replace(">", "&gt;")
@@ -317,7 +349,9 @@ def send_support_verification_request_email(
   <div><strong>Phone:</strong> {safe_phone}</div>
   <div><strong>Roles:</strong> {safe_roles}</div>
 </div>
-{(_button_html('Open admin dashboard', action) if action else '')}
+{(_button_html('Visit Mkulima Sokoni', landing) if landing else '')}
+{(_plain_link_html('Open admin dashboard', action) if action else '')}
+{(_plain_link_html('Landing page', landing) if landing else '')}
 <div style="margin-top:18px;color:#6b7280;font-size:13px;"><strong>Mkulima Sokoni System</strong></div>
 """
     html = _email_base_html("Verification review needed", "A user submitted verification for review.", html_body)
@@ -343,12 +377,15 @@ def send_account_verified_email(to_email: str, first_name: Optional[str] = None)
             "Mkulima Sokoni Team",
         ]
     )
+    landing = _landing_url()
     app = _app_public_url()
     action = f"{app}/auth.html" if app else ""
     html_body = f"""\
 <h1 style="margin:0 0 10px;font-size:20px;color:#111827;">Your account is verified</h1>
 <p style="margin:0 0 14px;color:#374151;line-height:1.6;">Good news — your account has been verified by our support team. You can now continue using the app.</p>
-{(_button_html('Open the app', action) if action else '')}
+{(_button_html('Visit Mkulima Sokoni', landing) if landing else '')}
+{(_plain_link_html('Open the app', action) if action else '')}
+{(_plain_link_html('Landing page', landing) if landing else '')}
 <div style="margin-top:18px;color:#6b7280;font-size:13px;">Thanks,<br /><strong>Mkulima Sokoni Team</strong></div>
 """
     html = _email_base_html("Account verified", "Your account is verified.", html_body)
