@@ -1572,16 +1572,55 @@ function exitSuperUser() {
   let profileLocked = false;
   const BUYER_GATE_STATUS_KEY = 'soko_gate_buyer_verify';
   const BUYER_PROFILE_OK_KEY_PREFIX = 'mk_profile_required_ok:buyer:';
+  const BUYER_PROFILE_OK_CACHE_VERSION = 'v2';
+  const BUYER_PROFILE_OK_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+  const BUYER_PROFILE_OK_THROTTLE_MS = 5 * 60 * 1000; // 5m (focus/refresh spam)
 
   function buyerProfileOkCacheKey(uid) {
     return BUYER_PROFILE_OK_KEY_PREFIX + String(uid || '');
   }
+  function buyerReadProfileOkCache(uid) {
+    try {
+      const raw = localStorage.getItem(buyerProfileOkCacheKey(uid));
+      if (!raw) return null;
+      // Back-compat: previous versions stored "1".
+      if (raw === '1') return { ok: true, checkedAt: 0, v: 'v1' };
+      const obj = JSON.parse(raw);
+      return obj && typeof obj === 'object' ? obj : null;
+    } catch (_) {
+      return null;
+    }
+  }
   function buyerHasProfileOkCached(uid) {
-    try { return localStorage.getItem(buyerProfileOkCacheKey(uid)) === '1'; } catch (_) { return false; }
+    const c = buyerReadProfileOkCache(uid);
+    if (!c || c.ok !== true) return false;
+    if (c.v !== BUYER_PROFILE_OK_CACHE_VERSION) return false;
+    const ts = Number(c.checkedAt || 0);
+    if (!ts) return false;
+    return (Date.now() - ts) < BUYER_PROFILE_OK_TTL_MS;
   }
   function buyerSetProfileOkCached(uid) {
-    try { localStorage.setItem(buyerProfileOkCacheKey(uid), '1'); } catch (_) {}
+    try {
+      localStorage.setItem(
+        buyerProfileOkCacheKey(uid),
+        JSON.stringify({ ok: true, checkedAt: Date.now(), v: BUYER_PROFILE_OK_CACHE_VERSION })
+      );
+    } catch (_) {}
   }
+  function buyerShouldRevalidateProfileOk(uid) {
+    // If cached is missing/expired/version-mismatch, revalidate but throttle.
+    const c = buyerReadProfileOkCache(uid);
+    const now = Date.now();
+    const last = Number(sessionStorage.getItem('mk_profile_ok_lastcheck:buyer:' + String(uid || '')) || 0);
+    if (now - last < BUYER_PROFILE_OK_THROTTLE_MS) return false;
+    const cacheOk = buyerHasProfileOkCached(uid);
+    if (cacheOk) return false;
+    sessionStorage.setItem('mk_profile_ok_lastcheck:buyer:' + String(uid || ''), String(now));
+    return true;
+  }
+  window.__mkResetProfileOkCacheBuyer = function(uid) {
+    try { localStorage.removeItem(buyerProfileOkCacheKey(uid)); } catch (_) {}
+  };
 
   let buyerAccountRejected = false;
   let buyerStatusResolved = false;
@@ -2713,7 +2752,7 @@ function exitSuperUser() {
       const uid = user.firebase_uid || user.id;
       if (!uid) { showPage('dashboard'); _mkGateHide(); return; }
 
-      // Once a user has completed required profile fields, never re-check again.
+      // Fast path when we have a recent, versioned "profile required fields OK" cache.
       if (buyerHasProfileOkCached(uid)) {
         profileLocked = false;
         const preferred = location.hash ? location.hash.replace('#','') : 'dashboard';
@@ -2736,6 +2775,11 @@ function exitSuperUser() {
         updateProfilePrimaryAction();
         _mkGateHide();
         return;
+      }
+
+      // Cache missing/expired: revalidate once (throttled) to handle backend-required-field changes or admin actions.
+      if (!buyerShouldRevalidateProfileOk(uid)) {
+        // If we're throttled but cache isn't ok, behave conservatively (do the original check).
       }
 
       const res = await fetch(`${API_BASE_URL}/profiles/buyer/${uid}`);
@@ -2788,7 +2832,10 @@ function exitSuperUser() {
       const user = JSON.parse(userStr);
       const uid = user.firebase_uid || user.id;
       if (!uid) return;
+      // If cache is still valid, skip.
       if (buyerHasProfileOkCached(uid)) return;
+      // If cache is not valid but we are throttled, skip to avoid spam checks.
+      if (!buyerShouldRevalidateProfileOk(uid)) return;
       const res = await fetch(`${API_BASE_URL}/profiles/buyer/${uid}`);
       if (!res.ok) { profileLocked = true; showPage('profile'); return; }
       const data = await res.json();
@@ -2820,11 +2867,6 @@ function exitSuperUser() {
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) return;
-    try {
-      const u = JSON.parse(localStorage.getItem('user') || 'null');
-      const uid = u && (u.firebase_uid || u.id);
-      if (uid && buyerHasProfileOkCached(uid)) return;
-    } catch (_) {}
     enforceBuyerProfileCompletion(true);
     const prof = document.getElementById('profile');
     if (prof && prof.classList.contains('active')) loadBuyerProfile();

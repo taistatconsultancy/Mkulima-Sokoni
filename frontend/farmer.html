@@ -1667,16 +1667,52 @@ function exitSuperUser() {
   let profileLocked = false;
   const FARMER_GATE_STATUS_KEY = 'soko_gate_farmer_cert';
   const FARMER_PROFILE_OK_KEY_PREFIX = 'mk_profile_required_ok:farmer:';
+  const FARMER_PROFILE_OK_CACHE_VERSION = 'v2';
+  const FARMER_PROFILE_OK_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+  const FARMER_PROFILE_OK_THROTTLE_MS = 5 * 60 * 1000; // 5m
 
   function farmerProfileOkCacheKey(uid) {
     return FARMER_PROFILE_OK_KEY_PREFIX + String(uid || '');
   }
+  function farmerReadProfileOkCache(uid) {
+    try {
+      const raw = localStorage.getItem(farmerProfileOkCacheKey(uid));
+      if (!raw) return null;
+      if (raw === '1') return { ok: true, checkedAt: 0, v: 'v1' };
+      const obj = JSON.parse(raw);
+      return obj && typeof obj === 'object' ? obj : null;
+    } catch (_) {
+      return null;
+    }
+  }
   function farmerHasProfileOkCached(uid) {
-    try { return localStorage.getItem(farmerProfileOkCacheKey(uid)) === '1'; } catch (_) { return false; }
+    const c = farmerReadProfileOkCache(uid);
+    if (!c || c.ok !== true) return false;
+    if (c.v !== FARMER_PROFILE_OK_CACHE_VERSION) return false;
+    const ts = Number(c.checkedAt || 0);
+    if (!ts) return false;
+    return (Date.now() - ts) < FARMER_PROFILE_OK_TTL_MS;
   }
   function farmerSetProfileOkCached(uid) {
-    try { localStorage.setItem(farmerProfileOkCacheKey(uid), '1'); } catch (_) {}
+    try {
+      localStorage.setItem(
+        farmerProfileOkCacheKey(uid),
+        JSON.stringify({ ok: true, checkedAt: Date.now(), v: FARMER_PROFILE_OK_CACHE_VERSION })
+      );
+    } catch (_) {}
   }
+  function farmerShouldRevalidateProfileOk(uid) {
+    const now = Date.now();
+    const last = Number(sessionStorage.getItem('mk_profile_ok_lastcheck:farmer:' + String(uid || '')) || 0);
+    if (now - last < FARMER_PROFILE_OK_THROTTLE_MS) return false;
+    const cacheOk = farmerHasProfileOkCached(uid);
+    if (cacheOk) return false;
+    sessionStorage.setItem('mk_profile_ok_lastcheck:farmer:' + String(uid || ''), String(now));
+    return true;
+  }
+  window.__mkResetProfileOkCacheFarmer = function(uid) {
+    try { localStorage.removeItem(farmerProfileOkCacheKey(uid)); } catch (_) {}
+  };
 
   /** When admin verifies the account, send user to dashboard and unlock all tabs (gate is only incomplete mandatory fields). */
   function applyFarmerVerificationTransition(prevStored, certificationStatus, hasRequired) {
@@ -3841,7 +3877,7 @@ function exitSuperUser() {
       const uid = user.firebase_uid || user.id;
       if (!uid) { showPage('dashboard'); _mkGateHide(); return; }
 
-      // Once a user has completed required profile fields, never re-check again.
+      // Fast path when we have a recent, versioned "profile required fields OK" cache.
       if (farmerHasProfileOkCached(uid)) {
         profileLocked = false;
         showPage('dashboard');
@@ -3939,6 +3975,7 @@ function exitSuperUser() {
       const uid = user.firebase_uid || user.id;
       if (!uid) return;
       if (farmerHasProfileOkCached(uid)) return;
+      if (!farmerShouldRevalidateProfileOk(uid)) return;
       const res = await fetch(`${API_BASE_URL}/profiles/farmer/${uid}`);
       if (!res.ok) { profileLocked = true; showPage('profile'); return; }
       const data = await res.json();
@@ -3971,11 +4008,6 @@ function exitSuperUser() {
   document.addEventListener('visibilitychange', () => {
     updateMarketplacePollingState();
     if (document.hidden) return;
-    try {
-      const u = JSON.parse(localStorage.getItem('user') || 'null');
-      const uid = u && (u.firebase_uid || u.id);
-      if (uid && farmerHasProfileOkCached(uid)) return;
-    } catch (_) {}
     enforceFarmerProfileCompletion(true);
     const prof = document.getElementById('profile');
     if (prof && prof.classList.contains('active')) loadFarmerProfile();

@@ -703,16 +703,52 @@ const AGRO_PROFILE_REQUIRED_FIELDS = {
 let profileLocked = false;
 const AGRO_GATE_STATUS_KEY = 'soko_gate_agro_cert';
 const AGRO_PROFILE_OK_KEY_PREFIX = 'mk_profile_required_ok:agro-dealer:';
+const AGRO_PROFILE_OK_CACHE_VERSION = 'v2';
+const AGRO_PROFILE_OK_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+const AGRO_PROFILE_OK_THROTTLE_MS = 5 * 60 * 1000; // 5m
 
 function agroProfileOkCacheKey(uid) {
   return AGRO_PROFILE_OK_KEY_PREFIX + String(uid || '');
 }
+function agroReadProfileOkCache(uid) {
+  try {
+    const raw = localStorage.getItem(agroProfileOkCacheKey(uid));
+    if (!raw) return null;
+    if (raw === '1') return { ok: true, checkedAt: 0, v: 'v1' };
+    const obj = JSON.parse(raw);
+    return obj && typeof obj === 'object' ? obj : null;
+  } catch (_) {
+    return null;
+  }
+}
 function agroHasProfileOkCached(uid) {
-  try { return localStorage.getItem(agroProfileOkCacheKey(uid)) === '1'; } catch (_) { return false; }
+  const c = agroReadProfileOkCache(uid);
+  if (!c || c.ok !== true) return false;
+  if (c.v !== AGRO_PROFILE_OK_CACHE_VERSION) return false;
+  const ts = Number(c.checkedAt || 0);
+  if (!ts) return false;
+  return (Date.now() - ts) < AGRO_PROFILE_OK_TTL_MS;
 }
 function agroSetProfileOkCached(uid) {
-  try { localStorage.setItem(agroProfileOkCacheKey(uid), '1'); } catch (_) {}
+  try {
+    localStorage.setItem(
+      agroProfileOkCacheKey(uid),
+      JSON.stringify({ ok: true, checkedAt: Date.now(), v: AGRO_PROFILE_OK_CACHE_VERSION })
+    );
+  } catch (_) {}
 }
+function agroShouldRevalidateProfileOk(uid) {
+  const now = Date.now();
+  const last = Number(sessionStorage.getItem('mk_profile_ok_lastcheck:agro:' + String(uid || '')) || 0);
+  if (now - last < AGRO_PROFILE_OK_THROTTLE_MS) return false;
+  const cacheOk = agroHasProfileOkCached(uid);
+  if (cacheOk) return false;
+  sessionStorage.setItem('mk_profile_ok_lastcheck:agro:' + String(uid || ''), String(now));
+  return true;
+}
+window.__mkResetProfileOkCacheAgroDealer = function(uid) {
+  try { localStorage.removeItem(agroProfileOkCacheKey(uid)); } catch (_) {}
+};
 let agroAccountRejected = false;
 let agroStatusResolved = false;
 
@@ -1084,6 +1120,7 @@ async function enforceAgroProfileCompletion(silent) {
   try {
     if (!firebaseUid) return;
     if (agroHasProfileOkCached(firebaseUid)) return;
+    if (!agroShouldRevalidateProfileOk(firebaseUid)) return;
     const res = await fetch(`${API}/profiles/farmer/${firebaseUid}`);
     if (!res.ok) { profileLocked = true; showPage('profile'); return; }
     const data = await res.json();
