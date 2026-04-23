@@ -199,7 +199,7 @@ def send_support_ticket_sms_to_user(ticket, message_preview, is_new_ticket=False
         if is_new_ticket
         else 'New message on your support ticket'
     )
-    body = f'Soko Safi [{num}]: {intro}. {prev}' if prev else f'Soko Safi [{num}]: {intro}.'
+    body = f'Mkulima Sokoni [{num}]: {intro}. {prev}' if prev else f'Mkulima Sokoni [{num}]: {intro}.'
     link = _support_app_link(ticket)
     if link:
         body += f' Open: {link}'

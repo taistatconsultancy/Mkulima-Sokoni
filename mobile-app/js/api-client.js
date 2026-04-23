@@ -27,6 +27,7 @@
     getFirebaseUid,
     getUser,
     apiJson,
+    publicConfig: () => apiJson(`${API_BASE}/public-config`),
     buyer: {
       products: () => apiJson(`${API_BASE}/products?status=active`),
       cart: () => apiJson(`${API_BASE}/cart?firebase_uid=${encodeURIComponent(getFirebaseUid())}`),
@@ -47,7 +48,14 @@
       products: () => apiJson(`${API_BASE}/products/farmer/${encodeURIComponent(getFirebaseUid())}`)
     },
     chat: {
-      conversations: (role) => apiJson(`${API_BASE}/chat/conversations?firebase_uid=${encodeURIComponent(getFirebaseUid())}&role=${encodeURIComponent(role)}`)
+      conversations: (role) => apiJson(`${API_BASE}/chat/conversations?firebase_uid=${encodeURIComponent(getFirebaseUid())}&role=${encodeURIComponent(role)}`),
+      thread: (conversationId, limit = 120, offset = 0) => apiJson(
+        `${API_BASE}/chat/conversations/${encodeURIComponent(conversationId)}/messages?firebase_uid=${encodeURIComponent(getFirebaseUid())}&limit=${encodeURIComponent(limit)}&offset=${encodeURIComponent(offset)}`
+      ),
+      send: (conversationId, body) => apiJson(`${API_BASE}/chat/conversations/${encodeURIComponent(conversationId)}/messages`, {
+        method: "POST",
+        body: JSON.stringify({ firebase_uid: getFirebaseUid(), body })
+      })
     }
   };
 

@@ -9,6 +9,10 @@
   let deferredInstallPrompt = null;
   const refreshStamp = {};
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  let mobileChat = { view: "list", convo: null, messages: [], sending: false };
+  let chatPollTimer = null;
+  let prevTotalUnread = 0;
+  let PUBLIC_CONFIG = { gps_enabled: true };
 
   function formatKsh(n) {
     return `KSh ${Number(n || 0).toLocaleString()}`;
@@ -78,6 +82,160 @@
     return `<div class="notice">On iPhone: tap Share, then "Add to Home Screen" to install.</div>`;
   }
 
+  function computeTotalUnread(convos) {
+    return (convos || []).reduce((sum, c) => sum + Number(c.unread_count || 0), 0);
+  }
+
+  async function loadPublicConfig() {
+    try {
+      const cfg = await MobileAPI.publicConfig();
+      if (cfg && typeof cfg === "object") PUBLIC_CONFIG = { ...PUBLIC_CONFIG, ...cfg };
+    } catch (_) {}
+    return PUBLIC_CONFIG;
+  }
+
+  function setRoleUnreadBadge(total) {
+    try {
+      rolePill.textContent = total > 0 ? `Role: ${currentRole} • ${total} unread` : `Role: ${currentRole}`;
+    } catch (_) {}
+  }
+
+  function showNewMsgNotice(delta) {
+    if (!delta || delta <= 0) return;
+    const id = "newMsgNotice";
+    let el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement("div");
+      el.id = id;
+      el.className = "notice";
+      el.style.marginBottom = "10px";
+      root.prepend(el);
+    }
+    el.textContent = `New messages (${delta}).`;
+    clearTimeout(el.__t);
+    el.__t = setTimeout(() => { try { el.remove(); } catch (_) {} }, 4500);
+  }
+
+  function stopChatPolling() {
+    if (chatPollTimer) clearTimeout(chatPollTimer);
+    chatPollTimer = null;
+  }
+
+  function startChatPolling() {
+    stopChatPolling();
+    const tick = async () => {
+      try {
+        if (document.hidden) return;
+        if (mobileChat.view === "thread" && mobileChat.convo) return;
+        const data = await MobileAPI.chat.conversations(currentRole);
+        const list = data?.conversations || [];
+        const total = computeTotalUnread(list);
+        const delta = Math.max(0, total - (prevTotalUnread || 0));
+        prevTotalUnread = total;
+        setRoleUnreadBadge(total);
+        showNewMsgNotice(delta);
+      } catch (_) {
+        // ignore polling errors
+      } finally {
+        chatPollTimer = setTimeout(tick, 15000 + Math.floor(Math.random() * 2000));
+      }
+    };
+    chatPollTimer = setTimeout(tick, 7000);
+  }
+
+  function escapeHtml(s) {
+    return String(s || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function renderThread(convo) {
+    const title = escapeHtml(convo?.farm_name || convo?.buyer_email || "Conversation");
+    const msgs = mobileChat.messages || [];
+    const body = msgs.length
+      ? msgs.map((m) => {
+          const mine = String(m.sender_user_id || "") === String(MobileAPI.getUser()?.id || "");
+          const cls = mine ? "me" : "them";
+          const pending = m.__pending ? " pending" : "";
+          const failed = m.__failed ? " failed" : "";
+          const meta = m.created_at ? `<div class="meta">${escapeHtml(m.created_at)}</div>` : "";
+          return `<div class="bubble ${cls}${pending}${failed}">${escapeHtml(m.body)}${meta}</div>`;
+        }).join("")
+      : `<div class="notice">No messages yet.</div>`;
+
+    return `
+      <section class="panel">
+        <div class="row" style="justify-content:flex-start;gap:10px;">
+          <button class="btn" id="backToConvos">← Conversations</button>
+          <strong style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${title}</strong>
+        </div>
+        <div class="chat-thread" id="chatThread">${body}</div>
+        <div class="row" style="gap:10px;align-items:flex-end;margin-top:10px;">
+          <textarea class="input" id="chatInput" placeholder="Type a message…" rows="2" style="flex:1;"></textarea>
+          <button class="btn primary" id="chatSendBtn" ${mobileChat.sending ? "disabled" : ""}>${mobileChat.sending ? "Sending…" : "Send"}</button>
+        </div>
+      </section>
+    `;
+  }
+
+  function wireThreadHandlers() {
+    const back = document.getElementById("backToConvos");
+    const sendBtn = document.getElementById("chatSendBtn");
+    const input = document.getElementById("chatInput");
+    const thread = document.getElementById("chatThread");
+    const scrollBottom = () => { try { thread.scrollTop = thread.scrollHeight; } catch (_) {} };
+    scrollBottom();
+
+    if (back) {
+      back.addEventListener("click", async () => {
+        mobileChat.view = "list";
+        mobileChat.convo = null;
+        mobileChat.messages = [];
+        await renderRole();
+      });
+    }
+
+    if (sendBtn && input) {
+      sendBtn.addEventListener("click", async () => {
+        const text = String(input.value || "").trim();
+        if (!text || mobileChat.sending || !mobileChat.convo) return;
+        mobileChat.sending = true;
+
+        const pending = {
+          body: text,
+          __pending: true,
+          __failed: false,
+          sender_user_id: String(MobileAPI.getUser()?.id || ""),
+          created_at: "pending…",
+        };
+        mobileChat.messages = [...(mobileChat.messages || []), pending];
+        root.className = "content";
+        root.innerHTML = renderThread(mobileChat.convo);
+        wireThreadHandlers();
+
+        try {
+          input.value = "";
+          await MobileAPI.chat.send(mobileChat.convo.id, text);
+          const t = await MobileAPI.chat.thread(mobileChat.convo.id);
+          mobileChat.messages = (t?.messages || []).slice().reverse().map((m) => ({ ...m }));
+        } catch (e) {
+          pending.__pending = false;
+          pending.__failed = true;
+          pending.created_at = "failed";
+          alert(e.message || "Failed to send");
+        } finally {
+          mobileChat.sending = false;
+          root.className = "content";
+          root.innerHTML = renderThread(mobileChat.convo);
+          wireThreadHandlers();
+        }
+      });
+    }
+  }
+
   async function renderBuyer() {
     root.className = "content two-col";
     root.innerHTML = panel("Buyer Dashboard", "Browse, cart, checkout, and messaging.", `<div class="notice">Loading buyer data…</div>`);
@@ -94,6 +252,9 @@
         MobileAPI.buyer.orders(),
         MobileAPI.chat.conversations("buyer")
       ]);
+      const totalUnread = computeTotalUnread(convos?.conversations || []);
+      prevTotalUnread = Math.max(prevTotalUnread, totalUnread);
+      setRoleUnreadBadge(totalUnread);
       setLastUpdated("buyer");
       root.innerHTML = installGuidance() +
         panel("Marketplace", getLastUpdated("buyer"), `<div class="stack">
@@ -127,10 +288,11 @@
             `<div class="row"><span>${o.status || "pending"}</span><span class="amount">${formatKsh(o.total_amount || 0)}</span></div>`
           )).join("") || `<div class="notice">No orders yet.</div>`}
         </div>`) +
-        panel("Messages", `Conversations: ${(convos?.conversations || []).length}`, `<div class="stack">
-          ${(convos?.conversations || []).slice(0, 5).map((c) => card(
-            c.farm_name || "Conversation",
-            `<div class="meta">${c.last_message_body || "No messages yet."}</div>`
+        panel("Messages", `Conversations: ${(convos?.conversations || []).length}`, `<div class="stack" id="mobileConvoList">
+          ${(convos?.conversations || []).slice(0, 8).map((c) => card(
+            `${escapeHtml(c.farm_name || "Conversation")}${c.unread_count ? ` (${Number(c.unread_count)})` : ""}`,
+            `<div class="meta">${escapeHtml(c.last_message_body || "No messages yet.")}</div>
+             <div class="actions"><button class="btn primary" data-open-convo="${escapeHtml(c.id)}">Open</button></div>`
           )).join("") || `<div class="notice">No conversations yet.</div>`}
         </div>`);
 
@@ -140,6 +302,26 @@
             await MobileAPI.buyer.addToCart(btn.getAttribute("data-add"), 1);
             await renderBuyer();
           } catch (e) { alert(e.message || "Failed to add to cart"); }
+        });
+      });
+
+      root.querySelectorAll("[data-open-convo]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-open-convo");
+          const convo = (convos?.conversations || []).find((x) => String(x.id) === String(id));
+          if (!convo) return;
+          try {
+            mobileChat.view = "thread";
+            mobileChat.convo = convo;
+            mobileChat.sending = false;
+            const t = await MobileAPI.chat.thread(convo.id);
+            mobileChat.messages = (t?.messages || []).slice().reverse().map((m) => ({ ...m }));
+            root.className = "content";
+            root.innerHTML = renderThread(convo);
+            wireThreadHandlers();
+          } catch (e) {
+            alert(e.message || "Failed to load messages");
+          }
         });
       });
     } catch (e) {
@@ -158,6 +340,9 @@
         MobileAPI.seller.tenders(),
         MobileAPI.chat.conversations("farmer")
       ]);
+      const totalUnread = computeTotalUnread(convos?.conversations || []);
+      prevTotalUnread = Math.max(prevTotalUnread, totalUnread);
+      setRoleUnreadBadge(totalUnread);
       setLastUpdated("farmer");
       root.innerHTML = installGuidance() +
         panel("Products", getLastUpdated("farmer"), `<div class="stack">
@@ -184,11 +369,32 @@
           )).join("") || `<div class="notice">No tenders available.</div>`}
         </div>`) +
         panel("Messages", `Conversations: ${(convos?.conversations || []).length}`, `<div class="stack">
-          ${(convos?.conversations || []).slice(0, 5).map((c) => card(
-            c.farm_name || "Conversation",
-            `<div class="meta">${c.last_message_body || "No messages yet."}</div>`
+          ${(convos?.conversations || []).slice(0, 8).map((c) => card(
+            `${escapeHtml(c.buyer_email || c.farm_name || "Conversation")}${c.unread_count ? ` (${Number(c.unread_count)})` : ""}`,
+            `<div class="meta">${escapeHtml(c.last_message_body || "No messages yet.")}</div>
+             <div class="actions"><button class="btn primary" data-open-convo="${escapeHtml(c.id)}">Open</button></div>`
           )).join("") || `<div class="notice">No conversations yet.</div>`}
         </div>`);
+
+      root.querySelectorAll("[data-open-convo]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-open-convo");
+          const convo = (convos?.conversations || []).find((x) => String(x.id) === String(id));
+          if (!convo) return;
+          try {
+            mobileChat.view = "thread";
+            mobileChat.convo = convo;
+            mobileChat.sending = false;
+            const t = await MobileAPI.chat.thread(convo.id);
+            mobileChat.messages = (t?.messages || []).slice().reverse().map((m) => ({ ...m }));
+            root.className = "content";
+            root.innerHTML = renderThread(convo);
+            wireThreadHandlers();
+          } catch (e) {
+            alert(e.message || "Failed to load messages");
+          }
+        });
+      });
     } catch (e) {
       root.innerHTML = panel("Farmer Dashboard", "", `<div class="notice">Could not load data: ${e.message || "Unknown error"}</div>`);
     }
@@ -246,6 +452,7 @@
       if (!btn) return;
       currentRole = btn.dataset.role;
       localStorage.setItem("userRole", currentRole);
+      setRoleUnreadBadge(0);
       renderRole();
     });
   }
@@ -276,7 +483,12 @@
 
   function wireVisibilityRefresh() {
     document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) renderRole();
+      if (document.hidden) {
+        stopChatPolling();
+        return;
+      }
+      renderRole();
+      startChatPolling();
     });
   }
 
@@ -284,5 +496,9 @@
   wireConnectivity();
   wireVisibilityRefresh();
   registerPWA();
+  loadPublicConfig().then(() => {
+    // In future GPS-related mobile features should check PUBLIC_CONFIG.gps_enabled.
+  });
   renderRole();
+  startChatPolling();
 })();

@@ -8,6 +8,7 @@ from models.user import User
 from models.farmer_profile import FarmerProfile
 from utils.account_access import is_rejected_user
 from utils.mailer import send_new_message_email
+from auth.admin_auth import decode_token_if_admin
 from database import execute_query
 import logging
 import os
@@ -244,3 +245,165 @@ def send_message(conversation_id):
         logger.error(f"send_message error: {str(e)}", exc_info=True)
         return jsonify({"error": "Failed to send message"}), 500
 
+
+@chat_bp.route("/admin/conversations", methods=["GET"])
+def admin_list_conversations():
+    """
+    Admin: list conversations with optional search.
+    Query params:
+      - q: search across participant emails/names (best-effort)
+      - limit, offset
+    Requires admin Firebase Bearer token.
+    """
+    decoded, err = decode_token_if_admin()
+    if err:
+        return err
+
+    q = (request.args.get("q") or "").strip()
+    try:
+        limit = int(request.args.get("limit", 50))
+        offset = int(request.args.get("offset", 0))
+    except Exception:
+        limit, offset = 50, 0
+    limit = max(1, min(200, limit))
+    offset = max(0, offset)
+
+    try:
+        query = """
+            SELECT
+              c.*,
+              bu.email AS buyer_email,
+              bu.firebase_uid AS buyer_firebase_uid,
+              fp.farm_name,
+              fp.user_id AS seller_user_id,
+              su.email AS seller_email,
+              su.firebase_uid AS seller_firebase_uid,
+              lm.body AS last_message_body,
+              lm.created_at AS last_message_created_at,
+              COALESCE(uc.unread_for_buyer, 0) AS unread_for_buyer,
+              COALESCE(uc.unread_for_seller, 0) AS unread_for_seller
+            FROM conversations c
+            JOIN users bu ON bu.id = c.buyer_user_id
+            JOIN farmer_profiles fp ON fp.id = c.farmer_profile_id
+            JOIN users su ON su.id = fp.user_id
+            LEFT JOIN LATERAL (
+              SELECT m.body, m.created_at
+              FROM messages m
+              WHERE m.conversation_id = c.id
+              ORDER BY m.created_at DESC
+              LIMIT 1
+            ) lm ON TRUE
+            LEFT JOIN LATERAL (
+              SELECT
+                COUNT(*) FILTER (WHERE m.is_read = FALSE AND m.sender_user_id <> c.buyer_user_id)::int AS unread_for_buyer,
+                COUNT(*) FILTER (WHERE m.is_read = FALSE AND m.sender_user_id <> fp.user_id)::int AS unread_for_seller
+              FROM messages m
+              WHERE m.conversation_id = c.id
+            ) uc ON TRUE
+            WHERE (
+              %s = '' OR
+              bu.email ILIKE %s OR
+              su.email ILIKE %s OR
+              fp.farm_name ILIKE %s
+            )
+            ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
+            LIMIT %s OFFSET %s
+        """
+        like = f"%{q}%"
+        rows = execute_query(query, (q, like, like, like, limit, offset), fetch_all=True) or []
+        return jsonify({"conversations": [dict(r) for r in rows]}), 200
+    except Exception as e:
+        logger.error(f"admin_list_conversations error: {str(e)}", exc_info=True)
+        return jsonify({"error": "Failed to list conversations"}), 500
+
+
+@chat_bp.route("/admin/conversations/<conversation_id>/messages", methods=["GET"])
+def admin_get_conversation_messages(conversation_id):
+    """
+    Admin: get messages for a conversation (no mark-read side effects).
+    Requires admin Firebase Bearer token.
+    """
+    decoded, err = decode_token_if_admin()
+    if err:
+        return err
+
+    try:
+        limit = int(request.args.get("limit", 200))
+        offset = int(request.args.get("offset", 0))
+    except Exception:
+        limit, offset = 200, 0
+    limit = max(1, min(500, limit))
+    offset = max(0, offset)
+
+    try:
+        convo = execute_query(
+            """
+            SELECT
+              c.*,
+              bu.email AS buyer_email,
+              fp.farm_name,
+              su.email AS seller_email
+            FROM conversations c
+            JOIN users bu ON bu.id = c.buyer_user_id
+            JOIN farmer_profiles fp ON fp.id = c.farmer_profile_id
+            JOIN users su ON su.id = fp.user_id
+            WHERE c.id = %s::uuid
+            LIMIT 1
+            """,
+            (conversation_id,),
+            fetch_one=True,
+        )
+        if not convo:
+            return jsonify({"error": "Conversation not found"}), 404
+        messages = Message.list_for_conversation(conversation_id, limit, offset)
+        return jsonify({"conversation": dict(convo), "messages": messages}), 200
+    except Exception as e:
+        logger.error(f"admin_get_conversation_messages error: {str(e)}", exc_info=True)
+        return jsonify({"error": "Failed to load messages"}), 500
+
+
+@chat_bp.route("/admin/conversations/<conversation_id>/messages", methods=["POST"])
+def admin_send_message(conversation_id):
+    """
+    Admin: send a message as a system/admin participant into an existing conversation.
+    Expects JSON: { body, as: 'buyer'|'seller' (default 'seller') }
+    Requires admin Firebase Bearer token.
+    """
+    decoded, err = decode_token_if_admin()
+    if err:
+        return err
+
+    data = request.get_json(silent=True) or {}
+    body = (data.get("body") or "").strip()
+    if not body:
+        return jsonify({"error": "Message body is required"}), 400
+
+    as_side = (data.get("as") or "seller").strip().lower()
+    if as_side not in ("buyer", "seller"):
+        as_side = "seller"
+
+    try:
+        # Resolve participants so admin can choose which side to message as.
+        convo = execute_query(
+            """
+            SELECT c.*, fp.user_id AS seller_user_id
+            FROM conversations c
+            JOIN farmer_profiles fp ON fp.id = c.farmer_profile_id
+            WHERE c.id = %s::uuid
+            LIMIT 1
+            """,
+            (conversation_id,),
+            fetch_one=True,
+        )
+        if not convo:
+            return jsonify({"error": "Conversation not found"}), 404
+
+        sender_user_id = str(convo["buyer_user_id"]) if as_side == "buyer" else str(convo["seller_user_id"])
+        msg = Message.create(conversation_id, sender_user_id, body)
+        if not msg:
+            return jsonify({"error": "Could not send message"}), 500
+
+        return jsonify({"success": True, "message": msg}), 201
+    except Exception as e:
+        logger.error(f"admin_send_message error: {str(e)}", exc_info=True)
+        return jsonify({"error": "Failed to send message"}), 500

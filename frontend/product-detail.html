@@ -270,6 +270,8 @@
     .loading-state { text-align: center; padding: 80px 20px; color: var(--muted); }
     .loading-state .icon { font-size: 48px; margin-bottom: 10px; }
 
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     @media (max-width: 900px) {
       .detail-main { grid-template-columns: 1fr; }
       .farmer-col { position: static; }
@@ -757,13 +759,19 @@ async function sendChatMessage() {
   var text = (input.value || '').trim();
   if (!text) return;
   try {
+    if (!btn.dataset.idleHtml) btn.dataset.idleHtml = btn.innerHTML;
     btn.disabled = true;
+    btn.innerHTML =
+      '<span style="display:inline-flex;align-items:center;gap:8px;">' +
+      '<span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;"></span>' +
+      ' Sending…</span>';
     var userStr = localStorage.getItem('user') || 'null';
     var user = JSON.parse(userStr);
     var firebaseUid = user && (user.firebase_uid || user.id);
     if (!firebaseUid) {
       await uiAlert('We could not find your account details. Please sign in again.', 'Account issue');
       btn.disabled = false;
+      btn.innerHTML = btn.dataset.idleHtml || '➤ Send';
       return;
     }
     var body = {
@@ -794,6 +802,7 @@ async function sendChatMessage() {
     await uiAlert(e.message || 'Could not send message. Please try again.', 'Message error');
   } finally {
     btn.disabled = false;
+    btn.innerHTML = btn.dataset.idleHtml || '➤ Send';
   }
 }
 

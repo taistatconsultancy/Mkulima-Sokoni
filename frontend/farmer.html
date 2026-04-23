@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Farmer Dashboard | Mkulima sokoni</title>
+  <title>Farmer Dashboard | Mkulima Sokoni</title>
   <link rel="icon" type="image/jpeg" href="assets/img/logo.jpeg" />
   <link rel="shortcut icon" type="image/jpeg" href="assets/img/logo.jpeg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -658,6 +658,8 @@
       background: #fff;
       border-bottom-left-radius: 4px;
     }
+    .chat-bubble.pending { opacity: .72; }
+    .chat-bubble.failed { opacity: 1; border: 1px solid rgba(239,68,68,.55); }
     .chat-meta { display:block; font-size:.7rem; color:#6b7280; margin-top:3px; text-align:right; }
     .chat-thread-foot {
       padding: 12px 14px;
@@ -831,9 +833,61 @@
       .agro-dealer-grid { grid-template-columns: 1fr; }
       #marketGrid { grid-template-columns: 1fr !important; }
     }
+
+    /* ── Bootstrap gate (first-time routing, no flicker) ── */
+    .bootstrap-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: none;
+      place-items: center;
+      padding: 22px 16px;
+      background: radial-gradient(ellipse 80% 70% at 20% 100%, rgba(116,198,157,.16) 0%, transparent 55%),
+                  radial-gradient(ellipse 70% 60% at 90% 0%, rgba(233,196,106,.14) 0%, transparent 55%),
+                  var(--cream);
+    }
+    .bootstrap-gate.show { display: grid; }
+    .bootstrap-card {
+      width: 100%;
+      max-width: 520px;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow-lg);
+      padding: 20px 18px;
+    }
+    .bootstrap-title { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 800; color: var(--forest); }
+    .bootstrap-sub { margin-top: 6px; color: var(--muted); font-size: .88rem; }
+    .bootstrap-row { display:flex; align-items:center; gap:10px; margin-top: 14px; }
+    .bootstrap-spin {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(27,67,50,.18);
+      border-top-color: var(--leaf);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    .bootstrap-retry { margin-top: 14px; display:none; }
+    .bootstrap-retry.show { display:block; }
+    .bootstrap-retry .btn { width: 100%; }
   </style>
 </head>
 <body>
+
+<!-- ── BOOTSTRAP GATE (prevents page flicker on first load) ── -->
+<div class="bootstrap-gate" id="bootstrapGate" aria-live="polite" aria-busy="true">
+  <div class="bootstrap-card">
+    <div class="bootstrap-title">Setting up your account…</div>
+    <div class="bootstrap-sub" id="bootstrapGateSub">Checking your profile and verification status.</div>
+    <div class="bootstrap-row" id="bootstrapGateRow">
+      <span class="bootstrap-spin" aria-hidden="true"></span>
+      <div style="font-weight:700;color:var(--forest);">Loading</div>
+    </div>
+    <div class="bootstrap-retry" id="bootstrapGateRetry">
+      <button class="btn btn-primary" type="button" onclick="window.__mkBootstrapRetry && window.__mkBootstrapRetry()">Retry</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── SUPER-USER BANNER (shown when admin accesses client account) ── -->
 <div id="superUserBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;padding:10px 24px;font-family:'DM Sans',system-ui,sans-serif;font-size:.85rem;box-shadow:0 4px 20px rgba(124,58,237,.35);">
@@ -871,10 +925,10 @@ function exitSuperUser() {
   <button class="mobile-nav-btn" type="button" onclick="toggleTopbarNav()" aria-label="Open navigation menu">☰</button>
   <a href="index.html" class="logo">
     <div class="logo-mark">
-      <img src="assets/img/logo.jpeg" alt="Mkulima sokoni" />
+      <img src="assets/img/logo.jpeg" alt="Mkulima Sokoni" />
     </div>
     <div class="logo-label">
-      <strong>Mkulima sokoni</strong>
+      <strong>Mkulima Sokoni</strong>
       <span>From farm to market, fairly.</span>
     </div>
   </a>
@@ -928,6 +982,9 @@ function exitSuperUser() {
       <div class="welcome-text">
         <h1 class="welcome-title" id="welcomeTitle">Welcome back, <em>Farmer</em>! 👋</h1>
         <p class="welcome-sub">Grow, sell, and thrive manage your produce directly with buyers.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
+          <a href="market.html" class="btn btn-white" style="text-decoration:none;">Go to Marketplace →</a>
+        </div>
       </div>
       </div>
 
@@ -956,18 +1013,20 @@ function exitSuperUser() {
       <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);"><div style="font-size:32px;margin-bottom:8px;">🏪</div><p style="font-weight:600;">Loading agro-dealer products…</p></div>
     </div>
 
-    <!-- Other Farmer Listings -->
+    <!-- Nearby Farmers -->
     <div class="section-header">
       <div class="section-header-text">
-        <div class="section-title">Farmer Listings 🌾</div>
-        <div class="section-subtitle">Fresh produce from other farmers across Kenya</div>
+        <div class="section-title">Farmers near you 🌾</div>
+        <div class="section-subtitle">Discover farmers around your location (GPS) or your county</div>
       </div>
     </div>
     <div id="marketplaceListings" style="margin-bottom:30px;">
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;" id="marketGrid">
-        <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);"><div style="font-size:32px;margin-bottom:8px;">🌱</div><p style="font-weight:600;">Loading farmer listings…</p></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;" id="nearbyFarmersGrid">
+        <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);"><div style="font-size:32px;margin-bottom:8px;">📍</div><p style="font-weight:600;">Finding farmers near you…</p></div>
       </div>
-      <div id="marketPagination" style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px;"></div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px;">
+        <button class="btn btn-white" type="button" onclick="loadNearbyFarmers(false)">Refresh nearby farmers</button>
+      </div>
     </div>
   </div>
 
@@ -1224,6 +1283,7 @@ function exitSuperUser() {
 
         <div id="profile-nav-actions" style="display:flex;gap:10px;margin-top:28px;padding-top:20px;border-top:1.5px solid var(--border);">
           <button type="button" class="btn btn-outline" onclick="showPage('dashboard')">Cancel</button>
+          <button type="button" class="btn btn-white" id="update-gps-btn" onclick="updateMyLocation()" style="display:none;">Update my location</button>
           <button type="button" class="btn btn-outline" id="profile-back-btn" style="display:none;" onclick="goToPreviousProfileTab()">Back</button>
           <button type="button" class="btn btn-primary" id="save-profile-btn" style="flex:1;" onclick="handleProfilePrimaryAction()">
             <span id="save-btn-text">Next</span>
@@ -1437,10 +1497,10 @@ function exitSuperUser() {
     <div class="footer-brand-col">
       <div class="footer-flogo">
         <div class="footer-flogo-mark">
-          <img src="assets/img/logo.jpeg" alt="Mkulima sokoni logo" />
+          <img src="assets/img/logo.jpeg" alt="Mkulima Sokoni logo" />
         </div>
         <div class="footer-flogo-label">
-          <strong>Mkulima sokoni</strong>
+          <strong>Mkulima Sokoni</strong>
           <span>From farm to market, fairly.</span>
         </div>
       </div>
@@ -1483,7 +1543,7 @@ function exitSuperUser() {
     </div>
   </div>
   <div class="footer-bottom">
-    <p class="footer-copy">© <span id="yr"></span> <strong>Mkulima sokoni</strong>. All rights reserved.</p>
+    <p class="footer-copy">© <span id="yr"></span> <strong>Mkulima Sokoni</strong>. All rights reserved.</p>
     <div class="footer-badges">
       <span class="footer-badge">Powered by TaiStat Firm</span>
     </div>
@@ -1516,6 +1576,19 @@ function exitSuperUser() {
       throw new Error(msg);
     }
     return data;
+  }
+
+  // Public feature flags (loaded from backend)
+  let PUBLIC_CONFIG = { gps_enabled: true };
+  async function loadPublicConfig() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/public-config`);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data && typeof data === 'object') {
+        PUBLIC_CONFIG = { ...PUBLIC_CONFIG, ...data };
+      }
+    } catch (_) {}
+    return PUBLIC_CONFIG;
   }
 
   let sellerOrdersPollTimer = null;
@@ -1615,7 +1688,15 @@ function exitSuperUser() {
     }
     if (profileLocked && pageName !== 'profile') {
       pageName = 'profile';
-      window.SokoUI?.toast('Complete your profile first to continue.', 'warning');
+      try {
+        const k = 'mk_profile_lock_toast_farmer_v1';
+        if (sessionStorage.getItem(k) !== 'true') {
+          sessionStorage.setItem(k, 'true');
+          window.SokoUI?.toast('Complete your profile first to continue.', 'warning');
+        }
+      } catch (_) {
+        window.SokoUI?.toast('Complete your profile first to continue.', 'warning');
+      }
     }
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     const t = document.getElementById(pageName);
@@ -1631,6 +1712,7 @@ function exitSuperUser() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (pageName === 'profile') loadFarmerProfile();
     stopSellerCommercePolling();
+    updateMarketplacePollingState();
     if (pageName === 'messages') {
       setFarmerMobileChatView('inbox');
       setTimeout(() => loadInbox(false).then(() => startInboxPolling()), 260);
@@ -1653,6 +1735,22 @@ function exitSuperUser() {
   let inboxCache = [];
   let inboxLoading = false;
   let threadLoading = false;
+  let farmerSending = false;
+  let farmerPrevTotalUnread = 0;
+  const farmerBaseTitle = document.title || 'Farmer';
+
+  function setSendBtnLoading(btn, on) {
+    if (!btn) return;
+    if (on) {
+      if (!btn.dataset.idleHtml) btn.dataset.idleHtml = btn.innerHTML;
+      btn.innerHTML =
+        '<span style="display:inline-flex;align-items:center;gap:8px;">' +
+        '<span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;"></span>' +
+        ' Sending…</span>';
+    } else if (btn.dataset.idleHtml) {
+      btn.innerHTML = btn.dataset.idleHtml;
+    }
+  }
 
   function _getAuthUid() {
     try {
@@ -1714,7 +1812,7 @@ function exitSuperUser() {
       stampLastUpdated('messages');
 
       // If a conversation is active, keep it refreshed too
-      if (activeConversationId) {
+      if (activeConversationId && !farmerSending) {
         await loadThread(activeConversationId, true);
       }
     } catch (e) {
@@ -1763,6 +1861,17 @@ function exitSuperUser() {
     if (!dot) return;
     const totalUnread = (conversations || []).reduce((sum, c) => sum + Number(c.unread_count || 0), 0);
     dot.classList.toggle('show', totalUnread > 0);
+    if (totalUnread > 0) document.title = `(${totalUnread}) ${farmerBaseTitle}`;
+    else document.title = farmerBaseTitle;
+
+    if (totalUnread > farmerPrevTotalUnread) {
+      const delta = totalUnread - farmerPrevTotalUnread;
+      const isOnMessages = activeFarmerPage && activeFarmerPage() === 'messages';
+      if (!isOnMessages) {
+        window.SokoUI?.toast(`${delta === 1 ? 'New message' : `${delta} new messages`}.`, 'info');
+      }
+    }
+    farmerPrevTotalUnread = totalUnread;
   }
 
   // Minimal escaping for chat list
@@ -1835,6 +1944,54 @@ function exitSuperUser() {
     bodyEl.scrollTop = bodyEl.scrollHeight;
   }
 
+  function _farmerAppendPendingBubble(text) {
+    const bodyEl = document.getElementById('chatThreadBody');
+    if (!bodyEl) return null;
+    if (bodyEl.querySelector('.chat-empty')) bodyEl.innerHTML = '';
+    const tempId = `pending-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const el = document.createElement('div');
+    el.className = 'chat-bubble me pending';
+    el.dataset.tempId = tempId;
+    el.innerHTML = `<div>${escapeHtml(text || '')}</div><span class="chat-meta">Sending…</span>`;
+    bodyEl.appendChild(el);
+    bodyEl.scrollTop = bodyEl.scrollHeight;
+    return { tempId, el };
+  }
+
+  function _farmerConfirmPending(tempId, message) {
+    const el = document.querySelector(`.chat-bubble.pending[data-temp-id="${tempId}"]`);
+    if (!el) return;
+    el.classList.remove('pending');
+    const t = message?.created_at ? new Date(message.created_at).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : 'Sent';
+    const meta = el.querySelector('.chat-meta');
+    if (meta) meta.textContent = t;
+  }
+
+  function _farmerMarkPendingFailed(tempId) {
+    const el = document.querySelector(`.chat-bubble.pending[data-temp-id="${tempId}"]`);
+    if (!el) return;
+    el.classList.remove('pending');
+    el.classList.add('failed');
+    const meta = el.querySelector('.chat-meta');
+    if (meta) meta.textContent = 'Failed to send';
+  }
+
+  function _farmerUpdateInboxAfterSend(conversationId, text, createdAt) {
+    const idx = (inboxCache || []).findIndex(c => String(c.id) === String(conversationId));
+    if (idx < 0) return;
+    const nowIso = createdAt || new Date().toISOString();
+    inboxCache[idx] = {
+      ...inboxCache[idx],
+      last_message_body: text,
+      last_message_created_at: nowIso,
+      last_message_at: nowIso,
+      unread_count: 0
+    };
+    try { sessionStorage.setItem('farmerInboxCache', JSON.stringify(inboxCache)); } catch {}
+    renderInbox(inboxCache);
+    updateUnreadDot(inboxCache);
+  }
+
   async function sendReply() {
     if (!activeConversationId) return;
     const uid = _getAuthUid();
@@ -1844,7 +2001,13 @@ function exitSuperUser() {
     const text = (input.value || '').trim();
     if (!text) return;
     try {
+      if (farmerSending) return;
+      farmerSending = true;
       btn.disabled = true;
+      setSendBtnLoading(btn, true);
+      input.disabled = true;
+      const pending = _farmerAppendPendingBubble(text);
+      const pendingId = pending?.tempId || null;
       const res = await fetch(`${API_BASE_URL}/chat/conversations/${activeConversationId}/messages`, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
@@ -1853,13 +2016,21 @@ function exitSuperUser() {
       const data = await res.json();
       if (!res.ok || !data.message) throw new Error(data.error || 'Failed to send message');
       input.value = '';
-      // Reload thread to include server timestamp + keep consistent
-      await loadThread(activeConversationId, true);
+      _farmerConfirmPending(pendingId, data.message);
+      _farmerUpdateInboxAfterSend(activeConversationId, text, data.message?.created_at);
     } catch (e) {
       console.error(e);
+      try {
+        const lastPending = document.querySelector('#chatThreadBody .chat-bubble.pending[data-temp-id]');
+        const id = lastPending?.dataset?.tempId;
+        if (id) _farmerMarkPendingFailed(id);
+      } catch (_) {}
       await uiAlert(e.message || 'Unable to send message.', 'Message error');
     } finally {
       btn.disabled = false;
+      setSendBtnLoading(btn, false);
+      input.disabled = false;
+      farmerSending = false;
     }
   }
 
@@ -2778,11 +2949,225 @@ function exitSuperUser() {
           Array.from(sel.options).forEach(o => { o.selected = lv.includes(o.value); });
           updateLivestockDisplay();
         }
+
+        // Existing users: ask once to save approximate GPS coords.
+        promptAndSaveFarmerGpsOnce(p);
+
+      // Show Update my location button once profile exists.
+      const gpsBtn = document.getElementById('update-gps-btn');
+      if (gpsBtn) gpsBtn.style.display = '';
       }
     } catch(err) { console.error(err); }
     finally {
       saveBtn.disabled = false; saveTxt.textContent = 'Next'; saveSpn.style.display = 'none';
       updateProfilePrimaryAction();
+    }
+  }
+
+  async function promptAndSaveFarmerGpsOnce(profile) {
+    try {
+      if (PUBLIC_CONFIG && PUBLIC_CONFIG.gps_enabled === false) return;
+      if (!navigator.geolocation) return;
+      const hasCoords = profile && profile.latitude != null && profile.longitude != null;
+      if (hasCoords) return;
+      const promptedKey = 'mk_farmer_gps_prompted_v1';
+      if (localStorage.getItem(promptedKey) === 'true') return;
+
+      // In-page banner prompt (better UX than confirm()).
+      if (document.getElementById('mk-gps-banner')) return;
+
+      const banner = document.createElement('div');
+      banner.id = 'mk-gps-banner';
+      banner.style.cssText = [
+        'position:fixed',
+        'left:14px',
+        'right:14px',
+        'bottom:14px',
+        'z-index:9999',
+        'background:#ffffff',
+        'border:1.5px solid var(--border)',
+        'border-radius:16px',
+        'box-shadow:0 14px 44px rgba(0,0,0,.18)',
+        'padding:14px 14px',
+        'max-width:860px',
+        'margin:0 auto',
+      ].join(';');
+      banner.innerHTML = `
+        <div style="display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;">
+          <div style="display:flex;gap:12px;align-items:flex-start;min-width:240px;flex:1;">
+            <div style="width:40px;height:40px;border-radius:14px;background:rgba(64,145,108,.12);display:grid;place-items:center;font-size:18px;flex-shrink:0;">📍</div>
+            <div style="min-width:0;">
+              <div style="font-weight:900;color:var(--forest);">Enable location to appear in nearby farmers</div>
+              <div style="font-size:.82rem;color:var(--muted);line-height:1.45;margin-top:2px;">
+                Helps others find you. We store an approximate location (~110m).
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <button type="button" class="btn btn-white" id="mkGpsNotNowBtn" style="white-space:nowrap;">Not now</button>
+            <button type="button" class="btn btn-primary" id="mkGpsAllowBtn" style="white-space:nowrap;">Allow</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(banner);
+
+      const closeBanner = () => {
+        try { banner.remove(); } catch (_) {}
+      };
+
+      const markPrompted = () => {
+        try { localStorage.setItem(promptedKey, 'true'); } catch (_) {}
+      };
+
+      const notNow = banner.querySelector('#mkGpsNotNowBtn');
+      const allow = banner.querySelector('#mkGpsAllowBtn');
+      if (notNow) {
+        notNow.onclick = () => {
+          markPrompted();
+          closeBanner();
+        };
+      }
+      if (allow) {
+        allow.onclick = async () => {
+          try {
+            allow.disabled = true;
+            allow.textContent = 'Saving…';
+            const pos = await new Promise((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: false,
+                timeout: 7000,
+                maximumAge: 5 * 60 * 1000,
+              });
+            });
+            const lat = pos?.coords?.latitude;
+            const lng = pos?.coords?.longitude;
+            if (typeof lat !== 'number' || typeof lng !== 'number') throw new Error('Could not read GPS location');
+
+            const userStr = localStorage.getItem('user');
+            if (!userStr) throw new Error('Please sign in again.');
+            const user = JSON.parse(userStr);
+            const uid = user.firebase_uid || user.id;
+            if (!uid) throw new Error('Please sign in again.');
+
+            const body = {
+              firebase_uid: uid,
+              // keep current required profile fields unchanged
+              farm_name: profile.farm_name,
+              location: profile.location,
+              county: profile.county,
+              national_id: profile.national_id,
+              ward: profile.ward || null,
+              crops: profile.crops || null,
+              livestock: profile.livestock || null,
+              referral_source: profile.referral_source || null,
+              referral_other: profile.referral_other || null,
+              farm_size_acres: profile.farm_size_acres || null,
+              farming_experience_years: profile.farming_experience_years || null,
+              bio: profile.bio || '',
+              profile_image_url: profile.profile_image_url || '',
+              latitude: Math.round(lat * 1000) / 1000,
+              longitude: Math.round(lng * 1000) / 1000,
+            };
+
+            const res = await fetch(`${API_BASE_URL}/profiles/farmer`, {
+              method: 'POST',
+              headers: {'Content-Type':'application/json'},
+              body: JSON.stringify(body)
+            });
+            if (!res.ok) {
+              const d = await res.json().catch(() => ({}));
+              throw new Error(d.error || 'Failed to save location');
+            }
+            markPrompted();
+            closeBanner();
+            window.SokoUI?.toast('Location saved (approx).', 'success');
+            await loadNearbyFarmers(true);
+          } catch (e) {
+            markPrompted();
+            closeBanner();
+            await uiAlert(e.message || 'Failed to save location.', 'Location');
+          } finally {
+            try {
+              allow.disabled = false;
+              allow.textContent = 'Allow';
+            } catch (_) {}
+          }
+        };
+      }
+    } catch (_) {
+      // ignore errors; fallback continues to work
+    }
+  }
+
+  async function updateMyLocation() {
+    try {
+      if (PUBLIC_CONFIG && PUBLIC_CONFIG.gps_enabled === false) {
+        window.SokoUI?.toast('GPS is disabled by admin.', 'warning');
+        return;
+      }
+      if (!navigator.geolocation) {
+        window.SokoUI?.toast('GPS not available on this device.', 'warning');
+        return;
+      }
+      const ok = window.confirm(
+        'Update your saved location?\n\n' +
+        'This helps others find you. Your location is stored approximately (~110m).'
+      );
+      if (!ok) return;
+
+      const userStr = localStorage.getItem('user');
+      if (!userStr) return;
+      const user = JSON.parse(userStr);
+      const uid = user.firebase_uid || user.id;
+      if (!uid) return;
+
+      const resProf = await fetch(`${API_BASE_URL}/profiles/farmer/${uid}`);
+      const dataProf = await resProf.json().catch(() => ({}));
+      const profile = dataProf.profile || dataProf || {};
+      if (!resProf.ok) throw new Error(dataProf.error || 'Could not load your profile');
+
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: false,
+          timeout: 7000,
+          maximumAge: 0,
+        });
+      });
+      const lat = pos?.coords?.latitude;
+      const lng = pos?.coords?.longitude;
+      if (typeof lat !== 'number' || typeof lng !== 'number') throw new Error('Could not read GPS location');
+
+      const body = {
+        firebase_uid: uid,
+        farm_name: profile.farm_name,
+        location: profile.location,
+        county: profile.county,
+        national_id: profile.national_id,
+        ward: profile.ward || null,
+        crops: profile.crops || null,
+        livestock: profile.livestock || null,
+        referral_source: profile.referral_source || null,
+        referral_other: profile.referral_other || null,
+        farm_size_acres: profile.farm_size_acres || null,
+        farming_experience_years: profile.farming_experience_years || null,
+        bio: profile.bio || '',
+        profile_image_url: profile.profile_image_url || '',
+        latitude: Math.round(lat * 1000) / 1000,
+        longitude: Math.round(lng * 1000) / 1000,
+      };
+
+      const res = await fetch(`${API_BASE_URL}/profiles/farmer`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || 'Failed to save location');
+      window.SokoUI?.toast('Location updated.', 'success');
+      await loadNearbyFarmers(false);
+      await loadFarmerProfile();
+    } catch (e) {
+      await uiAlert(e.message || 'Failed to update location.', 'Location');
     }
   }
 
@@ -2829,6 +3214,28 @@ function exitSuperUser() {
         bio: document.getElementById('bio').value,
         profile_image_url: document.getElementById('profile-image').value || currentImageUrl || ''
       };
+
+      // New users: attempt to capture GPS on profile save to improve nearby results.
+      // Rounded to ~110m (3dp) for privacy.
+      try {
+        if (PUBLIC_CONFIG && PUBLIC_CONFIG.gps_enabled !== false && navigator.geolocation) {
+          const pos = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: false,
+              timeout: 7000,
+              maximumAge: 5 * 60 * 1000,
+            });
+          });
+          const lat = pos?.coords?.latitude;
+          const lng = pos?.coords?.longitude;
+          if (typeof lat === 'number' && typeof lng === 'number') {
+            body.latitude = Math.round(lat * 1000) / 1000;
+            body.longitude = Math.round(lng * 1000) / 1000;
+          }
+        }
+      } catch (_) {
+        // permission denied or timeout; continue saving without coords
+      }
 
       const res = await fetch(`${API_BASE_URL}/profiles/farmer`, {
         method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
@@ -3123,6 +3530,7 @@ function exitSuperUser() {
   let agroDealerProducts = [];
   let mkPage = 0;
   const MK_PER_PAGE = 12;
+  let nearbyFarmersCache = [];
 
   async function loadFeaturedTickerRows() {
     try {
@@ -3207,29 +3615,113 @@ function exitSuperUser() {
     grid.innerHTML = agroDealerProducts.slice(0, 12).map(mkCardHTML).join('');
   }
 
-  function renderMarketplacePage() {
-    const grid = document.getElementById('marketGrid');
-    const pag = document.getElementById('marketPagination');
-    if (!farmerProducts.length) {
-      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted);"><p>No farmer listings available yet.</p></div>';
-      pag.innerHTML = '';
+  function renderNearbyFarmers() {
+    const grid = document.getElementById('nearbyFarmersGrid');
+    if (!grid) return;
+    const farmers = Array.isArray(nearbyFarmersCache) ? nearbyFarmersCache : [];
+    if (!farmers.length) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted);"><p>No nearby farmers found yet.</p></div>';
       return;
     }
-    const start = mkPage * MK_PER_PAGE;
-    const slice = farmerProducts.slice(start, start + MK_PER_PAGE);
-    const totalPages = Math.ceil(farmerProducts.length / MK_PER_PAGE);
+    const card = (f) => {
+      const name = (f.farm_name || 'Farmer').toString().replace(/</g,'&lt;');
+      const loc = ((f.location || '') + (f.county ? (', ' + f.county) : '')).trim().replace(/</g,'&lt;');
+      const uid = (f.firebase_uid || '').toString().replace(/</g,'&lt;').replace(/"/g,'&quot;');
+      const distance = f.distance_km != null ? `${Number(f.distance_km).toFixed(1)} km` : '';
+      const avatar = f.profile_image_url
+        ? `<img src="${f.profile_image_url}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" />`
+        : `<div style="font-weight:800;color:#fff;">${name.trim().charAt(0).toUpperCase() || 'F'}</div>`;
+      return `
+        <article style="background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;">
+          <div style="display:flex;gap:12px;align-items:center;padding:14px 14px 0;">
+            <div style="width:44px;height:44px;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,var(--forest),var(--leaf));display:grid;place-items:center;flex-shrink:0;box-shadow:0 6px 18px rgba(27,67,50,.12);">
+              ${avatar}
+            </div>
+            <div style="min-width:0;flex:1;">
+              <div style="font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
+              <div style="font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 ${loc || 'Kenya'}</div>
+            </div>
+            ${distance ? `<div style="font-size:.72rem;font-weight:800;color:var(--leaf);background:rgba(64,145,108,.10);padding:4px 10px;border-radius:999px;white-space:nowrap;">${distance}</div>` : ''}
+          </div>
+          <div style="padding:12px 14px 14px;margin-top:auto;">
+            <a class="btn btn-white" style="display:inline-flex;justify-content:center;align-items:center;width:100%;text-decoration:none;" href="seller-profile.html?uid=${uid}">View profile →</a>
+          </div>
+        </article>
+      `;
+    };
+    grid.innerHTML = farmers.map(card).join('');
+  }
 
-    grid.innerHTML = slice.map(mkCardHTML).join('');
-
-    let pagHTML = '';
-    if (totalPages > 1) {
-      pagHTML += `<button class="pg-btn" ${mkPage===0?'disabled':''} onclick="mkPage--;renderMarketplacePage();">← Prev</button>`;
-      for (let i = 0; i < totalPages; i++) {
-        pagHTML += `<button class="pg-btn ${i===mkPage?'active':''}" onclick="mkPage=${i};renderMarketplacePage();">${i+1}</button>`;
-      }
-      pagHTML += `<button class="pg-btn" ${mkPage>=totalPages-1?'disabled':''} onclick="mkPage++;renderMarketplacePage();">Next →</button>`;
+  async function loadNearbyFarmers(silent = false) {
+    const grid = document.getElementById('nearbyFarmersGrid');
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted);"><p>Please sign in to see farmers near you.</p></div>';
+      return;
     }
-    pag.innerHTML = pagHTML;
+    const user = JSON.parse(userStr);
+    const uid = user.firebase_uid || user.id;
+    if (!uid) return;
+
+    const setLoading = (msg) => {
+      if (!silent && grid) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);"><div style="font-size:32px;margin-bottom:8px;">📍</div><p style="font-weight:600;">${msg}</p></div>`;
+      }
+    };
+
+    const fetchByCounty = async () => {
+      try {
+        const resProf = await fetch(`${API_BASE_URL}/profiles/farmer/${uid}`);
+        if (!resProf.ok) throw new Error('Could not load your profile');
+        const dataProf = await resProf.json();
+        const prof = dataProf.profile || dataProf || {};
+        const county = String(prof.county || '').trim();
+        if (!county) throw new Error('Please add your county in Profile to see nearby farmers.');
+        const res = await fetch(`${API_BASE_URL}/profiles/farmers/nearby?county=${encodeURIComponent(county)}&limit=24`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load nearby farmers');
+        nearbyFarmersCache = data.farmers || [];
+        renderNearbyFarmers();
+      } catch (e) {
+        if (grid) grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted);"><p>${(e.message || 'Unable to load nearby farmers').replace(/</g,'&lt;')}</p></div>`;
+      }
+    };
+
+    const fetchByGps = async (lat, lng) => {
+      const url = `${API_BASE_URL}/profiles/farmers/nearby?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&radius_km=25&limit=24`;
+      const res = await fetch(url);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to load nearby farmers');
+      nearbyFarmersCache = data.farmers || [];
+      renderNearbyFarmers();
+    };
+
+    // Hybrid: GPS if enabled + allowed, fallback to county.
+    setLoading('Finding farmers near you…');
+    if (PUBLIC_CONFIG && PUBLIC_CONFIG.gps_enabled === false) {
+      await fetchByCounty();
+      return;
+    }
+    if (!navigator.geolocation) {
+      await fetchByCounty();
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const lat = pos?.coords?.latitude;
+          const lng = pos?.coords?.longitude;
+          if (typeof lat !== 'number' || typeof lng !== 'number') throw new Error('Invalid location');
+          await fetchByGps(lat, lng);
+        } catch (_) {
+          await fetchByCounty();
+        }
+      },
+      async () => {
+        await fetchByCounty();
+      },
+      { enableHighAccuracy: false, timeout: 7000, maximumAge: 5 * 60 * 1000 }
+    );
   }
 
   function renderAgroDealerTicker(products) {
@@ -3278,30 +3770,109 @@ function exitSuperUser() {
     });
   }
 
+  function stopMarketplacePolling() {
+    if (window.SokoMarketplaceSync) window.SokoMarketplaceSync.stop();
+  }
+
+  function shouldMarketplacePoll() {
+    return !document.hidden && activeFarmerPage() === 'dashboard';
+  }
+
+  function updateMarketplacePollingState() {
+    if (shouldMarketplacePoll()) startMarketplacePolling();
+    else stopMarketplacePolling();
+  }
+
+  function _mkGateShow(msg) {
+    const gate = document.getElementById('bootstrapGate');
+    const sub = document.getElementById('bootstrapGateSub');
+    const retry = document.getElementById('bootstrapGateRetry');
+    if (sub && msg) sub.textContent = msg;
+    if (retry) retry.classList.remove('show');
+    if (gate) gate.classList.add('show');
+  }
+  function _mkGateFail(msg) {
+    const gate = document.getElementById('bootstrapGate');
+    const sub = document.getElementById('bootstrapGateSub');
+    const retry = document.getElementById('bootstrapGateRetry');
+    if (sub) sub.textContent = msg || 'Could not load your account. Please retry.';
+    if (retry) retry.classList.add('show');
+    if (gate) gate.classList.add('show');
+  }
+  function _mkGateHide() {
+    const gate = document.getElementById('bootstrapGate');
+    if (gate) gate.classList.remove('show');
+  }
+  async function bootstrapAndRouteFarmer() {
+    _mkGateShow('Checking your profile…');
+    try {
+      // Load public config early (does not block routing).
+      loadPublicConfig().then(() => { loadNearbyFarmers(true); }).catch(() => {});
+
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        // No session: still allow page to render; keep them on dashboard (will show sign-in prompts where needed).
+        showPage('dashboard');
+        _mkGateHide();
+        return;
+      }
+      const user = JSON.parse(userStr);
+      const uid = user.firebase_uid || user.id;
+      if (!uid) { showPage('dashboard'); _mkGateHide(); return; }
+
+      const res = await fetch(`${API_BASE_URL}/profiles/farmer/${uid}`);
+      const data = await res.json().catch(() => ({}));
+      const p = data.profile || {};
+      const hasRequired = Boolean(
+        String(p.farm_name || '').trim() &&
+        String(p.location || '').trim() &&
+        String(p.county || '').trim() &&
+        String(p.national_id || '').trim()
+      );
+      profileLocked = !res.ok || !hasRequired;
+      showPage(profileLocked ? 'profile' : 'dashboard');
+      await loadFarmerProfile();
+      enforceFarmerProfileCompletion(true);
+      updateProfilePrimaryAction();
+
+      // Heavy loads only after routing is decided.
+      applyProductTypeOptions('product');
+      applyProductTypeOptions('edit');
+      loadUserProfile();
+      loadProducts();
+
+      if (!profileLocked) {
+        setTimeout(() => {
+          loadMarketplaceListings(); // agro-dealer grid + ticker
+          updateMarketplacePollingState();
+        }, 250);
+      } else {
+        updateMarketplacePollingState();
+      }
+
+      if (typeof onFeaturedTickerChanged === 'function') {
+        onFeaturedTickerChanged(function () {
+          loadFeaturedTickerRows().then(function () { renderAgroDealerTicker(featuredTickerProducts); });
+        });
+      }
+      if (window.SokoSupportCenter) {
+        window.SokoSupportCenter.initUserSupport({
+          rootId: 'farmerSupportCenterRoot',
+          roleLabel: 'Farmer'
+        });
+      }
+      const action = new URLSearchParams(window.location.search).get('action');
+      if (action === 'list-produce' && !profileLocked) addProduct();
+
+      _mkGateHide();
+    } catch (e) {
+      window.__mkBootstrapRetry = bootstrapAndRouteFarmer;
+      _mkGateFail('We could not load your account. Check your connection and retry.');
+    }
+  }
+
   window.addEventListener('DOMContentLoaded', async () => {
-    showPage('dashboard');
-    applyProductTypeOptions('product');
-    applyProductTypeOptions('edit');
-    loadUserProfile();
-    loadProducts();
-    loadMarketplaceListings();
-    startMarketplacePolling();
-    if (typeof onFeaturedTickerChanged === 'function') {
-      onFeaturedTickerChanged(function () {
-        loadFeaturedTickerRows().then(function () { renderAgroDealerTicker(featuredTickerProducts); });
-      });
-    }
-    if (window.SokoSupportCenter) {
-      window.SokoSupportCenter.initUserSupport({
-        rootId: 'farmerSupportCenterRoot',
-        roleLabel: 'Farmer'
-      });
-    }
-    const action = new URLSearchParams(window.location.search).get('action');
-    if (action === 'list-produce') addProduct();
-    await loadFarmerProfile();
-    enforceFarmerProfileCompletion(false);
-    updateProfilePrimaryAction();
+    bootstrapAndRouteFarmer();
   });
   window.addEventListener('resize', () => {
     if (!window.matchMedia('(max-width: 768px)').matches) {
@@ -3345,6 +3916,7 @@ function exitSuperUser() {
   }
 
   document.addEventListener('visibilitychange', () => {
+    updateMarketplacePollingState();
     if (document.hidden) return;
     enforceFarmerProfileCompletion(true);
     const prof = document.getElementById('profile');

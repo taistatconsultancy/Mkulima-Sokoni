@@ -196,6 +196,29 @@ img { max-width: 100%; height: auto; }
   padding: 8px 10px;
 }
 
+/* Chat thread (simple WhatsApp-like) */
+.chat-thread {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  background: #f1f5f9;
+  max-height: 56vh;
+  overflow-y: auto;
+}
+.bubble {
+  max-width: 86%;
+  padding: 8px 10px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0 0 8px;
+  word-break: break-word;
+}
+.bubble.me { margin-left: auto; background: #dcfce7; border-bottom-right-radius: 4px; }
+.bubble.them { margin-right: auto; background: #fff; border-bottom-left-radius: 4px; }
+.bubble.pending { opacity: .72; }
+.bubble.failed { border: 1px solid rgba(197,48,48,.45); }
+
 .offline {
   display: none;
   border: 1px solid #fecaca;

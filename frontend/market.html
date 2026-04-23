@@ -151,6 +151,9 @@
       .market-page-header-inner { flex-direction: column; align-items: flex-start; gap: 14px; }
       .market-page-header-right { align-items: flex-start; }
       .market-page-header h1 { font-size: 1.4rem; }
+      .market-page-header-left { width: 100%; flex-wrap: wrap; gap: 10px; }
+      .home-btn { width: 100%; justify-content: center; }
+      .list-produce-btn { width: 100%; justify-content: center; }
       .filter-bar { padding: 0 12px; }
       .market-wrap { padding: 20px 14px; }
       .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
@@ -194,6 +197,11 @@
       var map = {farmer:'farmer.html',buyer:'buyer.html','agro-dealer':'agro-dealer.html',admin:'admin-support.html'};
       var btn = document.getElementById('navHomeBtn');
       if(btn){ btn.textContent='Dashboard'; btn.onclick=function(){ location.href=map[role]||'index.html'; }; }
+      var back = document.getElementById('backToDashboardBtn');
+      if (back) {
+        back.style.display = '';
+        back.href = map[role] || 'index.html';
+      }
       var listBtn = document.getElementById('listProduceBtn');
       if (listBtn) {
         if (role === 'farmer') listBtn.href = 'farmer.html?action=list-produce';
@@ -213,6 +221,9 @@
 <section class="market-page-header">
   <div class="market-page-header-inner">
     <div class="market-page-header-left">
+      <a href="index.html" class="home-btn" id="backToDashboardBtn" style="display:none;">
+        ← Back to Dashboard
+      </a>
       <div class="market-page-header-text">
         <h1>Market Listings</h1>
         <p>Browse farm produce and agro-products from across Kenya</p>

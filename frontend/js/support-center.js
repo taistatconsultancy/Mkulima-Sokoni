@@ -857,6 +857,10 @@
     if (root.dataset.supportReady === 'true') {
       return;
     }
+    if (window.__sscAdminPollTimer) {
+      clearInterval(window.__sscAdminPollTimer);
+      window.__sscAdminPollTimer = null;
+    }
 
     var state = {
       root: root,
@@ -864,7 +868,8 @@
       tickets: [],
       allTickets: [],
       adminTicketPage: 0,
-      activeTicketId: null
+      activeTicketId: null,
+      prevTicketIds: {}
     };
 
     root.innerHTML = adminStatsShell(root);
@@ -877,6 +882,49 @@
     } catch (err) {
       setAlert(root.querySelector('[data-ssc-admin-alert]'), 'error', err.message || 'Could not load admin support queue.');
     }
+
+    // Poll for new tickets/replies (lightweight notifications).
+    var baseTitle = document.title || 'Admin';
+    function computeTicketIdSet(tickets) {
+      var map = {};
+      (tickets || []).forEach(function (t) { if (t && t.id) map[String(t.id)] = true; });
+      return map;
+    }
+    function countNewIds(prev, next) {
+      var n = 0;
+      Object.keys(next || {}).forEach(function (id) { if (!prev || !prev[id]) n += 1; });
+      return n;
+    }
+    state.prevTicketIds = computeTicketIdSet(state.allTickets);
+
+    window.__sscAdminPollTimer = setInterval(function () {
+      if (document.hidden) return;
+      // Only poll when admin is viewing the admin-support page.
+      try {
+        if (!document.getElementById(options.rootId)) return;
+      } catch (_) {}
+
+      Promise.resolve().then(async function () {
+        await loadAdminStats(state);
+        await loadAdminTickets(state);
+
+        var nextSet = computeTicketIdSet(state.allTickets);
+        var newlyAdded = countNewIds(state.prevTicketIds, nextSet);
+        state.prevTicketIds = nextSet;
+
+        var total = (state.allTickets || []).length;
+        if (total > 0) document.title = '(' + total + ') ' + baseTitle;
+        else document.title = baseTitle;
+
+        if (newlyAdded > 0) {
+          if (window.SokoUI && typeof window.SokoUI.toast === 'function') {
+            window.SokoUI.toast(newlyAdded === 1 ? 'New support ticket.' : (newlyAdded + ' new support tickets.'), 'info');
+          }
+        }
+      }).catch(function () {
+        // Silent polling failure.
+      });
+    }, 15000);
   }
 
   window.SokoSupportCenter = {

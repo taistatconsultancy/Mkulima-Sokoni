@@ -1,4 +1,4 @@
-# Twilio SMS (Soko Safi)
+# Twilio SMS (Mkulima Sokoni)
 
 Transactional SMS for **verification decisions** and **support ticket replies** (admin to user). Twilio is optional and gated by feature flags so the API keeps working if Twilio is off or misconfigured.
 

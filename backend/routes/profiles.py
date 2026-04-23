@@ -180,6 +180,41 @@ def extract_user_id(user):
 
 profiles_bp = Blueprint('profiles', __name__, url_prefix='/api/profiles')
 
+@profiles_bp.route('/farmers/nearby', methods=['GET'])
+def list_nearby_farmers():
+    """
+    List farmers near the user (hybrid):
+    - If lat/lng are provided, return farmers within radius_km ordered by distance.
+    - Else if county is provided, return farmers in that county.
+
+    Query params:
+      lat, lng, radius_km (default 25), limit (default 24)
+      county (fallback)
+    """
+    try:
+        lat = request.args.get('lat', None)
+        lng = request.args.get('lng', None)
+        county = request.args.get('county', None)
+        radius_km = request.args.get('radius_km', 25)
+        limit = request.args.get('limit', 24)
+
+        # Prefer GPS if present
+        use_gps = lat is not None and lng is not None and str(lat).strip() and str(lng).strip()
+        farmers = FarmerProfile.list_nearby(
+            lat=lat if use_gps else None,
+            lng=lng if use_gps else None,
+            radius_km=radius_km,
+            limit=limit,
+            county=None if use_gps else county,
+        )
+
+        return jsonify({'success': True, 'farmers': farmers}), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        logger.error(f"Error listing nearby farmers: {str(e)}")
+        return jsonify({'error': 'Failed to load nearby farmers'}), 500
+
 @profiles_bp.route('/', methods=['GET'])
 def profiles_info():
     """
@@ -318,6 +353,25 @@ def create_farmer_profile():
         cert_status = _user_submitted_verification_status(data.get('certification_status'))
         if not _farmer_profile_complete(data):
             cert_status = 'pending'
+
+        # Optional geo coordinates (validated). These are privacy-rounded client-side.
+        latitude = data.get('latitude', None)
+        longitude = data.get('longitude', None)
+        if latitude is not None or longitude is not None:
+            try:
+                lat_f = float(latitude) if latitude is not None and str(latitude).strip() != '' else None
+                lng_f = float(longitude) if longitude is not None and str(longitude).strip() != '' else None
+            except Exception:
+                return jsonify({'error': 'Invalid latitude/longitude (must be numbers)'}), 400
+            if lat_f is None or lng_f is None:
+                return jsonify({'error': 'Both latitude and longitude are required together'}), 400
+            if not (-90.0 <= lat_f <= 90.0):
+                return jsonify({'error': 'Invalid latitude (must be between -90 and 90)'}), 400
+            if not (-180.0 <= lng_f <= 180.0):
+                return jsonify({'error': 'Invalid longitude (must be between -180 and 180)'}), 400
+        else:
+            lat_f = None
+            lng_f = None
         if FarmerProfile.profile_exists(user_id):
             prev_profile = FarmerProfile.get_profile_by_user_id(user_id)
             prev_status = (prev_profile or {}).get('certification_status')
@@ -326,6 +380,8 @@ def create_farmer_profile():
                 farm_name=data.get('farm_name'),
                 location=data.get('location'),
                 county=data.get('county'),
+                latitude=lat_f,
+                longitude=lng_f,
                 farm_size_acres=data.get('farm_size_acres'),
                 farming_experience_years=data.get('farming_experience_years'),
                 bio=data.get('bio'),
@@ -351,6 +407,8 @@ def create_farmer_profile():
                 farm_name=data.get('farm_name'),
                 location=data.get('location'),
                 county=data.get('county'),
+                latitude=lat_f,
+                longitude=lng_f,
                 farm_size_acres=data.get('farm_size_acres'),
                 farming_experience_years=data.get('farming_experience_years'),
                 certification_status=cert_status or 'pending',

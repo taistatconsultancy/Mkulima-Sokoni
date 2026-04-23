@@ -1,6 +1,6 @@
 {
-  "name": "Soko Safi Mobile",
-  "short_name": "SokoSafi",
+  "name": "Mkulima Sokoni Mobile",
+  "short_name": "MkulimaSokoni",
   "description": "Mobile marketplace for buyers, farmers, and agro-dealers.",
   "start_url": "/mobile-app/index.html",
   "scope": "/mobile-app/",

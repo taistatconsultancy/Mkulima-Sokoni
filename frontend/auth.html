@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+h<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="api-base-url" content="" id="api-base-url-meta">
-  <title>Sign In | Mkulima sokoni</title>
-  <meta name="application-name" content="Mkulima sokoni" />
+  <title>Sign In | Mkulima Sokoni</title>
+  <meta name="application-name" content="Mkulima Sokoni" />
   <link rel="icon" type="image/jpeg" href="assets/img/logo.jpeg" />
   <link rel="shortcut icon" type="image/jpeg" href="assets/img/logo.jpeg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -168,9 +168,9 @@
 
     <div class="auth-logo">
       <div class="auth-logo-mark">
-        <img src="assets/img/logo.jpeg" alt="Mkulima sokoni logo" />
+        <img src="assets/img/logo.jpeg" alt="Mkulima Sokoni logo" />
       </div>
-      <div class="auth-logo-name">Mkulima sokoni</div>
+      <div class="auth-logo-name">Mkulima Sokoni</div>
       <div class="auth-logo-tag">From farm to market, fairly.</div>
     </div>
 
@@ -181,7 +181,7 @@
       <!-- ── LOGIN FORM ── -->
       <div id="login-form">
         <h2>Welcome Back</h2>
-        <p class="subtitle">Sign in to your Mkulima sokoni account</p>
+        <p class="subtitle">Sign in to your Mkulima Sokoni account</p>
         <form id="loginForm">
           <div class="form-group">
             <label for="login-email">Email</label>
@@ -210,7 +210,7 @@
       <!-- ── REGISTER FORM ── -->
       <div id="register-form" style="display: none;">
         <h2>Create Account</h2>
-        <p class="subtitle">Join Mkulima sokoni — select your role</p>
+        <p class="subtitle">Join Mkulima Sokoni — select your role</p>
 
         <div class="role-selector" id="role-selector">
           <label class="role-tab active" data-role="farmer">
@@ -276,7 +276,7 @@
     </div>
 
     <div class="back-link">
-      <a href="index.html">← Back to Mkulima sokoni Home</a>
+      <a href="index.html">← Back to Mkulima Sokoni Home</a>
     </div>
   </div>
 
@@ -368,6 +368,57 @@
         btn.innerHTML = btn.dataset.origText || originalText || 'Submit';
       }
     }
+
+    function actionCodeSettingsForVerification() {
+      // After user clicks verification email, bring them back to role selection flow.
+      const base = window.location.origin;
+      const continueUrl = `${base}/auth.html?next=choose-type`;
+      return {
+        url: continueUrl,
+        handleCodeInApp: false
+      };
+    }
+
+    async function completeLoginAndRoute(firebaseUser) {
+      const idToken = await firebaseUser.getIdToken(true);
+      const res = await fetch(`${API}/auth/login`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({id_token: idToken})
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+
+      if (data.new_user) {
+        showRoleSelectionForm(data.firebase_uid, data.email, data.first_name, data.last_name);
+      } else {
+        saveAndRedirect(data.user, data.user?.role);
+      }
+    }
+
+    // If verification link redirected user back here, prioritize guiding them to choose type.
+    (function handleNextChooseType() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        if (params.get('next') !== 'choose-type') return;
+
+        // Ensure login form visible.
+        document.getElementById('register-form').style.display = 'none';
+        document.getElementById('login-form').style.display = 'block';
+        showSuccess('Please sign in to continue and choose your user type.');
+
+        // If already signed in, route them immediately.
+        if (auth.currentUser) {
+          auth.currentUser.reload().then(async () => {
+            if (!auth.currentUser.emailVerified) {
+              showVerifyOverlay(auth.currentUser);
+              return;
+            }
+            await completeLoginAndRoute(auth.currentUser);
+          }).catch(() => {});
+        }
+      } catch (_) {}
+    })();
 
     /* spinner animation */
     if (!document.getElementById('auth-spinner-style')) {
@@ -486,7 +537,7 @@
       resendBtn.onclick = async () => {
         try {
           resendBtn.disabled = true;
-          await sendEmailVerification(firebaseUser);
+          await sendEmailVerification(firebaseUser, actionCodeSettingsForVerification());
           showSuccess('Verification email resent. Check your inbox.');
         } catch (err) {
           errEl.textContent = friendlyError(err);
@@ -508,21 +559,8 @@
           // Keep the overlay visible until the *entire* login flow succeeds.
           // If the backend call fails, we still want to show the error inside this modal.
           showSuccess('Email verified. Redirecting...');
-          const idToken = await firebaseUser.getIdToken(true);
-          const res = await fetch(`${API}/auth/login`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({id_token: idToken})
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Login failed');
-          if (data.new_user) {
-            overlay.remove();
-            showRoleSelectionForm(data.firebase_uid, data.email, data.first_name, data.last_name);
-          } else {
-            overlay.remove();
-            saveAndRedirect(data.user, data.user?.role);
-          }
+          await completeLoginAndRoute(firebaseUser);
+          overlay.remove();
         } catch (err) {
           errEl.textContent = friendlyError(err);
           errEl.style.display = 'block';
@@ -566,7 +604,7 @@
         if (!res.ok) throw new Error(data.error || 'Registration failed');
 
         // Send verification email and prompt user to verify
-        try { await sendEmailVerification(cred.user); } catch (_) {}
+        try { await sendEmailVerification(cred.user, actionCodeSettingsForVerification()); } catch (_) {}
         setLoading(btn, false, 'Create Account');
         showSuccess('Account created. Please check your email to verify your account.');
         showVerifyOverlay(cred.user);
@@ -625,7 +663,7 @@
           <div style="width:60px;height:60px;border-radius:14px;overflow:hidden;display:inline-grid;place-items:center;background:#fff;box-shadow:0 4px 16px rgba(116,198,157,.4);margin-bottom:12px;">
             <img src="assets/img/logo.jpeg" alt="" style="width:100%;height:100%;object-fit:contain;" />
           </div>
-          <h2 style="font-family:'Playfair Display',serif;color:#1B4332;font-size:1.25rem;">Welcome to Mkulima sokoni!</h2>
+          <h2 style="font-family:'Playfair Display',serif;color:#1B4332;font-size:1.25rem;">Welcome to Mkulima Sokoni!</h2>
           <p style="color:#6B705C;font-size:.88rem;">Select your role to get started</p>
         </div>
         <div id="role-modal-error" style="background:#fef2f2;color:#991b1b;padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:.85rem;display:none;border:1px solid #fecaca;"></div>

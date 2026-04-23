@@ -76,15 +76,18 @@ class Config:
     )
     TWILIO_VERIFY_APPROVED_BODY = os.getenv(
         'TWILIO_VERIFY_APPROVED_BODY',
-        'Soko Safi: Hi {name}, your account verification is approved. Thank you for joining.',
+        'Mkulima Sokoni: Hi {name}, your account verification is approved. Thank you for joining.',
     )
     TWILIO_VERIFY_REJECTED_BODY = os.getenv(
         'TWILIO_VERIFY_REJECTED_BODY',
-        'Soko Safi: Hi {name}, your verification could not be approved. Reason: {reason}. '
+        'Mkulima Sokoni: Hi {name}, your verification could not be approved. Reason: {reason}. '
         'Please update your profile and resubmit.',
     )
     PUBLIC_APP_URL = os.getenv('PUBLIC_APP_URL', '').rstrip('/')
     SUPPORT_TICKET_DEEP_LINK_BASE = os.getenv('SUPPORT_TICKET_DEEP_LINK_BASE', '').rstrip(
         '/'
     )
+
+    # Feature flags (safe to expose via /api/public-config)
+    GPS_ENABLED = os.getenv('GPS_ENABLED', 'true').lower() == 'true'
 

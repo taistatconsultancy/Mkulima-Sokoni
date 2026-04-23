@@ -84,6 +84,16 @@ def health():
         'version': '1.0.0'
     }, 200
 
+
+@app.route('/api/public-config')
+def public_config():
+    """
+    Public, non-sensitive feature flags for frontend HTML pages.
+    """
+    return {
+        'gps_enabled': bool(getattr(Config, 'GPS_ENABLED', True)),
+    }, 200
+
 @app.route('/assets/<path:filename>')
 def serve_assets(filename: str):
     """

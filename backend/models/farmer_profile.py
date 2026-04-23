@@ -164,7 +164,7 @@ class FarmerProfile:
                     raise ValueError(f"Invalid user_id: '{user_id}' is not a valid UUID format")
             
             # Build dynamic update query
-            allowed_fields = ['farm_name', 'location', 'county', 'farm_size_acres',
+            allowed_fields = ['farm_name', 'location', 'county', 'latitude', 'longitude', 'farm_size_acres',
                             'farming_experience_years', 'certification_status', 'bio', 'profile_image_url',
                             'national_id', 'id_front_url', 'id_back_url', 'profile_selfie_url', 'ward', 'crops', 'livestock',
                             'referral_source', 'referral_other']
@@ -193,6 +193,91 @@ class FarmerProfile:
         except Exception as e:
             logger.error(f"Error updating farmer profile: {str(e)}")
             raise
+
+    @staticmethod
+    def list_nearby(*, lat=None, lng=None, radius_km=25, limit=24, county=None):
+        """
+        List farmers near a point (lat/lng) with an optional radius cutoff.
+        Fallback mode: if county is provided (and lat/lng isn't), return farmers in that county first.
+
+        Returns rows including u.firebase_uid to support linking: seller-profile.html?uid=<firebase_uid>
+        """
+        try:
+            limit = int(limit or 24)
+        except Exception:
+            limit = 24
+        limit = max(1, min(100, limit))
+
+        if lat is not None and lng is not None:
+            try:
+                lat_f = float(lat)
+                lng_f = float(lng)
+                radius_f = float(radius_km or 25)
+            except Exception:
+                raise ValueError("Invalid lat/lng/radius_km")
+            radius_f = max(1.0, min(500.0, radius_f))
+
+            # Haversine distance (km) in SQL, no PostGIS required.
+            query = """
+                SELECT
+                  u.firebase_uid,
+                  fp.farm_name,
+                  fp.location,
+                  fp.county,
+                  fp.profile_image_url,
+                  fp.latitude,
+                  fp.longitude,
+                  (
+                    6371 * 2 * ASIN(
+                      SQRT(
+                        POWER(SIN(RADIANS(fp.latitude - %s) / 2), 2) +
+                        COS(RADIANS(%s)) * COS(RADIANS(fp.latitude)) *
+                        POWER(SIN(RADIANS(fp.longitude - %s) / 2), 2)
+                      )
+                    )
+                  ) AS distance_km
+                FROM farmer_profiles fp
+                JOIN users u ON u.id = fp.user_id
+                WHERE fp.latitude IS NOT NULL
+                  AND fp.longitude IS NOT NULL
+                ORDER BY distance_km ASC
+                LIMIT %s
+            """
+            rows = execute_query(query, (lat_f, lat_f, lng_f, limit), fetch_all=True) or []
+            # Apply radius filter in Python (keeps SQL simple + portable).
+            out = []
+            for r in rows:
+                d = r.get("distance_km")
+                try:
+                    if d is None or float(d) > radius_f:
+                        continue
+                except Exception:
+                    continue
+                out.append(dict(r))
+            return out
+
+        if county:
+            c = str(county).strip()
+            if not c:
+                return []
+            query = """
+                SELECT
+                  u.firebase_uid,
+                  fp.farm_name,
+                  fp.location,
+                  fp.county,
+                  fp.profile_image_url,
+                  NULL::double precision AS distance_km
+                FROM farmer_profiles fp
+                JOIN users u ON u.id = fp.user_id
+                WHERE fp.county ILIKE %s
+                ORDER BY COALESCE(fp.updated_at, fp.created_at) DESC
+                LIMIT %s
+            """
+            rows = execute_query(query, (c, limit), fetch_all=True) or []
+            return [dict(r) for r in rows]
+
+        return []
     
     @staticmethod
     def profile_exists(user_id):

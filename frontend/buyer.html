@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Buyer Dashboard | Mkulima sokoni</title>
+  <title>Buyer Dashboard | Mkulima Sokoni</title>
   <meta name="description" content="Browse fresh produce, create tenders, and manage orders on Mkulima sokoni." />
   <link rel="icon" type="image/jpeg" href="assets/img/logo.jpeg" />
   <link rel="shortcut icon" type="image/jpeg" href="assets/img/logo.jpeg" />
@@ -456,6 +456,8 @@
     .chat-bubble { max-width:78%; padding:8px 10px; border-radius:14px; font-size:.84rem; margin-bottom:6px; word-break:break-word; }
     .chat-bubble.me { margin-left:auto; background:#d1f7c4; border-bottom-right-radius:4px; }
     .chat-bubble.them { margin-right:auto; background:#fff; border-bottom-left-radius:4px; }
+    .chat-bubble.pending { opacity: .72; }
+    .chat-bubble.failed { opacity: 1; border: 1px solid rgba(239,68,68,.55); }
     .chat-meta { display:block; font-size:.7rem; color:#6b7280; margin-top:3px; text-align:right; }
     .chat-thread-foot { padding:12px 14px; border-top:1px solid var(--border); background:#fff; }
     .chat-input-row { display:flex; gap:10px; align-items:flex-end; }
@@ -570,9 +572,61 @@
       .user-menu-btn { padding-right: 6px; }
       .user-menu-btn .name { display: none; }
     }
+
+    /* ── Bootstrap gate (first-time routing, no flicker) ── */
+    .bootstrap-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: none;
+      place-items: center;
+      padding: 22px 16px;
+      background: radial-gradient(ellipse 80% 70% at 20% 100%, rgba(116,198,157,.16) 0%, transparent 55%),
+                  radial-gradient(ellipse 70% 60% at 90% 0%, rgba(233,196,106,.14) 0%, transparent 55%),
+                  var(--cream);
+    }
+    .bootstrap-gate.show { display: grid; }
+    .bootstrap-card {
+      width: 100%;
+      max-width: 520px;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow-lg);
+      padding: 20px 18px;
+    }
+    .bootstrap-title { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 800; color: var(--forest); }
+    .bootstrap-sub { margin-top: 6px; color: var(--muted); font-size: .88rem; }
+    .bootstrap-row { display:flex; align-items:center; gap:10px; margin-top: 14px; }
+    .bootstrap-spin {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(27,67,50,.18);
+      border-top-color: var(--leaf);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    .bootstrap-retry { margin-top: 14px; display:none; }
+    .bootstrap-retry.show { display:block; }
+    .bootstrap-retry .btn { width: 100%; }
   </style>
 </head>
 <body>
+
+<!-- ── BOOTSTRAP GATE (prevents page flicker on first load) ── -->
+<div class="bootstrap-gate" id="bootstrapGate" aria-live="polite" aria-busy="true">
+  <div class="bootstrap-card">
+    <div class="bootstrap-title">Setting up your account…</div>
+    <div class="bootstrap-sub" id="bootstrapGateSub">Checking your profile and verification status.</div>
+    <div class="bootstrap-row" id="bootstrapGateRow">
+      <span class="bootstrap-spin" aria-hidden="true"></span>
+      <div style="font-weight:700;color:var(--forest);">Loading</div>
+    </div>
+    <div class="bootstrap-retry" id="bootstrapGateRetry">
+      <button class="btn btn-primary" type="button" onclick="window.__mkBootstrapRetry && window.__mkBootstrapRetry()">Retry</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── SUPER-USER BANNER (shown when admin accesses client account) ── -->
 <div id="superUserBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;padding:10px 24px;font-family:'DM Sans',system-ui,sans-serif;font-size:.85rem;box-shadow:0 4px 20px rgba(124,58,237,.35);">
@@ -610,10 +664,10 @@ function exitSuperUser() {
   <button class="mobile-nav-btn" type="button" onclick="toggleTopbarNav()" aria-label="Open navigation menu">☰</button>
   <a href="index.html" class="logo">
     <div class="logo-mark">
-      <img src="assets/img/logo.jpeg" alt="Mkulima sokoni" />
+      <img src="assets/img/logo.jpeg" alt="Mkulima Sokoni" />
     </div>
     <div class="logo-label">
-      <strong>Mkulima sokoni</strong>
+      <strong>Mkulima Sokoni</strong>
       <span>Buyer Hub</span>
     </div>
   </a>
@@ -1051,10 +1105,10 @@ function exitSuperUser() {
     <div class="footer-brand-col">
       <div class="footer-flogo">
         <div class="footer-flogo-mark">
-          <img src="assets/img/logo.jpeg" alt="Mkulima sokoni logo" />
+          <img src="assets/img/logo.jpeg" alt="Mkulima Sokoni logo" />
         </div>
         <div class="footer-flogo-label">
-          <strong>Mkulima sokoni</strong>
+          <strong>Mkulima Sokoni</strong>
           <span>From farm to market, fairly.</span>
         </div>
       </div>
@@ -1097,7 +1151,7 @@ function exitSuperUser() {
     </div>
   </div>
   <div class="footer-bottom">
-    <p class="footer-copy">© <span id="yr"></span> <strong>Mkulima sokoni</strong>. All rights reserved.</p>
+    <p class="footer-copy">© <span id="yr"></span> <strong>Mkulima Sokoni</strong>. All rights reserved.</p>
     <div class="footer-badges">
       <span class="footer-badge">Powered by TaiStat Firm</span>
     </div>
@@ -1222,8 +1276,24 @@ function exitSuperUser() {
   let buyerInboxPollTimer = null;
   let buyerInboxLoading = false;
   let buyerThreadLoading = false;
+  let buyerSending = false;
   let buyerActiveConversationId = null;
   let buyerInboxCache = [];
+  let buyerPrevTotalUnread = 0;
+  const buyerBaseTitle = document.title || 'Buyer';
+
+  function setSendBtnLoading(btn, on) {
+    if (!btn) return;
+    if (on) {
+      if (!btn.dataset.idleHtml) btn.dataset.idleHtml = btn.innerHTML;
+      btn.innerHTML =
+        '<span style="display:inline-flex;align-items:center;gap:8px;">' +
+        '<span style="width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;"></span>' +
+        ' Sending…</span>';
+    } else if (btn.dataset.idleHtml) {
+      btn.innerHTML = btn.dataset.idleHtml;
+    }
+  }
 
   function _getUserId() {
     try {
@@ -1281,7 +1351,7 @@ function exitSuperUser() {
       renderBuyerInbox(buyerInboxCache);
       stampLastUpdated('messages');
       updateBuyerUnreadDot(buyerInboxCache);
-      if (buyerActiveConversationId) await loadBuyerThread(buyerActiveConversationId, true);
+      if (buyerActiveConversationId && !buyerSending) await loadBuyerThread(buyerActiveConversationId, true);
     } catch (e) {
       console.error(e);
       if (inboxEl) inboxEl.innerHTML = '<div class="chat-empty">Unable to load messages inbox.</div>';
@@ -1327,6 +1397,17 @@ function exitSuperUser() {
     if (!dot) return;
     const unread = (conversations || []).reduce((sum, c) => sum + Number(c.unread_count || 0), 0);
     dot.classList.toggle('show', unread > 0);
+    if (unread > 0) document.title = `(${unread}) ${buyerBaseTitle}`;
+    else document.title = buyerBaseTitle;
+
+    if (unread > buyerPrevTotalUnread) {
+      const delta = unread - buyerPrevTotalUnread;
+      const isOnMessages = activeBuyerPage() === 'messages';
+      if (!isOnMessages) {
+        window.SokoUI?.toast(`${delta === 1 ? 'New message' : `${delta} new messages`}.`, 'info');
+      }
+    }
+    buyerPrevTotalUnread = unread;
   }
 
   async function openBuyerConversation(conversationId) {
@@ -1392,6 +1473,54 @@ function exitSuperUser() {
     bodyEl.scrollTop = bodyEl.scrollHeight;
   }
 
+  function _buyerAppendPendingBubble(text) {
+    const bodyEl = document.getElementById('buyerChatThreadBody');
+    if (!bodyEl) return null;
+    if (bodyEl.querySelector('.chat-empty')) bodyEl.innerHTML = '';
+    const tempId = `pending-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const el = document.createElement('div');
+    el.className = 'chat-bubble me pending';
+    el.dataset.tempId = tempId;
+    el.innerHTML = `<div>${escapeHtml(text || '')}</div><span class="chat-meta">Sending…</span>`;
+    bodyEl.appendChild(el);
+    bodyEl.scrollTop = bodyEl.scrollHeight;
+    return { tempId, el };
+  }
+
+  function _buyerMarkPendingFailed(tempId) {
+    const el = document.querySelector(`.chat-bubble.pending[data-temp-id="${tempId}"]`);
+    if (!el) return;
+    el.classList.remove('pending');
+    el.classList.add('failed');
+    const meta = el.querySelector('.chat-meta');
+    if (meta) meta.textContent = 'Failed to send';
+  }
+
+  function _buyerConfirmPending(tempId, message) {
+    const el = document.querySelector(`.chat-bubble.pending[data-temp-id="${tempId}"]`);
+    if (!el) return;
+    el.classList.remove('pending');
+    const t = message?.created_at ? new Date(message.created_at).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : 'Sent';
+    const meta = el.querySelector('.chat-meta');
+    if (meta) meta.textContent = t;
+  }
+
+  function _buyerUpdateInboxAfterSend(conversationId, text, createdAt) {
+    const idx = (buyerInboxCache || []).findIndex(c => String(c.id) === String(conversationId));
+    if (idx < 0) return;
+    const nowIso = createdAt || new Date().toISOString();
+    buyerInboxCache[idx] = {
+      ...buyerInboxCache[idx],
+      last_message_body: text,
+      last_message_created_at: nowIso,
+      last_message_at: nowIso,
+      unread_count: 0
+    };
+    try { sessionStorage.setItem('buyerInboxCache', JSON.stringify(buyerInboxCache)); } catch {}
+    renderBuyerInbox(buyerInboxCache);
+    updateBuyerUnreadDot(buyerInboxCache);
+  }
+
   async function sendBuyerReply() {
     if (!buyerActiveConversationId) return;
     const uid = getFirebaseUid();
@@ -1401,7 +1530,13 @@ function exitSuperUser() {
     const text = (input.value || '').trim();
     if (!text) return;
     try {
+      if (buyerSending) return;
+      buyerSending = true;
       btn.disabled = true;
+      setSendBtnLoading(btn, true);
+      input.disabled = true;
+      const pending = _buyerAppendPendingBubble(text);
+      const pendingId = pending?.tempId || null;
       const res = await fetch(`${API_BASE_URL}/chat/conversations/${buyerActiveConversationId}/messages`, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
@@ -1410,12 +1545,21 @@ function exitSuperUser() {
       const data = await res.json();
       if (!res.ok || !data.message) throw new Error(data.error || 'Failed to send message');
       input.value = '';
-      await loadBuyerThread(buyerActiveConversationId, true);
+      _buyerConfirmPending(pendingId, data.message);
+      _buyerUpdateInboxAfterSend(buyerActiveConversationId, text, data.message?.created_at);
     } catch (e) {
       console.error(e);
+      try {
+        const lastPending = document.querySelector('#buyerChatThreadBody .chat-bubble.pending[data-temp-id]');
+        const id = lastPending?.dataset?.tempId;
+        if (id) _buyerMarkPendingFailed(id);
+      } catch (_) {}
       await uiAlert(e.message || 'Unable to send message.', 'Message error');
     } finally {
       btn.disabled = false;
+      setSendBtnLoading(btn, false);
+      input.disabled = false;
+      buyerSending = false;
     }
   }
 
@@ -1492,7 +1636,15 @@ function exitSuperUser() {
     }
     if (profileLocked && pageName !== 'profile') {
       pageName = 'profile';
-      window.SokoUI?.toast('Complete your profile first to continue.', 'warning');
+      try {
+        const k = 'mk_profile_lock_toast_buyer_v1';
+        if (sessionStorage.getItem(k) !== 'true') {
+          sessionStorage.setItem(k, 'true');
+          window.SokoUI?.toast('Complete your profile first to continue.', 'warning');
+        }
+      } catch (_) {
+        window.SokoUI?.toast('Complete your profile first to continue.', 'warning');
+      }
     }
     // Support deep links like buyer.html#cart
     if (!pageName && location.hash) pageName = location.hash.replace('#', '');
@@ -2503,29 +2655,83 @@ function exitSuperUser() {
 
   /* ── Init ── */
   window.addEventListener('DOMContentLoaded', async () => {
-    // If URL has hash, open that tab (e.g., #cart)
-    showPage(location.hash ? location.hash.replace('#','') : 'dashboard');
-    loadUserProfile();
-    loadProducts();
-    startProductPolling();
-    if (typeof onFeaturedTickerChanged === 'function') {
-      onFeaturedTickerChanged(() => { loadFeaturedTickerRows().then(() => renderLiveTicker(featuredTickerProducts)); });
-    }
-    refreshCartBadge();
-    if (window.SokoSupportCenter) {
-      window.SokoSupportCenter.initUserSupport({
-        rootId: 'buyerSupportCenterRoot',
-        roleLabel: 'Buyer'
-      });
-    }
-    if (sessionStorage.getItem('showSupport') === 'true') {
-      sessionStorage.removeItem('showSupport');
-      showPage('support');
-    }
-    await loadBuyerProfile();
-    enforceBuyerProfileCompletion(false);
-    updateProfilePrimaryAction();
+    bootstrapAndRouteBuyer();
   });
+
+  function _mkGateShow(msg) {
+    const gate = document.getElementById('bootstrapGate');
+    const sub = document.getElementById('bootstrapGateSub');
+    const retry = document.getElementById('bootstrapGateRetry');
+    if (sub && msg) sub.textContent = msg;
+    if (retry) retry.classList.remove('show');
+    if (gate) gate.classList.add('show');
+  }
+  function _mkGateFail(msg) {
+    const gate = document.getElementById('bootstrapGate');
+    const sub = document.getElementById('bootstrapGateSub');
+    const retry = document.getElementById('bootstrapGateRetry');
+    if (sub) sub.textContent = msg || 'Could not load your account. Please retry.';
+    if (retry) retry.classList.add('show');
+    if (gate) gate.classList.add('show');
+  }
+  function _mkGateHide() {
+    const gate = document.getElementById('bootstrapGate');
+    if (gate) gate.classList.remove('show');
+  }
+  async function bootstrapAndRouteBuyer() {
+    _mkGateShow('Checking your profile…');
+    try {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        showPage(location.hash ? location.hash.replace('#','') : 'dashboard');
+        _mkGateHide();
+        return;
+      }
+      const user = JSON.parse(userStr);
+      const uid = user.firebase_uid || user.id;
+      if (!uid) { showPage('dashboard'); _mkGateHide(); return; }
+
+      const res = await fetch(`${API_BASE_URL}/profiles/buyer/${uid}`);
+      const data = await res.json().catch(() => ({}));
+      const p = data.profile || {};
+      const hasRequired = Boolean(
+        String(p.company_name || '').trim() &&
+        String(p.location || '').trim() &&
+        String(p.county || '').trim() &&
+        String(p.national_id || '').trim()
+      );
+      profileLocked = !res.ok || !hasRequired;
+      const preferred = location.hash ? location.hash.replace('#','') : 'dashboard';
+      showPage(profileLocked ? 'profile' : preferred);
+
+      // Initialize core UX after routing decision
+      loadUserProfile();
+      loadProducts();
+      if (!profileLocked) startProductPolling();
+      if (typeof onFeaturedTickerChanged === 'function') {
+        onFeaturedTickerChanged(() => { loadFeaturedTickerRows().then(() => renderLiveTicker(featuredTickerProducts)); });
+      }
+      refreshCartBadge();
+      if (window.SokoSupportCenter) {
+        window.SokoSupportCenter.initUserSupport({
+          rootId: 'buyerSupportCenterRoot',
+          roleLabel: 'Buyer'
+        });
+      }
+      if (sessionStorage.getItem('showSupport') === 'true' && !profileLocked) {
+        sessionStorage.removeItem('showSupport');
+        showPage('support');
+      }
+      await loadBuyerProfile();
+      enforceBuyerProfileCompletion(true);
+      updateProfilePrimaryAction();
+
+      _mkGateHide();
+    } catch (e) {
+      window.__mkBootstrapRetry = bootstrapAndRouteBuyer;
+      _mkGateFail('We could not load your account. Check your connection and retry.');
+    }
+  }
 
   async function enforceBuyerProfileCompletion(silent) {
     try {
