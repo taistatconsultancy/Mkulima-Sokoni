@@ -59,7 +59,7 @@
       padding: 0 calc(28px + env(safe-area-inset-right)) 0 calc(28px + env(safe-area-inset-left));
       height: 60px; gap: 20px;
       box-shadow: 0 2px 16px rgba(0,0,0,.25);
-      overflow: hidden;
+      overflow: visible;
     }
     .mobile-nav-btn {
       display: none;
@@ -177,7 +177,7 @@
     .lt-item { flex-shrink:0; display:flex; align-items:center; gap:10px; padding:6px 20px; color:rgba(255,255,255,.95); font-size:.82rem; white-space:nowrap; border-right:1px solid rgba(255,255,255,.12); text-decoration:none; transition:background .2s; }
     .lt-item:hover { background:rgba(255,255,255,.06); }
     .lt-thumb { width:38px; height:38px; border-radius:9px; overflow:hidden; flex-shrink:0; background:rgba(255,255,255,.1); display:grid; place-items:center; font-size:18px; }
-    .lt-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+    .lt-thumb img { width:100%; height:100%; object-fit:cover; object-position:center center; display:block; }
     .lt-info { display:flex; flex-direction:column; gap:1px; }
     .lt-name { font-weight:600; color:#fff; font-size:.82rem; }
     .lt-price { font-size:.75rem; color:var(--gold); font-weight:600; }
@@ -317,7 +317,7 @@
       height: 140px; background: linear-gradient(135deg, var(--forest), var(--leaf));
       position: relative; overflow: hidden; display: grid; place-items: center; font-size: 44px;
     }
-    .product-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .product-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center center; }
     .product-badge {
       position: absolute; top: 10px; left: 10px;
       background: rgba(255,255,255,.93); backdrop-filter: blur(6px);
@@ -976,6 +976,9 @@ function exitSuperUser() {
               <label>Phone Number</label>
               <input type="tel" id="phone" name="phone" readonly />
               <div class="form-hint">Linked from your account</div>
+              <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+                <a href="phone-sharing.html" class="btn btn-outline btn-sm" style="text-decoration:none;">📜 Phone sharing & Terms</a>
+              </div>
             </div>
             <div class="form-group form-full">
               <label>National ID *</label>
@@ -1840,6 +1843,44 @@ function exitSuperUser() {
   let featuredTickerProducts = [];
   let lastProductCount = 0;
   let lastProductUpdateTime = null;
+  const PRODUCTS_CACHE_KEY = 'soko_products_cache_v1';
+  const FEATURED_CACHE_KEY = 'soko_featured_cache_v1';
+
+  function readFeaturedCache() {
+    try {
+      const raw = localStorage.getItem(FEATURED_CACHE_KEY);
+      if (!raw) return null;
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : null;
+    } catch(e) { return null; }
+  }
+
+  function writeFeaturedCache(items) {
+    try { localStorage.setItem(FEATURED_CACHE_KEY, JSON.stringify(items || [])); } catch(e) {}
+  }
+
+  function readProductsCache() {
+    try {
+      const s = sessionStorage.getItem('productsCache');
+      if (s) {
+        const arr = JSON.parse(s);
+        if (Array.isArray(arr)) return arr;
+      }
+    } catch(e) {}
+    try {
+      const l = localStorage.getItem(PRODUCTS_CACHE_KEY);
+      if (l) {
+        const arr = JSON.parse(l);
+        if (Array.isArray(arr)) return arr;
+      }
+    } catch(e2) {}
+    return null;
+  }
+
+  function writeProductsCache(products) {
+    try { sessionStorage.setItem('productsCache', JSON.stringify(products)); } catch(e) {}
+    try { localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(products)); } catch(e2) {}
+  }
 
   async function loadFeaturedTickerRows() {
     try {
@@ -1847,6 +1888,7 @@ function exitSuperUser() {
       if (!res.ok) throw new Error();
       const data = await res.json();
       featuredTickerProducts = Array.isArray(data) ? data : [];
+      writeFeaturedCache(featuredTickerProducts);
     } catch (e) {
       featuredTickerProducts = [];
     }
@@ -1860,18 +1902,21 @@ function exitSuperUser() {
     const container = document.getElementById('products-container');
     if (!container) return;
 
-    await loadFeaturedTickerRows();
+    // Instant render from cache (do not await ticker network first)
+    const cached = readProductsCache();
+    if (cached && cached.length) {
+      allProducts = cached;
+      lastProductCount = cached.length;
+      renderProducts(cached);
+    }
 
-    // Instant render from cache
-    try {
-      const cached = JSON.parse(sessionStorage.getItem('productsCache'));
-      if (cached && cached.length) {
-        allProducts = cached;
-        lastProductCount = cached.length;
-        renderProducts(cached);
-        renderLiveTicker(featuredTickerProducts);
-      }
-    } catch(e) {}
+    // Instant ticker from cache, then refresh
+    const featuredCached = readFeaturedCache();
+    if (featuredCached && featuredCached.length) {
+      featuredTickerProducts = featuredCached;
+      renderLiveTicker(featuredCached);
+    }
+    loadFeaturedTickerRows().then(() => renderLiveTicker(featuredTickerProducts));
 
     if (!allProducts.length) {
       container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:52px 20px;gap:14px;"><div class="spinner"></div><p style="color:var(--muted);font-weight:600;">Loading available products…</p></div>';
@@ -1884,7 +1929,7 @@ function exitSuperUser() {
       const products = await res.json();
       allProducts = products;
       lastProductCount = products.length;
-      try { sessionStorage.setItem('productsCache', JSON.stringify(products)); } catch(e) {}
+      writeProductsCache(products);
       renderProducts(products);
       await loadFeaturedTickerRows();
       renderLiveTicker(featuredTickerProducts);
@@ -2084,8 +2129,12 @@ function exitSuperUser() {
   function viewProductDetails(id, btnEl=null) {
     var p = allProducts.find(x => x.id === id);
     try {
-      if (p) sessionStorage.setItem('productCache_' + id, JSON.stringify(p));
+      if (p) {
+        sessionStorage.setItem('productCache_' + id, JSON.stringify(p));
+        localStorage.setItem('productCache_' + id, JSON.stringify(p));
+      }
       sessionStorage.setItem('productsCache', JSON.stringify(allProducts));
+      localStorage.setItem('soko_products_cache_v1', JSON.stringify(allProducts));
     } catch(e) {}
     if (btnEl) {
       btnEl.disabled = true;
@@ -2603,7 +2652,7 @@ function exitSuperUser() {
         }
         currentImageUrl = p.profile_image_url || '';
         set('profile-image', currentImageUrl);
-        if (p.user) { set('email', p.user.email); set('phone', p.user.phone_number); }
+        if (p.user) { set('email', p.user.email || user.email); set('phone', p.user.phone_number || user.phone_number); }
         else { set('email', user.email); set('phone', user.phone_number); }
         if (p.id_front_url) { document.getElementById('id-front-img').src = p.id_front_url; document.getElementById('id-front-preview').style.display='block'; }
         if (p.id_back_url)  { document.getElementById('id-back-img').src  = p.id_back_url;  document.getElementById('id-back-preview').style.display='block'; }
@@ -2740,7 +2789,17 @@ function exitSuperUser() {
     if (gate) gate.classList.remove('show');
   }
   async function bootstrapAndRouteBuyer() {
-    _mkGateShow('Checking your profile…');
+    // Avoid showing the heavy bootstrap gate on every reload.
+    // Show it at most once per 24h (per user) while still running the routing logic.
+    let uidForKey = '';
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || 'null');
+      uidForKey = (u && (u.firebase_uid || u.id)) ? String(u.firebase_uid || u.id) : '';
+    } catch(e) {}
+    const gateKey = 'mk_bootstrap_last_buyer_' + (uidForKey || 'anon');
+    const last = parseInt(localStorage.getItem(gateKey) || '0', 10) || 0;
+    const shouldShowGate = !last || (Date.now() - last) > (24 * 60 * 60 * 1000);
+    if (shouldShowGate) _mkGateShow('Checking your profile…');
     try {
       const userStr = localStorage.getItem('user');
       if (!userStr) {
@@ -2818,6 +2877,7 @@ function exitSuperUser() {
       enforceBuyerProfileCompletion(true);
       updateProfilePrimaryAction();
 
+      try { localStorage.setItem(gateKey, String(Date.now())); } catch(e) {}
       _mkGateHide();
     } catch (e) {
       window.__mkBootstrapRetry = bootstrapAndRouteBuyer;

@@ -48,8 +48,8 @@
 
     /* LEFT COLUMN — image + product info */
     .product-col {}
-    .main-img { width: 100%; aspect-ratio: 16/10; border-radius: 18px; overflow: hidden; background: linear-gradient(135deg, var(--forest), var(--leaf)); display: grid; place-items: center; border: 1.5px solid var(--border); position: relative; }
-    .main-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .main-img { width: 100%; aspect-ratio: 16/10; max-height: 430px; border-radius: 18px; overflow: hidden; background: linear-gradient(135deg, var(--forest), var(--leaf)); display: grid; place-items: center; border: 1.5px solid var(--border); position: relative; }
+    .main-img img { width: 100%; height: 100%; object-fit: cover; object-position: center center; display: block; }
     .main-img .emoji-placeholder { font-size: 80px; }
     .img-overlay { position: absolute; inset: 0; display: flex; align-items: flex-start; justify-content: space-between; padding: 14px; pointer-events: none; }
     .img-badge { background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-radius: 100px; padding: 5px 13px; font-size: .74rem; font-weight: 600; color: var(--forest); pointer-events: auto; }
@@ -73,6 +73,10 @@
     .share-label { font-size: .8rem; font-weight: 600; color: var(--muted); margin-right: 2px; }
     .share-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 13px; border-radius: 100px; border: 1.5px solid var(--border); background: #fff; font-size: .76rem; font-weight: 600; cursor: pointer; transition: all .2s; font-family: 'DM Sans', sans-serif; color: var(--ink); }
     .share-btn:hover { border-color: var(--leaf); color: var(--leaf); transform: translateY(-1px); }
+    .brand-icon { width:18px;height:18px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-size:.66rem;font-weight:900;line-height:1; }
+    .brand-whatsapp { background:#25D366; }
+    .brand-facebook { background:#1877F2; }
+    .brand-x { background:#111; }
 
     /* RIGHT COLUMN — farmer card (sticky) */
     .farmer-col { position: sticky; top: 80px; }
@@ -132,7 +136,7 @@
     .sim-card { background: #fff; border-radius: 14px; border: 1.5px solid var(--border); overflow: hidden; transition: all .28s; cursor: pointer; text-decoration: none; display: block; }
     .sim-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--lime); }
     .sim-img { height: 110px; background: linear-gradient(135deg, var(--forest), var(--leaf)); position: relative; overflow: hidden; display: grid; place-items: center; font-size: 36px; }
-    .sim-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .sim-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center center; }
     .sim-body { padding: 10px 12px; }
     .sim-name { font-weight: 600; font-size: .85rem; margin-bottom: 3px; }
     .sim-loc { font-size: .72rem; color: var(--muted); margin-bottom: 6px; }
@@ -144,7 +148,9 @@
     .modal-box { background: #fff; border-radius: 18px; padding: 28px; max-width: 420px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
     .modal-box h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 10px; color: var(--forest); }
     .modal-box p { font-size: .86rem; color: var(--muted); margin-bottom: 8px; }
-    .phone-display { font-size: 1.15rem; font-weight: 700; color: var(--forest); display: flex; align-items: center; gap: 8px; margin: 12px 0; }
+    .phone-contact-card { background: var(--cream); border: 1.5px solid var(--border); border-radius: 14px; padding: 14px; margin: 14px 0; }
+    .phone-display { font-size: 1.15rem; font-weight: 700; color: var(--forest); display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .phone-action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .modal-close { margin-top: 14px; width: 100%; padding: 10px; border-radius: 10px; border: 1.5px solid var(--border); background: #fff; font-size: .86rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
     .modal-close:hover { border-color: var(--leaf); }
     .login-prompt-box { text-align: center; }
@@ -385,9 +391,11 @@ var EMOJI = { Vegetables:'🥬', Fruits:'🍊', Cereals:'🌽', Livestock:'🐄'
 var uiAlert = function(msg, title){ return window.SokoUI ? window.SokoUI.alert(msg, title || 'Notice') : Promise.resolve(window.alert(msg)); };
 var uiConfirm = function(msg, title, opts){ return window.SokoUI ? window.SokoUI.confirm(msg, title || 'Confirm', opts || {}) : Promise.resolve(window.confirm(msg)); };
 var uiPrompt = function(cfg){ return window.SokoUI ? window.SokoUI.prompt(cfg) : Promise.resolve(null); };
+var PRODUCTS_CACHE_KEY = 'soko_products_cache_v1';
 
 var currentProduct = null;
 var currentSeller = null;
+var resolvedSellerPhone = null;
 
 function isSignedIn() { try { return !!localStorage.getItem('user'); } catch(e) { return false; } }
 function requireAuth(action) { if (isSignedIn()) action(); else openModal('loginModal'); }
@@ -396,6 +404,40 @@ function closeModal(id) { document.getElementById(id).classList.remove('active')
 function esc(s) { return (s||'').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
 
 function getProductId() { return new URLSearchParams(window.location.search).get('id'); }
+function readProductsCache() {
+  try {
+    var s = sessionStorage.getItem('productsCache');
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  try {
+    var l = localStorage.getItem(PRODUCTS_CACHE_KEY);
+    if (l) return JSON.parse(l);
+  } catch(e2) {}
+  return null;
+}
+
+function findCachedProduct(pid) {
+  var sources = [];
+  try { sources.push(JSON.parse(sessionStorage.getItem('productCache_' + pid) || 'null')); } catch(e) {}
+  try { sources.push(JSON.parse(localStorage.getItem('productCache_' + pid) || 'null')); } catch(e) {}
+  try { sources = sources.concat(readProductsCache() || []); } catch(e) {}
+  try {
+    var u = JSON.parse(localStorage.getItem('user') || 'null');
+    var uid = u && (u.firebase_uid || u.id) ? String(u.firebase_uid || u.id) : '';
+    if (uid) sources = sources.concat(JSON.parse(sessionStorage.getItem('farmerMyProductsCache:' + uid) || '[]'));
+  } catch(e) {}
+  return sources.find(function(p) { return p && String(p.id) === String(pid); }) || null;
+}
+
+async function fetchWithTimeout(url, ms) {
+  var controller = window.AbortController ? new AbortController() : null;
+  var timer = controller ? setTimeout(function(){ controller.abort(); }, ms || 8000) : null;
+  try {
+    return await fetch(url, controller ? { signal: controller.signal } : {});
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 function priceStr(p) {
   if (p.product_type === 'livestock' && p.price_min != null && p.price_max != null)
@@ -492,9 +534,9 @@ function renderProductCol(p) {
       descHTML +
       '<div class="share-strip">' +
         '<span class="share-label">Share this product</span>' +
-        '<button class="share-btn" onclick="requireAuth(function(){shareProduct(\'whatsapp\')})">💬 WhatsApp</button>' +
-        '<button class="share-btn" onclick="requireAuth(function(){shareProduct(\'facebook\')})">f Facebook</button>' +
-        '<button class="share-btn" onclick="requireAuth(function(){shareProduct(\'x\')})">𝕏 X</button>' +
+        '<button class="share-btn" onclick="requireAuth(function(){shareProduct(\'whatsapp\')})"><span class="brand-icon brand-whatsapp">☎</span> WhatsApp</button>' +
+        '<button class="share-btn" onclick="requireAuth(function(){shareProduct(\'facebook\')})"><span class="brand-icon brand-facebook">f</span> Facebook</button>' +
+        '<button class="share-btn" onclick="requireAuth(function(){shareProduct(\'x\')})"><span class="brand-icon brand-x">𝕏</span> X</button>' +
         '<button class="share-btn" onclick="requireAuth(function(){shareProduct(\'copy\')})">🔗 Copy</button>' +
       '</div>' +
     '</div>';
@@ -522,27 +564,30 @@ function renderFarmerCol(seller) {
     ? '<span class="verified-badge"><span class="verified-badge-icon">✔</span>Verified</span>'
     : '';
 
-  var profileUrl = 'seller-profile.html?uid=' + encodeURIComponent(seller.firebase_uid || '');
+  var uid = seller.firebase_uid || '';
+  var profileUrl = 'seller-profile.html?uid=' + encodeURIComponent(uid);
 
   document.getElementById('farmerCol').innerHTML =
     '<div class="farmer-card">' +
       '<div class="farmer-card-header">' +
         '<div class="farmer-avatar-wrap">' + avatarInner + '</div>' +
-        '<div class="farmer-card-name">' + esc(name) + '</div>' +
+        '<a href="' + profileUrl + '" class="farmer-card-name" style="text-decoration:none;" onclick="return cacheSellerProfile(event)">' + esc(name) + '</a>' +
         '<div class="farmer-card-farm">' + esc(seller.farm_name || 'Independent Farmer') + '</div>' +
       '</div>' +
       '<div class="farmer-card-body">' +
         verifyBadge +
+        '<div style="display:grid;gap:8px;margin-bottom:14px;">' +
+          '<button class="btn btn-primary" onclick="requireAuth(showContactSeller)">📞 Contact Farmer</button>' +
+          '<button class="btn btn-outline" onclick="requireAuth(showSellerPhone)">☎ Phone Number</button>' +
+          '<button class="btn btn-outline" style="border-color:#25D366;color:#128C3A;" onclick="requireAuth(openSellerWhatsApp)">🟢 WhatsApp</button>' +
+          '<a href="' + profileUrl + '" class="btn btn-outline" onclick="return cacheSellerProfile(event)">👤 View Profile</a>' +
+        '</div>' +
         '<ul class="farmer-detail-list">' +
           '<li><span class="fd-icon">📍</span><span class="fd-label">Location</span><span class="fd-value">' + esc(seller.seller_location||'N/A') + (seller.seller_county ? ', ' + esc(seller.seller_county) : '') + '</span></li>' +
           (memberSince ? '<li><span class="fd-icon">📅</span><span class="fd-label">Joined</span><span class="fd-value">' + memberSince + '</span></li>' : '') +
           (seller.farming_experience_years ? '<li><span class="fd-icon">🌾</span><span class="fd-label">Experience</span><span class="fd-value">' + seller.farming_experience_years + ' years</span></li>' : '') +
         '</ul>' +
-        (seller.bio ? '<p style="font-size:.84rem;color:var(--muted);margin-bottom:16px;line-height:1.6;">' + esc(seller.bio) + '</p>' : '') +
-        '<div class="farmer-actions">' +
-          '<button class="btn btn-primary" onclick="requireAuth(showContactSeller)">📞 Contact Farmer</button>' +
-          '<a href="' + profileUrl + '" class="btn btn-outline" onclick="return requireAuthLink(event)">👤 View Profile</a>' +
-        '</div>' +
+        (seller.bio ? '<p style="font-size:.84rem;color:var(--muted);line-height:1.6;">' + esc(seller.bio) + '</p>' : '') +
       '</div>' +
     '</div>';
 }
@@ -586,8 +631,7 @@ async function init() {
   }
 
   // 2) Render product from basic product cache
-  var cached = null;
-  try { cached = JSON.parse(sessionStorage.getItem('productCache_' + pid)); } catch(e) {}
+  var cached = findCachedProduct(pid);
   if (!didRenderProduct && cached) {
     renderProductCol(cached); didRenderProduct = true;
   }
@@ -605,7 +649,7 @@ async function init() {
   // 4) Instant similar products from all-products cache
   if (!didRenderSimilar) {
     var allCached = null;
-    try { allCached = JSON.parse(sessionStorage.getItem('productsCache')); } catch(e) {}
+    allCached = readProductsCache();
     if (!allCached) try { allCached = JSON.parse(sessionStorage.getItem('allProductsCache')); } catch(e) {}
     var srcProduct = (detailCached ? detailCached.product : null) || cached;
     if (allCached && allCached.length && srcProduct) {
@@ -619,7 +663,7 @@ async function init() {
 
   // 5) Fetch full detail in background and update everything
   try {
-    var res = await fetch(API + '/products/' + pid + '/detail');
+    var res = await fetchWithTimeout(API + '/products/' + pid + '/detail', didRenderProduct ? 8000 : 12000);
     if (!res.ok) throw new Error('Product not found');
     var data = await res.json();
     currentProduct = data.product;
@@ -663,6 +707,79 @@ function showContactSeller() {
   startChat();
 }
 
+function showSellerPhone() {
+  if (!currentSeller) return;
+  tryResolvePhoneThen(function(available){
+    if (available) {
+      openPhoneModal(resolvedSellerPhone);
+      return;
+    }
+    uiAlert('This farmer has not enabled phone sharing. Please use chat.', 'Chat only');
+  });
+}
+
+function openSellerWhatsApp() {
+  if (!currentSeller) return;
+  tryResolvePhoneThen(function(available){
+    if (!available) {
+      uiAlert('WhatsApp is available only after phone sharing is enabled. Please use chat.', 'Chat only');
+      return;
+    }
+    var phone = String(resolvedSellerPhone || '').replace(/[^\d]/g, '');
+    var text = 'Hello, I am interested in ' + ((currentProduct && currentProduct.name) || 'your product') + ' on Mkulima Sokoni.';
+    window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(text), '_blank');
+  });
+}
+
+function openPhoneModal(phone) {
+  var safe = esc(phone || '');
+  var whatsappPhone = String(phone || '').replace(/[^\d]/g, '');
+  var whatsappText = encodeURIComponent('Hello, I am interested in ' + ((currentProduct && currentProduct.name) || 'your product') + ' on Mkulima Sokoni.');
+  var box = document.createElement('div');
+  box.className = 'modal-overlay active';
+  box.id = 'phoneModal';
+  box.innerHTML =
+    '<div class="modal-box">' +
+      '<h3>Contact Farmer</h3>' +
+      '<p>This contact is available because both accounts accepted phone sharing terms.</p>' +
+      '<div class="phone-contact-card">' +
+        '<div class="phone-display">📞 <a href="tel:' + safe + '" style="color:inherit;text-decoration:none;">' + safe + '</a></div>' +
+        '<div class="phone-action-grid">' +
+          '<a class="btn btn-primary" style="text-decoration:none;" href="tel:' + safe + '">Call</a>' +
+          '<a class="btn btn-outline" style="text-decoration:none;border-color:#25D366;color:#128C3A;" href="https://wa.me/' + whatsappPhone + '?text=' + whatsappText + '" target="_blank">WhatsApp</a>' +
+        '</div>' +
+      '</div>' +
+      '<button class="modal-close" id="phoneModalCloseBtn">Close</button>' +
+    '</div>';
+  document.body.appendChild(box);
+  var closeBtn = document.getElementById('phoneModalCloseBtn');
+  if (closeBtn) closeBtn.onclick = function() {
+    var modal = document.getElementById('phoneModal');
+    if (modal) modal.remove();
+  };
+}
+
+function tryResolvePhoneThen(cb) {
+  cb = cb || function(){};
+  resolvedSellerPhone = null;
+  try {
+    if (!currentSeller || !currentSeller.firebase_uid) return cb(false);
+    if (!isSignedIn()) return cb(false);
+    var viewerUid = getFirebaseUid();
+    if (!viewerUid) return cb(false);
+    fetch(API + '/phone-sharing/phone/' + encodeURIComponent(currentSeller.firebase_uid) + '?viewer_uid=' + encodeURIComponent(viewerUid))
+      .then(function(r){ return r.json().catch(function(){ return {}; }); })
+      .then(function(d){
+        if (d && d.available && d.phone_number) {
+          resolvedSellerPhone = String(d.phone_number);
+          return cb(true);
+        }
+        return cb(false);
+      })
+      .catch(function(){ cb(false); });
+  } catch(e) { cb(false); }
+}
+
 var currentConversationId = null;
 var isLoadingChat = false;
 
@@ -673,7 +790,7 @@ async function startChat() {
   }
   var thread = document.getElementById('chatThread');
   if (thread) {
-    thread.innerHTML = '<div class="chat-empty">Loading conversation…</div>';
+    thread.innerHTML = '<div class="chat-empty">No messages yet. Say hi to the farmer to start the conversation.</div>';
   }
   openModal('contactModal');
   try {
@@ -808,6 +925,19 @@ async function sendChatMessage() {
 
 function requireAuthLink(e) {
   if (!isSignedIn()) { e.preventDefault(); openModal('loginModal'); return false; }
+  return true;
+}
+
+function cacheSellerProfile(e) {
+  if (!requireAuthLink(e)) return false;
+  try {
+    if (currentSeller && currentSeller.firebase_uid) {
+      localStorage.setItem('sellerProfileCache:' + currentSeller.firebase_uid, JSON.stringify({
+        profile: currentSeller,
+        user: currentSeller
+      }));
+    }
+  } catch (_) {}
   return true;
 }
 

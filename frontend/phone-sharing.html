@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phone Number Sharing | Mkulima Sokoni</title>
+  <link rel="icon" type="image/jpeg" href="assets/img/logo.jpeg" />
+  <link rel="shortcut icon" type="image/jpeg" href="assets/img/logo.jpeg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root { --forest:#1B4332; --leaf:#40916C; --lime:#74C69D; --gold:#E9C46A; --cream:#FAF6EF; --ink:#1A1A18; --muted:#6B705C; --border:#DDD8CE; --shadow:0 10px 32px rgba(27,67,50,.12); }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family:'DM Sans',system-ui,sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+    a { color: inherit; text-decoration: none; }
+    .topbar { position: sticky; top:0; z-index:100; height:60px; padding:0 18px; display:flex; align-items:center; gap:12px; background: var(--forest); box-shadow: 0 2px 16px rgba(0,0,0,.22); }
+    .logo { display:flex; align-items:center; gap:10px; }
+    .logo-mark { width:36px; height:36px; border-radius:9px; background:#fff; overflow:hidden; display:grid; place-items:center; }
+    .logo-mark img { width:100%; height:100%; object-fit: contain; }
+    .logo-label strong { display:block; color:#fff; font-size:.9rem; font-weight:700; line-height:1.2; }
+    .logo-label span { display:block; color: var(--lime); font-size:.68rem; font-weight:300; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 22px 14px 44px; }
+    .card { background:#fff; border:1.5px solid var(--border); border-radius:18px; box-shadow: var(--shadow); overflow:hidden; }
+    .card-head { padding:18px 20px; background: linear-gradient(135deg, var(--forest), var(--leaf)); color:#fff; }
+    .card-head h1 { font-family:'Playfair Display',serif; font-size: 1.35rem; font-weight:800; }
+    .card-head p { margin-top:6px; font-size:.86rem; opacity:.86; }
+    .card-body { padding: 18px 20px; }
+    .section { margin-bottom: 18px; }
+    .section h3 { font-size: .9rem; font-weight: 800; color: var(--forest); margin-bottom: 8px; }
+    .section p, .section li { color: var(--muted); font-size: .86rem; line-height: 1.65; }
+    ul { padding-left: 18px; }
+    .controls { display:grid; gap: 12px; margin-top: 14px; }
+    .row { display:flex; align-items:flex-start; gap:10px; padding: 12px; border:1.5px solid var(--border); border-radius: 14px; background: #fff; }
+    .row input[type="checkbox"] { margin-top: 2px; }
+    label { font-weight: 700; color: var(--ink); }
+    .hint { margin-top: 2px; font-size: .8rem; color: var(--muted); }
+    .field { display:grid; gap: 6px; }
+    .field input { height: 44px; border-radius: 12px; border: 1.5px solid var(--border); padding: 0 12px; font-size: .92rem; outline: none; }
+    .field input:focus { border-color: var(--leaf); box-shadow: 0 0 0 3px rgba(64,145,108,.12); }
+    .btns { display:flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    .btn { cursor:pointer; border:none; border-radius: 999px; padding: 11px 18px; font-weight: 800; font-size: .9rem; font-family:'DM Sans',sans-serif; }
+    .btn-primary { background: linear-gradient(135deg, var(--forest), var(--leaf)); color:#fff; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--forest); }
+    .btn-danger { background: #ef4444; color: #fff; }
+    .status { margin-top: 12px; font-size: .85rem; color: var(--muted); }
+    .pill { display:inline-flex; align-items:center; gap:6px; padding: 4px 10px; border-radius: 999px; background: rgba(116,198,157,.16); color: var(--forest); font-weight: 800; font-size: .76rem; }
+    .pill.off { background: rgba(244,162,97,.18); color: #7c2d12; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a href="index.html" class="logo">
+      <span class="logo-mark"><img src="assets/img/logo.jpeg" alt="Mkulima Sokoni" /></span>
+      <span class="logo-label"><strong>Mkulima Sokoni</strong><span>Phone Number Sharing</span></span>
+    </a>
+  </header>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="card-head">
+        <h1>Phone Number Sharing</h1>
+        <p>Accept terms to view phone numbers. Enable sharing to show your phone number to verified users who accepted the same terms.</p>
+      </div>
+      <div class="card-body">
+        <div class="section">
+          <h3>Terms & Conditions (Phone Sharing)</h3>
+          <p style="margin-bottom:10px;">
+            To protect users, phone numbers are shared only with consent. By accepting, you agree to the rules below.
+          </p>
+
+          <h3 style="margin-top:14px;">1) Phone numbers are shown only with consent</h3>
+          <ul>
+            <li>You must be <strong>signed in</strong> and accept these terms to view any phone numbers.</li>
+            <li>The seller must accept these terms and turn <strong>Allow my phone number to be shared</strong> ON.</li>
+            <li>If any condition is not met, <strong>buyers can still contact you</strong> via <strong>in-app chat</strong>.</li>
+          </ul>
+
+          <h3 style="margin-top:14px;">2) Allowed use (no spam)</h3>
+          <ul>
+            <li>Use phone numbers only to discuss marketplace activity (products, orders, delivery, payments).</li>
+            <li>No harassment, threats, impersonation, abusive language, or repeated unwanted calls/messages.</li>
+            <li>No marketing campaigns or promotions without the seller’s consent.</li>
+          </ul>
+
+          <h3 style="margin-top:14px;">3) No sharing or scraping</h3>
+          <ul>
+            <li>Do not publish, forward, copy, scrape, resell, or build lists of phone numbers from the Platform.</li>
+            <li>Do not use automated tools to collect contact details.</li>
+          </ul>
+
+          <h3 style="margin-top:14px;">4) Your control (you can revoke anytime)</h3>
+          <ul>
+            <li>Turning sharing OFF hides your phone number immediately.</li>
+            <li>Chat remains available even when phone sharing is OFF.</li>
+            <li>You are responsible for keeping your phone number accurate.</li>
+          </ul>
+
+          <h3 style="margin-top:14px;">5) Safety & enforcement</h3>
+          <ul>
+            <li>Never share OTPs, passwords, PINs, or bank/card details.</li>
+            <li>We may restrict phone sharing or suspend accounts if we detect abuse.</li>
+            <li>We may update these terms for safety improvements; you may be asked to accept again.</li>
+          </ul>
+        </div>
+
+        <div class="controls">
+          <div class="row">
+            <input type="checkbox" id="acceptTerms" />
+            <div>
+              <label for="acceptTerms">I accept the phone sharing terms</label>
+              <div class="hint">Required before you can view any phone numbers.</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="phoneNumber">Your phone number</label>
+            <input id="phoneNumber" type="tel" placeholder="+2547xxxxxxxx" />
+            <div class="hint">This is stored in your account and used only when phone sharing is enabled.</div>
+          </div>
+
+          <div class="row">
+            <input type="checkbox" id="enableSharing" />
+            <div>
+              <label for="enableSharing">Allow my phone number to be shared</label>
+              <div class="hint">When enabled, signed-in users who accepted terms can see your phone number on “📞 Contact Farmer” and “👤 View Profile”.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button class="btn btn-primary" id="saveBtn">Save</button>
+          <button class="btn btn-danger" id="revokeBtn">Revoke phone sharing</button>
+          <button class="btn btn-outline" onclick="history.back()">Back</button>
+        </div>
+
+        <div class="status" id="statusLine">Status: <span class="pill off" id="statusPill">Not loaded</span></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/ui-feedback.js"></script>
+  <script>
+    const isProduction = !['localhost','127.0.0.1'].includes(window.location.hostname);
+    const API = isProduction ? '/api' : 'http://localhost:5000/api';
+
+    function getUid() {
+      try {
+        const u = JSON.parse(localStorage.getItem('user') || 'null');
+        return u && (u.firebase_uid || u.id) ? String(u.firebase_uid || u.id) : null;
+      } catch(e) { return null; }
+    }
+
+    function toast(msg, kind) {
+      if (window.SokoUI && window.SokoUI.toast) window.SokoUI.toast(msg, kind || 'success');
+      else alert(msg);
+    }
+
+    function setStatus(text, on) {
+      const pill = document.getElementById('statusPill');
+      pill.textContent = text;
+      pill.className = 'pill ' + (on ? '' : 'off');
+    }
+
+    async function loadStatus() {
+      const uid = getUid();
+      if (!uid) { setStatus('Sign in required', false); return; }
+      try {
+        const res = await fetch(`${API}/phone-sharing/status/${encodeURIComponent(uid)}?viewer_uid=${encodeURIComponent(uid)}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed');
+        const s = data.settings || {};
+        document.getElementById('phoneNumber').value = s.phone_number || '';
+        document.getElementById('acceptTerms').checked = !!s.phone_terms_accepted_at;
+        document.getElementById('enableSharing').checked = !!s.phone_sharing_enabled;
+        setStatus(s.phone_sharing_enabled ? 'Sharing ON' : 'Sharing OFF', !!s.phone_sharing_enabled);
+      } catch(e) {
+        setStatus('Could not load', false);
+      }
+    }
+
+    async function saveSettings(revokeOnly) {
+      const uid = getUid();
+      if (!uid) { toast('Please sign in first', 'warning'); return; }
+      const acceptTerms = document.getElementById('acceptTerms').checked;
+      const phoneNumber = document.getElementById('phoneNumber').value.trim();
+      const enableSharing = revokeOnly ? false : document.getElementById('enableSharing').checked;
+
+      if (!acceptTerms) {
+        toast('You must accept the terms to continue.', 'warning');
+        return;
+      }
+      if (enableSharing && !phoneNumber) {
+        toast('Please add your phone number before enabling sharing.', 'warning');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API}/phone-sharing/settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firebase_uid: uid,
+            phone_number: phoneNumber || null,
+            accept_terms: true,
+            enable_sharing: enableSharing
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed');
+        toast('Saved successfully', 'success');
+        setStatus(enableSharing ? 'Sharing ON' : 'Sharing OFF', enableSharing);
+      } catch(e) {
+        toast('Could not save. Please try again.', 'error');
+      }
+    }
+
+    document.getElementById('saveBtn').addEventListener('click', () => saveSettings(false));
+    document.getElementById('revokeBtn').addEventListener('click', () => saveSettings(true));
+
+    window.addEventListener('DOMContentLoaded', loadStatus);
+  </script>
+</body>
+</html>
+

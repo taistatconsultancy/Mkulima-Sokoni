@@ -51,6 +51,10 @@
       try {
         sessionStorage.setItem('productsCache', JSON.stringify(products));
       } catch (e) {}
+      try {
+        localStorage.setItem('soko_products_cache_v1', JSON.stringify(products));
+        localStorage.setItem('soko_products_cache_v1_ts', String(Date.now()));
+      } catch (e2) {}
       if (typeof opts.onRefresh === 'function') {
         await opts.onRefresh(products, meta);
       }

@@ -107,7 +107,11 @@
 
     /* Share profile */
     .share-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
-    .share-pill { padding: 5px 12px; border-radius: 100px; border: 1.5px solid var(--border); background: #fff; font-size: .72rem; font-weight: 600; cursor: pointer; transition: all .2s; font-family: 'DM Sans', sans-serif; color: var(--ink); }
+    .share-pill { display:inline-flex;align-items:center;gap:6px;padding:5px 12px; border-radius:100px; border:1.5px solid var(--border); background:#fff; font-size:.72rem; font-weight:600; cursor:pointer; transition:all .2s; font-family:'DM Sans', sans-serif; color:var(--ink); }
+    .brand-icon { width:18px;height:18px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-size:.66rem;font-weight:900;line-height:1; }
+    .brand-whatsapp { background:#25D366; }
+    .brand-facebook { background:#1877F2; }
+    .brand-x { background:#111; }
     .share-pill:hover { border-color: var(--leaf); color: var(--leaf); }
 
     /* Main column */
@@ -121,7 +125,7 @@
     .pp-card { background: var(--cream); border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; transition: all .2s; cursor: pointer; }
     .pp-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--lime); }
     .pp-img { height: 100px; background: linear-gradient(135deg, var(--forest), var(--leaf)); overflow: hidden; display: grid; place-items: center; font-size: 30px; position: relative; }
-    .pp-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .pp-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center center; }
     .pp-body { padding: 10px 11px; }
     .pp-name { font-weight: 600; font-size: .82rem; margin-bottom: 3px; }
     .pp-price { font-family: 'Playfair Display', serif; font-size: .95rem; font-weight: 700; color: var(--forest); }
@@ -134,6 +138,8 @@
     .modal-box { background: #fff; border-radius: 18px; padding: 28px; max-width: 400px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,.2); text-align: center; }
     .modal-box h3 { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 8px; color: var(--forest); }
     .modal-box p { font-size: .86rem; color: var(--muted); margin-bottom: 16px; }
+    .phone-contact-card { background: var(--cream); border: 1.5px solid var(--border); border-radius: 14px; padding: 14px; margin: 14px 0; text-align: left; }
+    .phone-action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
     .modal-close { margin-top: 10px; width: 100%; padding: 10px; border-radius: 10px; border: 1.5px solid var(--border); background: #fff; font-size: .86rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
 
     /* Footer */
@@ -199,9 +205,9 @@
       <div class="sidebar-card">
         <h4>Share Profile</h4>
         <div class="share-row">
-          <button class="share-pill" onclick="requireAuth(function(){shareProfile('whatsapp')})">💬 WhatsApp</button>
-          <button class="share-pill" onclick="requireAuth(function(){shareProfile('facebook')})">f Facebook</button>
-          <button class="share-pill" onclick="requireAuth(function(){shareProfile('x')})">𝕏 X</button>
+          <button class="share-pill" onclick="requireAuth(function(){shareProfile('whatsapp')})"><span class="brand-icon brand-whatsapp">☎</span> WhatsApp</button>
+          <button class="share-pill" onclick="requireAuth(function(){shareProfile('facebook')})"><span class="brand-icon brand-facebook">f</span> Facebook</button>
+          <button class="share-pill" onclick="requireAuth(function(){shareProfile('x')})"><span class="brand-icon brand-x">𝕏</span> X</button>
           <button class="share-pill" onclick="requireAuth(function(){shareProfile('copy')})">🔗 Copy</button>
         </div>
       </div>
@@ -257,6 +263,7 @@ var EMOJI = { Vegetables:'🥬', Fruits:'🍊', Cereals:'🌽', Livestock:'🐄'
 var uiAlert = function(msg, title){ return window.SokoUI ? window.SokoUI.alert(msg, title || 'Notice') : Promise.resolve(window.alert(msg)); };
 
 var profileData = {};
+var resolvedSellerPhone = null;
 
 function isSignedIn() { try { return !!localStorage.getItem('user'); } catch(e) { return false; } }
 function requireAuth(fn) { if (isSignedIn()) fn(); else openModal('loginModal'); }
@@ -281,23 +288,42 @@ async function loadProfile() {
     return;
   }
 
+  var renderedFromCache = false;
+  try {
+    var cached = JSON.parse(sessionStorage.getItem('sellerProfileCache:' + uid) || localStorage.getItem('sellerProfileCache:' + uid) || 'null');
+    if (cached) {
+      renderLoadedProfile(cached, uid);
+      renderedFromCache = true;
+    }
+  } catch(e) {}
+
   try {
     var res = await fetch(API + '/profiles/farmer/' + uid);
     if (!res.ok) throw new Error('Profile not found');
     var data = await res.json();
-    var profile = data.profile || data;
-    var user = profile.user || {};
-    profileData = { profile: profile, user: user };
-    renderBanner(profile, user);
-    renderSidebar(profile, user);
-    renderAbout(profile);
-    loadFarmerProducts(uid);
-    document.title = esc((profile.farm_name || user.first_name || 'Farmer')) + ' | Mkulima sokoni';
+    renderLoadedProfile(data, uid);
+    try {
+      sessionStorage.setItem('sellerProfileCache:' + uid, JSON.stringify(data));
+      localStorage.setItem('sellerProfileCache:' + uid, JSON.stringify(data));
+    } catch(e) {}
   } catch(e) {
-    document.getElementById('profileName').textContent = 'Could not load profile';
-    document.getElementById('infoRows').textContent = e.message || 'Error loading profile.';
-    document.getElementById('productsContainer').innerHTML = '<div class="empty-msg">Could not load products.</div>';
+    if (!renderedFromCache) {
+      document.getElementById('profileName').textContent = 'Could not load profile';
+      document.getElementById('infoRows').textContent = e.message || 'Error loading profile.';
+      document.getElementById('productsContainer').innerHTML = '<div class="empty-msg">Could not load products.</div>';
+    }
   }
+}
+
+function renderLoadedProfile(data, uid) {
+  var profile = data.profile || data;
+  var user = profile.user || data.user || {};
+  profileData = { profile: profile, user: user };
+  renderBanner(profile, user);
+  renderSidebar(profile, user);
+  renderAbout(profile);
+  loadFarmerProducts(uid);
+  document.title = esc((profile.farm_name || user.first_name || 'Farmer')) + ' | Mkulima sokoni';
 }
 
 function renderBanner(p, u) {
@@ -328,15 +354,130 @@ function renderBanner(p, u) {
 }
 
 function renderSidebar(p, u) {
-  var memberSince = p.created_at ? new Date(p.created_at).toLocaleDateString('en-KE',{year:'numeric',month:'short'}) : '';
+  var memberSince = (p.created_at || p.member_since) ? new Date(p.created_at || p.member_since).toLocaleDateString('en-KE',{year:'numeric',month:'short'}) : '';
   var rows = '';
-  rows += '<div class="info-row"><span class="info-icon">📍</span><span class="info-label">Location</span><span class="info-value">' + esc(p.location||'N/A') + (p.county ? ', ' + esc(p.county) : '') + '</span></div>';
+  var loc = p.location || p.seller_location || 'N/A';
+  var county = p.county || p.seller_county || '';
+  rows += '<div class="info-row"><span class="info-icon">📍</span><span class="info-label">Location</span><span class="info-value">' + esc(loc) + (county ? ', ' + esc(county) : '') + '</span></div>';
   if (memberSince) rows += '<div class="info-row"><span class="info-icon">📅</span><span class="info-label">Joined</span><span class="info-value">' + memberSince + '</span></div>';
   if (p.farming_experience_years) rows += '<div class="info-row"><span class="info-icon">🌾</span><span class="info-label">Experience</span><span class="info-value">' + p.farming_experience_years + ' years</span></div>';
   if (p.farm_size_acres) rows += '<div class="info-row"><span class="info-icon">📐</span><span class="info-label">Farm Size</span><span class="info-value">' + p.farm_size_acres + ' acres</span></div>';
   document.getElementById('infoRows').innerHTML = rows;
 
-  // Hide direct email/phone for public view; buyers contact via in-app flows.
+  // Contact controls: Phone only when both parties accepted terms and seller enabled sharing.
+  renderContactActions(p, u);
+}
+
+function openPhoneModal(phone) {
+  var safe = esc(phone || '');
+  var whatsappPhone = String(phone || '').replace(/[^\d]/g, '');
+  var text = encodeURIComponent('Hello, I found your profile on Mkulima Sokoni.');
+  var modal = document.createElement('div');
+  modal.className = 'modal-overlay active';
+  modal.id = 'phoneModal';
+  modal.innerHTML =
+    '<div class="modal-box">' +
+      '<h3>Contact Farmer</h3>' +
+      '<p>This contact is available because both accounts accepted phone sharing terms.</p>' +
+      '<div class="phone-contact-card">' +
+        '<div style="font-size:1.15rem;font-weight:800;color:var(--forest);">📞 <a href="tel:' + safe + '" style="color:inherit;text-decoration:none;">' + safe + '</a></div>' +
+        '<div class="phone-action-grid">' +
+          '<a href="tel:' + safe + '" class="btn btn-primary" style="text-decoration:none;">Call</a>' +
+          '<a href="https://wa.me/' + whatsappPhone + '?text=' + text + '" target="_blank" class="btn btn-outline" style="text-decoration:none;border-color:#25D366;color:#128C3A;">WhatsApp</a>' +
+        '</div>' +
+      '</div>' +
+      '<button class="modal-close" id="phoneModalCloseBtn">Close</button>' +
+    '</div>';
+  document.body.appendChild(modal);
+  var closeBtn = document.getElementById('phoneModalCloseBtn');
+  if (closeBtn) closeBtn.onclick = function() {
+    var activeModal = document.getElementById('phoneModal');
+    if (activeModal) activeModal.remove();
+  };
+}
+
+function tryResolvePhoneThen(uid, cb) {
+  cb = cb || function(){};
+  resolvedSellerPhone = null;
+  try {
+    if (!uid) return cb(false);
+    if (!isSignedIn()) return cb(false);
+    var viewer = null;
+    try { viewer = JSON.parse(localStorage.getItem('user') || 'null'); } catch(e) { viewer = null; }
+    var viewerUid = viewer && (viewer.firebase_uid || viewer.id) ? String(viewer.firebase_uid || viewer.id) : '';
+    if (!viewerUid) return cb(false);
+    fetch(API + '/phone-sharing/phone/' + encodeURIComponent(uid) + '?viewer_uid=' + encodeURIComponent(viewerUid))
+      .then(function(r){ return r.json().catch(function(){ return {}; }); })
+      .then(function(d){
+        if (d && d.available && d.phone_number) {
+          resolvedSellerPhone = String(d.phone_number);
+          return cb(true);
+        }
+        return cb(false);
+      })
+      .catch(function(){ cb(false); });
+  } catch(e) { cb(false); }
+}
+
+function renderContactActions(p, u) {
+  var card = document.getElementById('contactCard');
+  var actions = document.getElementById('contactActions');
+  if (!card || !actions) return;
+  actions.innerHTML = '';
+  card.style.display = '';
+
+  var uid = getUid();
+
+  function openChatOnlyModal() {
+    var modal = document.createElement('div');
+    modal.className = 'modal-overlay active';
+    modal.id = 'chatOnlyModal';
+    modal.innerHTML =
+      '<div class="modal-box">' +
+        '<h3>Contact Farmer</h3>' +
+        '<p>This farmer is available via <strong>chat only</strong>. Phone sharing is not enabled.</p>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">' +
+          '<button class="btn btn-primary" id="chatOnlyViewProductsBtn">View listed products</button>' +
+          '<a class="btn btn-outline" href="market.html" style="text-decoration:none;">Open Marketplace</a>' +
+        '</div>' +
+        '<button class="modal-close" id="chatOnlyCloseBtn">Close</button>' +
+      '</div>';
+    document.body.appendChild(modal);
+
+    var closeBtn = document.getElementById('chatOnlyCloseBtn');
+    if (closeBtn) closeBtn.onclick = function() {
+      var m = document.getElementById('chatOnlyModal');
+      if (m) m.remove();
+    };
+
+    var viewBtn = document.getElementById('chatOnlyViewProductsBtn');
+    if (viewBtn) viewBtn.onclick = function() {
+      try {
+        var target = document.getElementById('productsContainer') || document.getElementById('mainCol');
+        if (target && target.scrollIntoView) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch(e) {}
+      var m = document.getElementById('chatOnlyModal');
+      if (m) m.remove();
+    };
+  }
+
+  var phoneBtn = document.createElement('button');
+  phoneBtn.className = 'btn btn-primary';
+  phoneBtn.textContent = '📞 Contact Farmer';
+  phoneBtn.onclick = function() {
+    requireAuth(function() {
+      // Open something instantly, then resolve phone in background.
+      openChatOnlyModal();
+      tryResolvePhoneThen(uid, function(ok){
+        if (!ok) return;
+        // If phone is available, replace the chat-only modal with phone modal.
+        try { var m = document.getElementById('chatOnlyModal'); if (m) m.remove(); } catch(e) {}
+        openPhoneModal(resolvedSellerPhone);
+      });
+    });
+  };
+  actions.appendChild(phoneBtn);
+
 }
 
 function renderAbout(p) {
@@ -347,10 +488,30 @@ function renderAbout(p) {
 }
 
 async function loadFarmerProducts(uid) {
+  var renderedFromCache = false;
+  try {
+    var cached = JSON.parse(sessionStorage.getItem('sellerProfileProductsCache:' + uid) || localStorage.getItem('sellerProfileProductsCache:' + uid) || '[]');
+    if (Array.isArray(cached) && cached.length) {
+      renderFarmerProducts(uid, cached);
+      renderedFromCache = true;
+    }
+  } catch(e) {}
+
   try {
     var res = await fetch(API + '/products/farmer/' + uid + '?status=active');
     if (!res.ok) throw new Error();
     var products = await res.json();
+    renderFarmerProducts(uid, products);
+    try {
+      sessionStorage.setItem('sellerProfileProductsCache:' + uid, JSON.stringify(products));
+      localStorage.setItem('sellerProfileProductsCache:' + uid, JSON.stringify(products));
+    } catch(e) {}
+  } catch(e) {
+    if (!renderedFromCache) document.getElementById('productsContainer').innerHTML = '<div class="empty-msg">Could not load products.</div>';
+  }
+}
+
+function renderFarmerProducts(uid, products) {
     if (!products.length) {
       document.getElementById('productsContainer').innerHTML = '<div class="empty-msg">No active listings yet.</div>';
       return;
@@ -360,15 +521,28 @@ async function loadFarmerProducts(uid) {
       '<div class="profile-products">' +
       products.map(function(p) {
         var imgInner = p.image_url ? '<img src="' + esc(p.image_url) + '" alt="" />' : (EMOJI[p.category]||'🌿');
-        return '<a class="pp-card" href="product-detail.html?id=' + p.id + '" style="text-decoration:none;">' +
+        return '<a class="pp-card" href="product-detail.html?id=' + p.id + '" onclick="cacheProfileProduct(' + "'" + p.id + "'" + ')" style="text-decoration:none;">' +
           '<div class="pp-img">' + imgInner + '</div>' +
           '<div class="pp-body"><div class="pp-name">' + esc(p.name) + '</div>' +
           '<div class="pp-price">' + priceStr(p) + '</div></div></a>';
       }).join('') +
       '</div>';
-  } catch(e) {
-    document.getElementById('productsContainer').innerHTML = '<div class="empty-msg">Could not load products.</div>';
-  }
+}
+
+function cacheProfileProduct(pid) {
+  try {
+    var uid = getUid();
+    var products = JSON.parse(sessionStorage.getItem('sellerProfileProductsCache:' + uid) || localStorage.getItem('sellerProfileProductsCache:' + uid) || '[]');
+    var p = products.find(function(x) { return String(x.id) === String(pid); });
+    if (p) {
+      sessionStorage.setItem('productCache_' + pid, JSON.stringify(p));
+      localStorage.setItem('productCache_' + pid, JSON.stringify(p));
+    }
+    if (products.length) {
+      sessionStorage.setItem('productsCache', JSON.stringify(products));
+      localStorage.setItem('soko_products_cache_v1', JSON.stringify(products));
+    }
+  } catch(e) {}
 }
 
 function requireAuthLink(e) {

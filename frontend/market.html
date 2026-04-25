@@ -54,7 +54,7 @@
     .product-ticker-item { flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding: 6px 24px; color: rgba(255,255,255,.95); font-size: .85rem; white-space: nowrap; border-right: 1px solid rgba(255,255,255,.12); text-decoration: none; transition: background .2s; }
     .product-ticker-item:hover { background: rgba(255,255,255,.06); }
     .product-ticker-item .ticker-thumb { width: 44px; height: 44px; border-radius: 10px; overflow: hidden; flex-shrink: 0; background: rgba(255,255,255,.1); display: grid; place-items: center; font-size: 22px; }
-    .product-ticker-item .ticker-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .product-ticker-item .ticker-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: center center; display: block; }
     .product-ticker-item .ticker-info { display: flex; flex-direction: column; gap: 1px; }
     .product-ticker-item .ticker-name { font-weight: 600; color: #fff; }
     .product-ticker-item .ticker-price { font-size: .8rem; color: var(--gold); font-weight: 600; }
@@ -91,8 +91,8 @@
 
     .product-card { background: #fff; border-radius: 14px; border: 1.5px solid var(--border); overflow: hidden; display: flex; flex-direction: column; transition: all .28s cubic-bezier(.34,1.56,.64,1); cursor: pointer; }
     .product-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-color: var(--lime); }
-    .product-img { height: 130px; background: linear-gradient(135deg, var(--forest), var(--leaf)); position: relative; overflow: hidden; display: grid; place-items: center; font-size: 44px; }
-    .product-img-real { position: absolute; inset: 0; object-fit: cover; width: 100%; height: 100%; }
+    .product-img { height: 110px; background: linear-gradient(135deg, var(--forest), var(--leaf)); position: relative; overflow: hidden; display: grid; place-items: center; font-size: 44px; }
+    .product-img-real { position: absolute; inset: 0; object-fit: cover; object-position: center center; width: 100%; height: 100%; }
     .product-location-badge { position: absolute; bottom: 8px; left: 8px; background: rgba(255,255,255,.92); backdrop-filter: blur(8px); border-radius: 100px; padding: 2px 9px; font-size: .66rem; font-weight: 600; color: var(--forest); }
     .product-body { padding: 12px 14px; flex: 1; display: flex; flex-direction: column; }
     .product-name { font-size: .92rem; font-weight: 600; margin-bottom: 5px; }
@@ -339,32 +339,59 @@
   const API = isProduction ? '/api' : 'http://localhost:5000/api';
   let allProducts = [];
   let featuredProducts = [];
+  const PRODUCTS_CACHE_KEY = 'soko_products_cache_v1';
+  const FEATURED_CACHE_KEY = 'soko_featured_cache_v1';
 
   const EMOJI = { Vegetables:'🥬', Fruits:'🍊', Cereals:'🌽', Livestock:'🐄', Dairy:'🥛', Tea:'🍵', Nuts:'🥜', Legumes:'🫘', Herbs:'🌿', Potatoes:'🥔', Other:'📦' };
+
+  function readProductsCache() {
+    try {
+      const raw = sessionStorage.getItem('productsCache') || localStorage.getItem(PRODUCTS_CACHE_KEY);
+      const arr = raw ? JSON.parse(raw) : null;
+      return Array.isArray(arr) ? arr : null;
+    } catch(e) { return null; }
+  }
+
+  function writeProductsCache(products) {
+    try { sessionStorage.setItem('productsCache', JSON.stringify(products)); } catch(e) {}
+    try { localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(products)); } catch(e) {}
+  }
+
+  function readFeaturedCache() {
+    try {
+      const raw = localStorage.getItem(FEATURED_CACHE_KEY);
+      const arr = raw ? JSON.parse(raw) : null;
+      return Array.isArray(arr) ? arr : null;
+    } catch(e) { return null; }
+  }
+
+  function writeFeaturedCache(products) {
+    try { localStorage.setItem(FEATURED_CACHE_KEY, JSON.stringify(products || [])); } catch(e) {}
+  }
 
   async function loadProducts() {
     const container = document.getElementById('products-container');
 
-    await loadFeaturedProducts();
+    const cached = readProductsCache();
+    if (cached && cached.length) {
+      allProducts = cached;
+      renderProducts(cached);
+    }
 
-    // Instant render from cache
-    try {
-      const cached = JSON.parse(sessionStorage.getItem('productsCache'));
-      if (cached && cached.length) {
-        allProducts = cached;
-        renderProducts(cached);
-        renderProductTicker(featuredProducts);
-      }
-    } catch(e) {}
+    const featuredCached = readFeaturedCache();
+    if (featuredCached && featuredCached.length) {
+      featuredProducts = featuredCached;
+      renderProductTicker(featuredCached);
+    }
+    loadFeaturedProducts().then(function(){ renderProductTicker(featuredProducts); });
 
     // Fetch fresh data in background
     try {
-      await loadFeaturedProducts();
       const res = await fetch(`${API}/products?status=active`);
       if (!res.ok) throw new Error();
       const products = await res.json();
       allProducts = products;
-      try { sessionStorage.setItem('productsCache', JSON.stringify(products)); } catch(e) {}
+      writeProductsCache(products);
       renderProducts(products);
       await loadFeaturedProducts();
       renderProductTicker(featuredProducts);
@@ -388,6 +415,7 @@
       if (!res.ok) throw new Error();
       const products = await res.json();
       featuredProducts = Array.isArray(products) ? products : [];
+      writeFeaturedCache(featuredProducts);
     } catch (e) {
       featuredProducts = [];
     }
@@ -429,8 +457,12 @@
   function goToProduct(pid) {
     var p = allProducts.find(x => x.id === pid);
     try {
-      if (p) sessionStorage.setItem('productCache_' + pid, JSON.stringify(p));
+      if (p) {
+        sessionStorage.setItem('productCache_' + pid, JSON.stringify(p));
+        localStorage.setItem('productCache_' + pid, JSON.stringify(p));
+      }
       sessionStorage.setItem('productsCache', JSON.stringify(allProducts));
+      localStorage.setItem('soko_products_cache_v1', JSON.stringify(allProducts));
     } catch(e) {}
     location.href = 'product-detail.html?id=' + pid;
   }

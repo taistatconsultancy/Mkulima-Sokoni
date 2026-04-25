@@ -26,7 +26,7 @@
     body{font-family:'DM Sans',system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.6;min-height:100vh;overflow-x:hidden;}
     a{color:inherit;text-decoration:none;}
 
-    .topbar{position:sticky;top:0;z-index:200;background:var(--forest);display:flex;align-items:center;padding:0 calc(28px + env(safe-area-inset-right)) 0 calc(28px + env(safe-area-inset-left));height:60px;gap:20px;box-shadow:0 2px 16px rgba(0,0,0,.25);overflow:hidden;}
+    .topbar{position:sticky;top:0;z-index:200;background:var(--forest);display:flex;align-items:center;padding:0 calc(28px + env(safe-area-inset-right)) 0 calc(28px + env(safe-area-inset-left));height:60px;gap:20px;box-shadow:0 2px 16px rgba(0,0,0,.25);overflow:visible;}
     .mobile-nav-btn{display:none;width:36px;height:36px;border-radius:10px;border:1.5px solid rgba(255,255,255,.25);background:transparent;color:#fff;font-size:1rem;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;}
     .logo{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:1;}
     .logo-mark{width:36px;height:36px;border-radius:9px;overflow:hidden;display:grid;place-items:center;background:#fff;flex-shrink:0;box-shadow:0 3px 12px rgba(116,198,157,.4);}
@@ -100,7 +100,7 @@
     .ag-ticker-item{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:6px 20px;color:rgba(255,255,255,.95);font-size:.82rem;white-space:nowrap;border-right:1px solid rgba(255,255,255,.12);text-decoration:none;transition:background .2s;}
     .ag-ticker-item:hover{background:rgba(255,255,255,.06);}
     .ag-ticker-thumb{width:38px;height:38px;border-radius:9px;overflow:hidden;flex-shrink:0;background:rgba(255,255,255,.1);display:grid;place-items:center;font-size:18px;}
-    .ag-ticker-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+    .ag-ticker-thumb img{width:100%;height:100%;object-fit:cover;object-position:center center;display:block;}
     .ag-ticker-info{display:flex;flex-direction:column;gap:1px;}
     .ag-ticker-name{font-weight:600;color:#fff;font-size:.82rem;}
     .ag-ticker-price{font-size:.75rem;color:var(--gold);font-weight:600;}
@@ -163,7 +163,7 @@
     .inv-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;overflow:hidden;transition:all .2s;}
     .inv-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--lime);}
     .inv-card-img{height:140px;background:var(--cream);display:grid;place-items:center;overflow:hidden;}
-    .inv-card-img img{width:100%;height:100%;object-fit:cover;}
+    .inv-card-img img{width:100%;height:100%;object-fit:cover;object-position:center center;}
     .inv-card-body{padding:14px;}
     .inv-card-name{font-weight:700;font-size:.9rem;margin-bottom:4px;}
     .inv-card-price{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--forest);margin-bottom:4px;}
@@ -174,8 +174,8 @@
     .mk-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
     .mk-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;overflow:hidden;transition:all .2s;cursor:pointer;}
     .mk-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--lime);}
-    .mk-card-img{height:130px;background:var(--cream);display:grid;place-items:center;overflow:hidden;font-size:32px;}
-    .mk-card-img img{width:100%;height:100%;object-fit:cover;}
+    .mk-card-img{height:110px;background:var(--cream);display:grid;place-items:center;overflow:hidden;font-size:32px;}
+    .mk-card-img img{width:100%;height:100%;object-fit:cover;object-position:center center;}
     .mk-card-body{padding:12px;}
     .mk-card-name{font-weight:700;font-size:.85rem;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .mk-card-price{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:700;color:var(--forest);margin-bottom:2px;}
@@ -335,6 +335,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
         </div>
         <div class="dd-item" onclick="showPage('dashboard',this)"><span>🏠</span> Dashboard</div>
         <div class="dd-item" onclick="showPage('profile',this)"><span>⚙️</span> Settings</div>
+        <div class="dd-item" onclick="location.href='phone-sharing.html'"><span>☎</span> Phone sharing</div>
         <div class="dd-item dd-logout" onclick="logout()"><span>🚪</span> Logout</div>
       </div>
     </div>
@@ -464,7 +465,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
             <label>Product Image *</label>
             <input type="file" id="ap-image" accept="image/*" required onchange="previewImg(this)" />
             <img id="ap-preview" class="img-preview" alt="Preview" />
-            <p style="font-size:.74rem;color:var(--muted);margin-top:6px;">Tip: use landscape photos so cards render cleanly across marketplace pages.</p>
+            <p style="font-size:.74rem;color:var(--muted);margin-top:6px;">Tip: use <strong>landscape</strong> photos. Portrait photos may be cropped on cards.</p>
           </div>
           <div class="form-full" style="display:flex;gap:10px;">
             <button type="submit" class="form-submit" id="ap-submit-btn">Publish to Marketplace</button>
@@ -615,7 +616,15 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
             <div class="form-group"><label>Company Name *</label><input type="text" id="profile-business" placeholder="e.g. Green Valley Agro Supplies" required /></div>
             <div class="form-group"><label>Owner Name</label><input type="text" id="profile-owner" placeholder="Full name" readonly style="background:var(--cream);" /></div>
             <div class="form-group"><label>Email</label><input type="email" id="profile-email" readonly style="background:var(--cream);" /><p style="font-size:.72rem;color:var(--muted);margin-top:4px;">Linked from your account</p></div>
-            <div class="form-group"><label>Phone Number</label><input type="tel" id="profile-phone" placeholder="+254 700 000 000" readonly style="background:var(--cream);" /><p style="font-size:.72rem;color:var(--muted);margin-top:4px;">Linked from your account</p></div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="tel" id="profile-phone" placeholder="+254 700 000 000" readonly style="background:var(--cream);" />
+              <p style="font-size:.72rem;color:var(--muted);margin-top:4px;">Linked from your account</p>
+              <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+                <a href="phone-sharing.html" class="btn-sm" style="text-decoration:none;border:1.5px solid var(--border);background:#fff;color:var(--forest);">📜 Phone sharing & Terms</a>
+                <a href="phone-sharing.html" class="btn-sm solid" style="text-decoration:none;">🔒 Revoke phone sharing</a>
+              </div>
+            </div>
             <div class="form-group"><label>Location *</label><input type="text" id="profile-location" placeholder="e.g. Nakuru" required /></div>
             <div class="form-group"><label>County *</label><input type="text" id="profile-county" placeholder="e.g. Nakuru" required /></div>
             <div class="form-group"><label>National ID *</label><input type="text" id="profile-national-id" placeholder="e.g. 12345678" required /></div>
@@ -694,6 +703,44 @@ let allMarketProducts = [];
 let featuredTickerProducts = [];
 let mkPage = 0;
 const MK_PER_PAGE = 12;
+const PRODUCTS_CACHE_KEY = 'soko_products_cache_v1';
+const FEATURED_CACHE_KEY = 'soko_featured_cache_v1';
+
+function readFeaturedCache() {
+  try {
+    const raw = localStorage.getItem(FEATURED_CACHE_KEY);
+    if (!raw) return null;
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : null;
+  } catch(e) { return null; }
+}
+
+function writeFeaturedCache(items) {
+  try { localStorage.setItem(FEATURED_CACHE_KEY, JSON.stringify(items || [])); } catch(e) {}
+}
+
+function readProductsCache() {
+  try {
+    const s = sessionStorage.getItem('productsCache');
+    if (s) {
+      const arr = JSON.parse(s);
+      if (Array.isArray(arr)) return arr;
+    }
+  } catch(e) {}
+  try {
+    const l = localStorage.getItem(PRODUCTS_CACHE_KEY);
+    if (l) {
+      const arr = JSON.parse(l);
+      if (Array.isArray(arr)) return arr;
+    }
+  } catch(e2) {}
+  return null;
+}
+
+function writeProductsCache(products) {
+  try { sessionStorage.setItem('productsCache', JSON.stringify(products)); } catch(e) {}
+  try { localStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify(products)); } catch(e2) {}
+}
 const AGRO_PROFILE_TAB_ORDER = ['basic', 'business', 'additional'];
 const AGRO_PROFILE_REQUIRED_FIELDS = {
   basic: ['profile-business', 'profile-location', 'profile-county', 'profile-national-id'],
@@ -758,6 +805,7 @@ async function loadFeaturedTickerRows() {
     if (!res.ok) throw new Error();
     const data = await res.json();
     featuredTickerProducts = Array.isArray(data) ? data : [];
+    writeFeaturedCache(featuredTickerProducts);
   } catch (e) {
     featuredTickerProducts = [];
   }
@@ -1078,7 +1126,13 @@ function _mkGateFail(msg){
 function _mkGateHide(){ var gate=document.getElementById('bootstrapGate'); if(gate) gate.classList.remove('show'); }
 
 async function bootstrapAndRouteAgro(){
-  _mkGateShow('Checking your profile…');
+  // Show the "Setting up your account…" gate at most once per 24 hours (per user).
+  var uidForKey = firebaseUid ? String(firebaseUid) : 'anon';
+  var gateKey = 'mk_bootstrap_last_agro_' + uidForKey;
+  var last = 0;
+  try { last = parseInt(localStorage.getItem(gateKey) || '0', 10) || 0; } catch(e) { last = 0; }
+  var shouldShowGate = !last || (Date.now() - last) > (24 * 60 * 60 * 1000);
+  if (shouldShowGate) _mkGateShow('Checking your profile…');
   try {
     if (!firebaseUid) {
       showPage('dashboard');
@@ -1109,6 +1163,7 @@ async function bootstrapAndRouteAgro(){
     showPage(profileLocked ? 'profile' : 'dashboard');
     await loadProfile();
     enforceAgroProfileCompletion(true);
+    try { localStorage.setItem(gateKey, String(Date.now())); } catch(e) {}
     _mkGateHide();
   } catch (e) {
     window.__mkBootstrapRetry = bootstrapAndRouteAgro;
@@ -1204,7 +1259,7 @@ function renderDealerProducts(grid, products) {
 
   grid.innerHTML = myProducts.slice().sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).map(function(p) {
     const emoji = EMOJI[p.category] || '📦';
-    const price = p.price ? `KSh ${Number(p.price).toLocaleString()}` : (p.price_min && p.price_max ? `KSh ${Number(p.price_min).toLocaleString()} – ${Number(p.price_max).toLocaleString()}` : '—');
+    const price = productPriceText(p);
     return `<div class="inv-card">
       <div class="inv-card-img">${p.image_url ? `<img src="${p.image_url}" alt="${p.name}"/>` : `<span style="font-size:48px;">${emoji}</span>`}</div>
       <div class="inv-card-body">
@@ -1331,21 +1386,28 @@ async function submitProduct(status) {
 /* ── Marketplace ── */
 async function loadMarketplace() {
   const grid = document.getElementById('mk-grid');
-  await loadFeaturedTickerRows();
-  try {
-    const cached = sessionStorage.getItem('productsCache');
-    if (cached) {
-      const arr = JSON.parse(cached);
-      if (arr.length) { allMarketProducts = arr; renderMkPage(); renderDashMk(); renderTicker(featuredTickerProducts); }
-    }
-  } catch(e) {}
+  // Instant render from cache (no network blocking)
+  const cached = readProductsCache();
+  if (cached && cached.length) {
+    allMarketProducts = cached;
+    renderMkPage();
+    renderDashMk();
+  }
+
+  // Instant ticker from cache, then refresh
+  const featuredCached = readFeaturedCache();
+  if (featuredCached && featuredCached.length) {
+    featuredTickerProducts = featuredCached;
+    renderTicker(featuredCached);
+  }
+  loadFeaturedTickerRows().then(() => renderTicker(featuredTickerProducts));
 
   try {
     const res = await fetch(`${API}/products?status=active`);
     if (!res.ok) return;
     const products = await res.json();
     allMarketProducts = products;
-    sessionStorage.setItem('productsCache', JSON.stringify(products));
+    writeProductsCache(products);
     document.getElementById('stat-market').textContent = products.length;
     renderMkPage();
     renderDashMk();
@@ -1358,9 +1420,7 @@ async function loadMarketplace() {
 
 async function applyMarketplaceProducts(products) {
   allMarketProducts = products;
-  try {
-    sessionStorage.setItem('productsCache', JSON.stringify(products));
-  } catch (e) {}
+  writeProductsCache(products);
   const stat = document.getElementById('stat-market');
   if (stat) stat.textContent = products.length;
   renderMkPage();
@@ -1387,7 +1447,7 @@ function renderDashMk() {
   if (!items.length) { grid.innerHTML = '<div style="grid-column:1/-1;" class="empty-state"><div class="icon">🌱</div><h4>No products yet</h4></div>'; return; }
   grid.innerHTML = items.map(p => {
     const emoji = EMOJI[p.category] || '📦';
-    const price = p.price ? `KSh ${Number(p.price).toLocaleString()}` : '—';
+    const price = productPriceText(p);
     return `<div class="mk-card" onclick="goToProduct('${p.id}')">
       <div class="mk-card-img">${p.image_url ? `<img src="${p.image_url}" alt="${p.name}"/>` : emoji}</div>
       <div class="mk-card-body">
@@ -1407,7 +1467,7 @@ function renderMkPage() {
 
   grid.innerHTML = slice.map(p => {
     const emoji = EMOJI[p.category] || '📦';
-    const price = p.price ? `KSh ${Number(p.price).toLocaleString()}` : '—';
+    const price = productPriceText(p);
     return `<div class="mk-card" onclick="goToProduct('${p.id}')">
       <div class="mk-card-img">${p.image_url ? `<img src="${p.image_url}" alt="${p.name}"/>` : emoji}</div>
       <div class="mk-card-body">
@@ -1426,10 +1486,24 @@ function renderMkPage() {
     <button ${mkPage>=totalPages-1?'disabled':''} onclick="mkPage++;renderMkPage();">Next →</button>`;
 }
 
+function productPriceText(p) {
+  if (p.product_type === 'livestock' && p.price_min != null && p.price_max != null) {
+    return `KSh ${Number(p.price_min).toLocaleString()}–${Number(p.price_max).toLocaleString()}`;
+  }
+  if (p.price != null && p.price !== '') return `KSh ${Number(p.price).toLocaleString()}`;
+  if (p.price_min != null) return `From KSh ${Number(p.price_min).toLocaleString()}`;
+  if (p.price_max != null) return `Up to KSh ${Number(p.price_max).toLocaleString()}`;
+  return 'Price on request';
+}
+
 function goToProduct(pid) {
   const p = allMarketProducts.find(x => String(x.id) === String(pid));
-  if (p) sessionStorage.setItem('productCache_' + pid, JSON.stringify(p));
+  if (p) {
+    sessionStorage.setItem('productCache_' + pid, JSON.stringify(p));
+    localStorage.setItem('productCache_' + pid, JSON.stringify(p));
+  }
   sessionStorage.setItem('productsCache', JSON.stringify(allMarketProducts));
+  localStorage.setItem('soko_products_cache_v1', JSON.stringify(allMarketProducts));
   window.location.href = 'product-detail.html?id=' + pid;
 }
 
@@ -1441,7 +1515,7 @@ function renderTicker(products) {
 
   const chunk = products.map(p => {
     const emoji = EMOJI[p.category] || '📦';
-    const price = p.price ? `KSh ${Number(p.price).toLocaleString()}` : '';
+    const price = productPriceText(p);
     const thumb = p.image_url ? `<img src="${p.image_url}" alt=""/>` : emoji;
     return `<a href="#" onclick="goToProduct('${p.id}');return false;" class="ag-ticker-item">
       <div class="ag-ticker-thumb">${thumb}</div>
