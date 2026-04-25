@@ -1279,11 +1279,39 @@ function renderDealerProducts(grid, products) {
         <div class="inv-card-meta"><span>👁 ${p.views||0} views</span><span>•</span><span>📍 ${p.location||'—'}</span></div>
         <div class="inv-card-actions">
           ${p.status==='draft'?`<button class="btn-sm" onclick="activateProduct('${p.id}')">Publish</button>`:''}
+          <button class="btn-sm" onclick="editDealerProduct('${p.id}')">Edit</button>
           <a href="product-detail.html?id=${p.id}" class="btn-sm" style="text-decoration:none;">View</a>
         </div>
       </div>
     </div>`;
   }).join('');
+}
+
+function getDealerProductById(id) {
+  return (myProducts || []).find(p => String(p.id) === String(id)) || null;
+}
+
+function editDealerProduct(id) {
+  const p = getDealerProductById(id);
+  if (!p) { uiAlert('Could not find product. Please refresh.', 'Product missing'); return; }
+  // Reuse the add-product form as an "edit" surface (quick + reliable).
+  showPage('inventory');
+  try {
+    document.getElementById('ap-name').value = p.name || '';
+    document.getElementById('ap-category').value = p.category || '';
+    syncAgroUnitsByCategory();
+    document.getElementById('ap-price').value = p.price != null ? p.price : '';
+    document.getElementById('ap-qty').value = p.quantity || '';
+    document.getElementById('ap-unit').value = p.measurement_metric || 'Kg';
+    document.getElementById('ap-location').value = p.location || '';
+    document.getElementById('ap-desc').value = p.description || '';
+    // store editing id
+    sessionStorage.setItem('dealer_edit_product_id', String(p.id));
+    window.SokoUI?.toast('Editing product. Update fields then click Publish/Draft to save changes.', 'success');
+    // scroll to form
+    const form = document.getElementById('addProductForm');
+    if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {}
 }
 
 async function activateProduct(pid) {
@@ -1332,7 +1360,8 @@ async function submitProduct(status) {
   if (!form.checkValidity()) { form.reportValidity(); return; }
 
   const imageFile = document.getElementById('ap-image').files[0];
-  if (!imageFile && status === 'active') { await uiAlert('Please select a product image.', 'Image required'); return; }
+  const editingId = sessionStorage.getItem('dealer_edit_product_id') || '';
+  if (!imageFile && !editingId && status === 'active') { await uiAlert('Please select a product image.', 'Image required'); return; }
 
   const btn = document.getElementById('ap-submit-btn');
   btn.disabled = true;
@@ -1364,17 +1393,23 @@ async function submitProduct(status) {
       status: status
     };
 
-    const res = await fetch(`${API}/products`, {
-      method: 'POST',
+    // If editing, do PUT /products/:id. Otherwise create via POST /products
+    const isEdit = !!editingId;
+    const url = isEdit ? `${API}/products/${encodeURIComponent(editingId)}` : `${API}/products`;
+    const method = isEdit ? 'PUT' : 'POST';
+    if (!imageData) delete data.image; // don't overwrite existing image when not provided
+    const res = await fetch(url, {
+      method: method,
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(data)
     });
     const result = await res.json();
-    if (!res.ok) throw new Error(result.error || 'Failed to create product');
+    if (!res.ok) throw new Error(result.error || (isEdit ? 'Failed to update product' : 'Failed to create product'));
 
-    window.SokoUI?.toast(status === 'active' ? 'Product published to marketplace!' : 'Product saved as draft!', 'success');
+    window.SokoUI?.toast(isEdit ? 'Product updated successfully!' : (status === 'active' ? 'Product published to marketplace!' : 'Product saved as draft!'), 'success');
     form.reset();
     document.getElementById('ap-preview').style.display = 'none';
+    sessionStorage.removeItem('dealer_edit_product_id');
     loadMyProducts();
     loadMarketplace();
     if (window.SokoMarketplaceSync) window.SokoMarketplaceSync.invalidate();

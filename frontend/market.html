@@ -530,10 +530,9 @@
     const agroHtml = presentAgroCats.length ? `
       <div class="cat-section">
         <div class="cat-title">🏪 Agro-Dealers</div>
-        ${presentAgroCats.map(cat => `
-          <div class="cat-subtitle">${EMOJI[cat] || '📦'} ${cat}</div>
-          <div class="products-grid">${byCategory[cat].map(p => productCardHTML(p)).join('')}</div>
-        `).join('')}
+        <div class="products-grid">
+          ${presentAgroCats.flatMap(cat => (byCategory[cat] || []).map(p => productCardHTML(p))).join('')}
+        </div>
       </div>` : '';
     container.innerHTML = normalHtml + agroHtml;
   }

@@ -1977,16 +1977,13 @@ function exitSuperUser() {
       const section = document.createElement('div');
       section.className = 'category-section';
       section.innerHTML = `<div class="category-label">🏪 Agro-Dealers</div>`;
+      // Combine agro-dealer categories into one grid so items render in true rows.
+      const grid = document.createElement('div');
+      grid.className = 'products-grid';
       presentAgro.forEach(cat => {
-        const subtitle = document.createElement('div');
-        subtitle.style.cssText = 'font-size:.78rem;color:var(--muted);font-weight:600;margin:8px 0 10px;';
-        subtitle.textContent = `${categoryEmoji[cat]||'📦'} ${cat}`;
-        const grid = document.createElement('div');
-        grid.className = 'products-grid';
-        byCategory[cat].forEach(p => grid.appendChild(buildProductCard(p)));
-        section.appendChild(subtitle);
-        section.appendChild(grid);
+        (byCategory[cat] || []).forEach(p => grid.appendChild(buildProductCard(p)));
       });
+      section.appendChild(grid);
       container.appendChild(section);
     }
   }

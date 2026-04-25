@@ -733,7 +733,8 @@
         if (!res.ok) throw new Error();
         allAdminUsers = await res.json();
         buildUserFilters(allAdminUsers);
-        verificationQueueUsers = allAdminUsers.filter(isVerificationActionable);
+        // Verification Queue should show ALL users; filtering is handled by the UI controls.
+        verificationQueueUsers = allAdminUsers.slice();
         verificationPage = 0;
         renderUsersTable(allAdminUsers);
         renderVerificationTable();
@@ -966,7 +967,7 @@
         return true;
       });
       if (!users.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px;">No pending or rejected verification items</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:28px;">No users match these filters</td></tr>';
         document.getElementById('verification-page-label').textContent = 'Page 1';
         document.getElementById('verification-prev-btn').disabled = true;
         document.getElementById('verification-next-btn').disabled = true;
