@@ -4,14 +4,39 @@ Product routes for Phase 3
 from flask import Blueprint, request, jsonify
 from models.product import Product
 from models.farmer_profile import FarmerProfile
-from utils.cloudinary_service import upload_base64_image
+from utils.cloudinary_service import upload_base64_image, delete_image
 from auth.admin_auth import decode_token_if_admin
 from utils.profile_verification_display import effective_verification_badge
 import logging
+import re
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
 products_bp = Blueprint('products', __name__, url_prefix='/api/products')
+
+def _cloudinary_public_id_from_url(url):
+    """Extract Cloudinary public_id from a delivery URL."""
+    if not url or 'res.cloudinary.com' not in str(url):
+        return None
+    try:
+        parsed = urlparse(str(url))
+        parts = [p for p in parsed.path.split('/') if p]
+        if 'upload' not in parts:
+            return None
+        upload_idx = parts.index('upload')
+        public_parts = parts[upload_idx + 1:]
+        if public_parts and re.match(r'^v\\d+$', public_parts[0]):
+            public_parts = public_parts[1:]
+        if not public_parts:
+            return None
+        filename = public_parts[-1]
+        if '.' in filename:
+            filename = filename.rsplit('.', 1)[0]
+        public_parts[-1] = filename
+        return '/'.join(public_parts)
+    except Exception:
+        return None
 
 def get_farmer_profile_id(firebase_uid):
     """
@@ -544,7 +569,8 @@ def update_product(product_id):
         if str(product['farmer_profile_id']) != str(farmer_profile_id):
             return jsonify({'error': 'Unauthorized'}), 403
         
-        # Handle image update if provided
+        # Handle image update if provided (replace + attempt to delete old Cloudinary asset)
+        old_image_url = product.get('image_url')
         if data.get('image'):
             upload_result = upload_base64_image(
                 data.get('image'),
@@ -560,6 +586,15 @@ def update_product(product_id):
         updated_product = Product.update_product(product_id, **update_data)
         
         if updated_product:
+            # Best-effort cleanup: delete previous Cloudinary asset if image was replaced
+            try:
+                new_url = update_data.get('image_url')
+                if new_url and old_image_url and str(new_url) != str(old_image_url):
+                    public_id = _cloudinary_public_id_from_url(old_image_url)
+                    if public_id:
+                        delete_image(public_id)
+            except Exception as cleanup_exc:
+                logger.warning(f"Cloudinary cleanup failed (non-fatal): {cleanup_exc}")
             product_dict = dict(updated_product)
             product_dict['id'] = str(product_dict['id'])
             product_dict['farmer_profile_id'] = str(product_dict['farmer_profile_id'])
