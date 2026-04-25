@@ -1891,6 +1891,7 @@ function exitSuperUser() {
       writeFeaturedCache(featuredTickerProducts);
     } catch (e) {
       featuredTickerProducts = [];
+      writeFeaturedCache([]);
     }
   }
 
@@ -2012,7 +2013,6 @@ function exitSuperUser() {
         <div class="product-meta"><span>Min. order: ${p.min_order||1} ${p.measurement_metric||''}</span><span>👁 ${p.views||0} views</span></div>
       </div>
       <div class="product-footer">
-        <div class="star-rating">⭐⭐⭐⭐☆ <span style="color:var(--muted);font-size:.7rem;">(${p.orders||0} orders)</span></div>
         <div style="display:flex;gap:8px;align-items:center;">
           <button class="btn btn-outline btn-sm" onclick="addToCart('${p.id}', null, this)">Add</button>
           <button class="btn btn-primary btn-sm" onclick="viewProductDetails('${p.id}', this)">View →</button>
@@ -2820,7 +2820,12 @@ function exitSuperUser() {
         loadProducts();
         startProductPolling();
         if (typeof onFeaturedTickerChanged === 'function') {
-          onFeaturedTickerChanged(() => { loadFeaturedTickerRows().then(() => renderLiveTicker(featuredTickerProducts)); });
+          onFeaturedTickerChanged(() => {
+            featuredTickerProducts = [];
+            writeFeaturedCache([]);
+            renderLiveTicker([]);
+            loadFeaturedTickerRows().then(() => renderLiveTicker(featuredTickerProducts));
+          });
         }
         refreshCartBadge();
         if (window.SokoSupportCenter) {
@@ -2860,7 +2865,12 @@ function exitSuperUser() {
       loadProducts();
       if (!profileLocked) startProductPolling();
       if (typeof onFeaturedTickerChanged === 'function') {
-        onFeaturedTickerChanged(() => { loadFeaturedTickerRows().then(() => renderLiveTicker(featuredTickerProducts)); });
+        onFeaturedTickerChanged(() => {
+          featuredTickerProducts = [];
+          writeFeaturedCache([]);
+          renderLiveTicker([]);
+          loadFeaturedTickerRows().then(() => renderLiveTicker(featuredTickerProducts));
+        });
       }
       refreshCartBadge();
       if (window.SokoSupportCenter) {

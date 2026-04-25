@@ -418,6 +418,8 @@
       writeFeaturedCache(featuredProducts);
     } catch (e) {
       featuredProducts = [];
+      // Authoritative safety: do not keep showing old cached items if we can't validate.
+      writeFeaturedCache([]);
     }
   }
 
@@ -593,9 +595,10 @@
     startMarketplacePolling();
     if (window.onFeaturedTickerChanged) {
       onFeaturedTickerChanged(function () {
-        loadFeaturedProducts().then(function () {
-          renderProductTicker(featuredProducts);
-        });
+        featuredProducts = [];
+        writeFeaturedCache([]);
+        renderProductTicker([]);
+        loadFeaturedProducts().then(function () { renderProductTicker(featuredProducts); });
       });
     }
   });

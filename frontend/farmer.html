@@ -412,6 +412,44 @@
     .form-group textarea { resize: vertical; min-height: 90px; }
     .form-hint { font-size: .72rem; color: var(--muted); margin-top: 2px; }
 
+    /* ════════════════════════════════════
+       CROPS / LIVESTOCK PICKERS (mobile friendly)
+    ════════════════════════════════════ */
+    .pick-card{
+      background:#fff;border:1.5px solid var(--border);border-radius:14px;
+      padding:12px;box-shadow:var(--shadow-sm);
+    }
+    .pick-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
+    .pick-title{font-weight:800;color:var(--forest);font-size:.86rem;}
+    .pick-sub{color:var(--muted);font-size:.74rem;margin-top:2px;line-height:1.5;}
+    .pick-search{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+    .pick-search input{
+      flex:1;min-width:210px;height:42px;border-radius:10px;border:1.5px solid var(--border);
+      padding:0 12px;font-size:.86rem;font-family:'DM Sans',sans-serif;background:var(--cream);outline:none;
+    }
+    .pick-search input:focus{border-color:var(--leaf);background:#fff;box-shadow:0 0 0 3px rgba(64,145,108,.1);}
+    .pick-search .btn{height:42px;padding:0 14px;}
+    .pill-grid{display:flex;flex-wrap:wrap;gap:8px;}
+    .pick-pill{
+      border:1.5px solid var(--border);background:#fff;color:var(--ink);
+      padding:6px 12px;border-radius:999px;font-weight:700;font-size:.78rem;
+      cursor:pointer;transition:all .15s;
+    }
+    .pick-pill:hover{border-color:var(--leaf);color:var(--leaf);transform:translateY(-1px);}
+    .pick-pill.active{background:rgba(116,198,157,.18);border-color:var(--leaf);color:var(--forest);}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:7px 10px;border-radius:999px;background:rgba(64,145,108,.12);
+      border:1.5px solid rgba(64,145,108,.25);color:var(--forest);font-weight:800;font-size:.78rem;
+    }
+    .chip button{
+      width:22px;height:22px;border-radius:50%;border:none;cursor:pointer;
+      background:rgba(27,67,50,.12);color:var(--forest);font-weight:900;line-height:1;
+    }
+    .chip button:hover{background:rgba(27,67,50,.18);}
+    .pick-note{margin-top:10px;font-size:.72rem;color:var(--muted);line-height:1.5;}
+
     /* Profile tabs */
     .profile-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 24px; overflow-x: auto; }
     .profile-tab-btn {
@@ -1219,31 +1257,45 @@ function exitSuperUser() {
             <div class="form-group"><label>Ward</label><input type="text" id="ward" name="ward" placeholder="e.g., Kasarani Ward" /></div>
             <div class="form-group"><label>Farm Size (Acres)</label><input type="number" id="farm-size" name="farm_size_acres" step="0.01" min="0" placeholder="e.g., 5.5" /></div>
             <div class="form-group form-full">
-              <label>Crops (hold Ctrl/Cmd for multiple)</label>
-              <div style="border:1.5px solid var(--border);border-radius:10px;padding:10px;background:var(--cream);">
-              <select id="crops-select" multiple style="min-height:125px;background:#fff;">
-                <option value="Maize">Maize</option><option value="Wheat">Wheat</option><option value="Rice">Rice</option><option value="Beans">Beans</option><option value="Potatoes">Potatoes</option><option value="Tomatoes">Tomatoes</option><option value="Onions">Onions</option><option value="Cabbage">Cabbage</option><option value="Carrots">Carrots</option><option value="Bananas">Bananas</option><option value="Coffee">Coffee</option><option value="Tea">Tea</option><option value="Sugarcane">Sugarcane</option><option value="Avocado">Avocado</option><option value="Mangoes">Mangoes</option>
-              </select>
+              <div class="pick-card" id="cropsPicker">
+                <div class="pick-head">
+                  <div>
+                    <div class="pick-title">Crops</div>
+                    <div class="pick-sub">Tap to select. Add your own crop if it’s not listed.</div>
+                  </div>
+                </div>
+                <select id="crops-select" multiple style="display:none;">
+                  <option value="Maize">Maize</option><option value="Wheat">Wheat</option><option value="Rice">Rice</option><option value="Beans">Beans</option><option value="Potatoes">Potatoes</option><option value="Tomatoes">Tomatoes</option><option value="Onions">Onions</option><option value="Cabbage">Cabbage</option><option value="Carrots">Carrots</option><option value="Bananas">Bananas</option><option value="Coffee">Coffee</option><option value="Tea">Tea</option><option value="Sugarcane">Sugarcane</option><option value="Avocado">Avocado</option><option value="Mangoes">Mangoes</option>
+                </select>
+                <div class="pick-search">
+                  <input type="text" id="crop-custom" placeholder="Search or add a crop (e.g., Kale)" oninput="filterPicker('crops', this.value)" />
+                  <button type="button" class="btn btn-outline btn-sm" onclick="addCustomCrop()">Add</button>
+                </div>
+                <div class="pill-grid" id="crops-pill-grid"></div>
+                <div class="chips" id="selected-crops"></div>
+                <div class="pick-note">Tip: You can select multiple items.</div>
               </div>
-              <div style="display:flex;gap:8px;margin-top:8px;">
-                <input type="text" id="crop-custom" placeholder="Add custom crop…" style="flex:1;" />
-                <button type="button" class="btn btn-outline btn-sm" onclick="addCustomCrop()">Add</button>
-              </div>
-              <div id="selected-crops" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
               <input type="hidden" id="crops" name="crops" />
             </div>
             <div class="form-group form-full">
-              <label>Livestock (hold Ctrl/Cmd for multiple)</label>
-              <div style="border:1.5px solid var(--border);border-radius:10px;padding:10px;background:var(--cream);">
-              <select id="livestock-select" multiple style="min-height:125px;background:#fff;">
-                <option value="Cattle">Cattle</option><option value="Goats">Goats</option><option value="Sheep">Sheep</option><option value="Pigs">Pigs</option><option value="Chickens">Chickens</option><option value="Ducks">Ducks</option><option value="Rabbits">Rabbits</option><option value="Fish">Fish</option><option value="Bees">Bees</option>
-              </select>
+              <div class="pick-card" id="livestockPicker">
+                <div class="pick-head">
+                  <div>
+                    <div class="pick-title">Livestock</div>
+                    <div class="pick-sub">Tap to select. Add your own livestock if it’s not listed.</div>
+                  </div>
+                </div>
+                <select id="livestock-select" multiple style="display:none;">
+                  <option value="Cattle">Cattle</option><option value="Goats">Goats</option><option value="Sheep">Sheep</option><option value="Pigs">Pigs</option><option value="Chickens">Chickens</option><option value="Ducks">Ducks</option><option value="Rabbits">Rabbits</option><option value="Fish">Fish</option><option value="Bees">Bees</option>
+                </select>
+                <div class="pick-search">
+                  <input type="text" id="livestock-custom" placeholder="Search or add livestock (e.g., Donkeys)" oninput="filterPicker('livestock', this.value)" />
+                  <button type="button" class="btn btn-outline btn-sm" onclick="addCustomLivestock()">Add</button>
+                </div>
+                <div class="pill-grid" id="livestock-pill-grid"></div>
+                <div class="chips" id="selected-livestock"></div>
+                <div class="pick-note">Tip: You can select multiple items.</div>
               </div>
-              <div style="display:flex;gap:8px;margin-top:8px;">
-                <input type="text" id="livestock-custom" placeholder="Add custom livestock…" style="flex:1;" />
-                <button type="button" class="btn btn-outline btn-sm" onclick="addCustomLivestock()">Add</button>
-              </div>
-              <div id="selected-livestock" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
               <input type="hidden" id="livestock" name="livestock" />
             </div>
             <div class="form-group form-full">
@@ -3514,6 +3566,51 @@ function exitSuperUser() {
   }
 
   /* ── Crops & livestock ── */
+  function escText(s){ return String(s||'').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+  function buildPickerPills(type) {
+    const sel = document.getElementById(type === 'crops' ? 'crops-select' : 'livestock-select');
+    const grid = document.getElementById(type === 'crops' ? 'crops-pill-grid' : 'livestock-pill-grid');
+    if (!sel || !grid) return;
+    grid.innerHTML = '';
+    Array.from(sel.options).forEach(opt => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'pick-pill';
+      b.dataset.value = opt.value;
+      b.dataset.type = type;
+      b.innerHTML = escText(opt.value);
+      b.onclick = function() {
+        opt.selected = !opt.selected;
+        if (type === 'crops') updateCropsDisplay();
+        else updateLivestockDisplay();
+      };
+      grid.appendChild(b);
+    });
+  }
+
+  function syncPillActive(type) {
+    const sel = document.getElementById(type === 'crops' ? 'crops-select' : 'livestock-select');
+    const grid = document.getElementById(type === 'crops' ? 'crops-pill-grid' : 'livestock-pill-grid');
+    if (!sel || !grid) return;
+    const selected = new Set(Array.from(sel.selectedOptions).map(o => o.value));
+    Array.from(grid.querySelectorAll('.pick-pill')).forEach(p => {
+      const v = p.dataset.value;
+      if (selected.has(v)) p.classList.add('active');
+      else p.classList.remove('active');
+    });
+  }
+
+  function filterPicker(type, q) {
+    const grid = document.getElementById(type === 'crops' ? 'crops-pill-grid' : 'livestock-pill-grid');
+    if (!grid) return;
+    const term = String(q || '').toLowerCase().trim();
+    Array.from(grid.querySelectorAll('.pick-pill')).forEach(p => {
+      const show = !term || String(p.dataset.value || '').toLowerCase().includes(term);
+      p.style.display = show ? '' : 'none';
+    });
+  }
+
   function updateCropsDisplay() {
     const sel = document.getElementById('crops-select');
     const hid = document.getElementById('crops');
@@ -3523,16 +3620,17 @@ function exitSuperUser() {
     const div = document.getElementById('selected-crops');
     div.innerHTML = '';
     all.forEach(c => {
-      const span = document.createElement('span');
-      span.style.cssText = 'padding:6px 12px;background:#e6f6ee;color:#1b5e3b;border:1px solid #9ad7b4;border-radius:999px;font-size:.78rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;';
-      span.textContent = c;
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.innerHTML = `<span>${escText(c)}</span>`;
       const x = document.createElement('button');
       x.textContent='×'; x.type='button';
-      x.style.cssText='background:#1b5e3b;border:none;color:#fff;cursor:pointer;border-radius:50%;width:18px;height:18px;font-size:12px;line-height:1;padding:0;';
       x.onclick = () => removeCrop(c);
-      span.appendChild(x); div.appendChild(span);
+      chip.appendChild(x);
+      div.appendChild(chip);
     });
     hid.value = JSON.stringify(custom.filter(c => !Array.from(sel.selectedOptions).map(o=>o.value).includes(c)));
+    syncPillActive('crops');
   }
   function addCustomCrop() {
     const inp = document.getElementById('crop-custom');
@@ -3540,8 +3638,19 @@ function exitSuperUser() {
     if (!v) return;
     const hid = document.getElementById('crops');
     const arr = hid.value ? JSON.parse(hid.value) : [];
-    if (!arr.includes(v)) { arr.push(v); hid.value = JSON.stringify(arr); updateCropsDisplay(); }
+    const sel = document.getElementById('crops-select');
+    if (sel && !Array.from(sel.options).some(o => String(o.value).toLowerCase() === v.toLowerCase())) {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v; o.selected = true;
+      sel.appendChild(o);
+      buildPickerPills('crops');
+    } else if (sel) {
+      Array.from(sel.options).forEach(o => { if (String(o.value).toLowerCase() === v.toLowerCase()) o.selected = true; });
+    }
+    if (!arr.includes(v)) { arr.push(v); hid.value = JSON.stringify(arr); }
+    updateCropsDisplay();
     inp.value = '';
+    filterPicker('crops', '');
   }
   function removeCrop(c) {
     const sel = document.getElementById('crops-select');
@@ -3560,16 +3669,17 @@ function exitSuperUser() {
     const div = document.getElementById('selected-livestock');
     div.innerHTML = '';
     all.forEach(l => {
-      const span = document.createElement('span');
-      span.style.cssText = 'padding:6px 12px;background:#eef3ff;color:#233876;border:1px solid #b6c4ff;border-radius:999px;font-size:.78rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;';
-      span.textContent = l;
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.innerHTML = `<span>${escText(l)}</span>`;
       const x = document.createElement('button');
       x.textContent='×'; x.type='button';
-      x.style.cssText='background:#233876;border:none;color:#fff;cursor:pointer;border-radius:50%;width:18px;height:18px;font-size:12px;line-height:1;padding:0;';
       x.onclick = () => removeLivestock(l);
-      span.appendChild(x); div.appendChild(span);
+      chip.appendChild(x);
+      div.appendChild(chip);
     });
     hid.value = JSON.stringify(custom.filter(l => !Array.from(sel.selectedOptions).map(o=>o.value).includes(l)));
+    syncPillActive('livestock');
   }
   function addCustomLivestock() {
     const inp = document.getElementById('livestock-custom');
@@ -3577,8 +3687,19 @@ function exitSuperUser() {
     if (!v) return;
     const hid = document.getElementById('livestock');
     const arr = hid.value ? JSON.parse(hid.value) : [];
-    if (!arr.includes(v)) { arr.push(v); hid.value = JSON.stringify(arr); updateLivestockDisplay(); }
+    const sel = document.getElementById('livestock-select');
+    if (sel && !Array.from(sel.options).some(o => String(o.value).toLowerCase() === v.toLowerCase())) {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v; o.selected = true;
+      sel.appendChild(o);
+      buildPickerPills('livestock');
+    } else if (sel) {
+      Array.from(sel.options).forEach(o => { if (String(o.value).toLowerCase() === v.toLowerCase()) o.selected = true; });
+    }
+    if (!arr.includes(v)) { arr.push(v); hid.value = JSON.stringify(arr); }
+    updateLivestockDisplay();
     inp.value = '';
+    filterPicker('livestock', '');
   }
   function removeLivestock(l) {
     const sel = document.getElementById('livestock-select');
@@ -3591,6 +3712,10 @@ function exitSuperUser() {
 
   document.getElementById('crops-select').addEventListener('change', updateCropsDisplay);
   document.getElementById('livestock-select').addEventListener('change', updateLivestockDisplay);
+  buildPickerPills('crops');
+  buildPickerPills('livestock');
+  updateCropsDisplay();
+  updateLivestockDisplay();
 
   // Show an input when category == "Other"
   (function(){
@@ -3698,6 +3823,7 @@ function exitSuperUser() {
       try { localStorage.setItem(FEATURED_CACHE_KEY, JSON.stringify(featuredTickerProducts)); } catch(e) {}
     } catch (e) {
       featuredTickerProducts = [];
+      try { localStorage.setItem(FEATURED_CACHE_KEY, JSON.stringify([])); } catch(e2) {}
     }
   }
 
@@ -4030,6 +4156,9 @@ function exitSuperUser() {
         }, 250);
         if (typeof onFeaturedTickerChanged === 'function') {
           onFeaturedTickerChanged(function () {
+            featuredTickerProducts = [];
+            try { localStorage.setItem(FEATURED_CACHE_KEY, JSON.stringify([])); } catch(e) {}
+            renderAgroDealerTicker([]);
             loadFeaturedTickerRows().then(function () { renderAgroDealerTicker(featuredTickerProducts); });
           });
         }
@@ -4075,6 +4204,9 @@ function exitSuperUser() {
 
       if (typeof onFeaturedTickerChanged === 'function') {
         onFeaturedTickerChanged(function () {
+          featuredTickerProducts = [];
+          try { localStorage.setItem(FEATURED_CACHE_KEY, JSON.stringify([])); } catch(e) {}
+          renderAgroDealerTicker([]);
           loadFeaturedTickerRows().then(function () { renderAgroDealerTicker(featuredTickerProducts); });
         });
       }

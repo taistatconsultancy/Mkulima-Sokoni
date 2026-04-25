@@ -341,9 +341,10 @@
         </div>
         
         <div class="form-group">
-          <div class="picker-card">
-            <div class="picker-label">Crops (hold Ctrl/Cmd for multiple)</div>
-            <select id="crops-select" class="picker-select" multiple>
+          <div class="picker-card" style="background:#fff;border:1.5px solid #e5e7eb;border-radius:14px;padding:12px;">
+            <div style="font-weight:800;color:#14532d;font-size:.95rem;">Crops</div>
+            <div style="color:#6b7280;font-size:.82rem;margin-top:2px;line-height:1.4;">Tap to select. Add your own crop if it’s not listed.</div>
+            <select id="crops-select" class="picker-select" multiple style="display:none;">
             <option value="Maize">Maize</option>
             <option value="Wheat">Wheat</option>
             <option value="Rice">Rice</option>
@@ -360,19 +361,21 @@
             <option value="Avocado">Avocado</option>
             <option value="Mangoes">Mangoes</option>
             </select>
-          </div>
-          <div style="display: flex; gap: 8px; margin-top: 8px;">
-            <input type="text" id="crop-custom" placeholder="Add custom crop (e.g., Kale)" style="flex: 1;">
-            <button type="button" onclick="addCustomCrop()" style="padding: 0.75rem 1.5rem; background: #27AE60; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Add</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+              <input type="text" id="crop-custom" placeholder="Search or add a crop (e.g., Kale)" style="flex:1;min-width:210px;padding:.7rem .85rem;border:1.5px solid #e5e7eb;border-radius:10px;background:#f9fafb;outline:none;" oninput="filterPicker('crops', this.value)" />
+              <button type="button" onclick="addCustomCrop()" style="height:42px;padding:0 14px; background: transparent; color: #14532d; border: 1.5px solid #14532d; border-radius: 999px; cursor: pointer; font-weight: 800;">Add</button>
+            </div>
+            <div id="crops-pill-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
           </div>
           <div id="selected-crops" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
           <input type="hidden" id="crops" name="crops">
         </div>
         
         <div class="form-group">
-          <div class="picker-card">
-            <div class="picker-label">Livestock (hold Ctrl/Cmd for multiple)</div>
-            <select id="livestock-select" class="picker-select" multiple>
+          <div class="picker-card" style="background:#fff;border:1.5px solid #e5e7eb;border-radius:14px;padding:12px;">
+            <div style="font-weight:800;color:#14532d;font-size:.95rem;">Livestock</div>
+            <div style="color:#6b7280;font-size:.82rem;margin-top:2px;line-height:1.4;">Tap to select. Add your own livestock if it’s not listed.</div>
+            <select id="livestock-select" class="picker-select" multiple style="display:none;">
             <option value="Cattle">Cattle</option>
             <option value="Goats">Goats</option>
             <option value="Sheep">Sheep</option>
@@ -384,10 +387,11 @@
             <option value="Fish">Fish</option>
             <option value="Bees">Bees</option>
             </select>
-          </div>
-          <div style="display: flex; gap: 8px; margin-top: 8px;">
-            <input type="text" id="livestock-custom" placeholder="Add custom livestock (e.g., Donkeys)" style="flex: 1;">
-            <button type="button" onclick="addCustomLivestock()" style="padding: 0.75rem 1.5rem; background: #27AE60; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Add</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+              <input type="text" id="livestock-custom" placeholder="Search or add livestock (e.g., Donkeys)" style="flex:1;min-width:210px;padding:.7rem .85rem;border:1.5px solid #e5e7eb;border-radius:10px;background:#f9fafb;outline:none;" oninput="filterPicker('livestock', this.value)" />
+              <button type="button" onclick="addCustomLivestock()" style="height:42px;padding:0 14px; background: transparent; color: #14532d; border: 1.5px solid #14532d; border-radius: 999px; cursor: pointer; font-weight: 800;">Add</button>
+            </div>
+            <div id="livestock-pill-grid" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
           </div>
           <div id="selected-livestock" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;"></div>
           <input type="hidden" id="livestock" name="livestock">
@@ -490,6 +494,50 @@
       });
     }
     
+    function escText(s){ return String(s||'').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+    function buildPickerPills(type) {
+      const sel = document.getElementById(type === 'crops' ? 'crops-select' : 'livestock-select');
+      const grid = document.getElementById(type === 'crops' ? 'crops-pill-grid' : 'livestock-pill-grid');
+      if (!sel || !grid) return;
+      grid.innerHTML = '';
+      Array.from(sel.options).forEach(opt => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.dataset.value = opt.value;
+        b.style.cssText = 'border:1.5px solid #e5e7eb;background:#fff;color:#111827;padding:6px 12px;border-radius:999px;font-weight:800;font-size:.78rem;cursor:pointer;transition:all .15s;';
+        b.textContent = opt.value;
+        b.onclick = function() {
+          opt.selected = !opt.selected;
+          if (type === 'crops') updateCropsDisplay();
+          else updateLivestockDisplay();
+        };
+        grid.appendChild(b);
+      });
+    }
+
+    function syncPillActive(type) {
+      const sel = document.getElementById(type === 'crops' ? 'crops-select' : 'livestock-select');
+      const grid = document.getElementById(type === 'crops' ? 'crops-pill-grid' : 'livestock-pill-grid');
+      if (!sel || !grid) return;
+      const selected = new Set(Array.from(sel.selectedOptions).map(o => o.value));
+      Array.from(grid.children).forEach(p => {
+        const v = p.dataset.value;
+        if (selected.has(v)) p.style.cssText = 'border:1.5px solid #27AE60;background:rgba(39,174,96,.12);color:#14532d;padding:6px 12px;border-radius:999px;font-weight:800;font-size:.78rem;cursor:pointer;transition:all .15s;';
+        else p.style.cssText = 'border:1.5px solid #e5e7eb;background:#fff;color:#111827;padding:6px 12px;border-radius:999px;font-weight:800;font-size:.78rem;cursor:pointer;transition:all .15s;';
+      });
+    }
+
+    function filterPicker(type, q) {
+      const grid = document.getElementById(type === 'crops' ? 'crops-pill-grid' : 'livestock-pill-grid');
+      if (!grid) return;
+      const term = String(q || '').toLowerCase().trim();
+      Array.from(grid.children).forEach(p => {
+        const show = !term || String(p.dataset.value || '').toLowerCase().includes(term);
+        p.style.display = show ? '' : 'none';
+      });
+    }
+
     // Update crops display
     function updateCropsDisplay() {
       const cropsSelect = document.getElementById('crops-select');
@@ -503,12 +551,12 @@
       
       allCrops.forEach(crop => {
         const badge = document.createElement('span');
-        badge.textContent = crop;
-        badge.style.cssText = 'padding: 6px 12px; background: #27AE60; color: white; border-radius: 20px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;';
+        badge.style.cssText = 'padding: 7px 10px; background: rgba(39,174,96,.12); color: #14532d; border: 1.5px solid rgba(39,174,96,.25); border-radius: 999px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 8px; font-weight: 800;';
+        badge.innerHTML = `<span>${escText(crop)}</span>`;
         
         const removeBtn = document.createElement('button');
         removeBtn.textContent = '×';
-        removeBtn.style.cssText = 'background: rgba(255,255,255,0.3); border: none; color: white; cursor: pointer; border-radius: 50%; width: 20px; height: 20px; font-size: 16px; line-height: 1; padding: 0;';
+        removeBtn.style.cssText = 'background: rgba(20,83,45,0.12); border: none; color: #14532d; cursor: pointer; border-radius: 50%; width: 22px; height: 22px; font-size: 16px; line-height: 1; padding: 0; font-weight: 900;';
         removeBtn.onclick = () => removeCrop(crop);
         badge.appendChild(removeBtn);
         
@@ -516,6 +564,7 @@
       });
       
       cropsHidden.value = JSON.stringify(customCrops);
+      syncPillActive('crops');
     }
     
     // Update livestock display
@@ -531,12 +580,12 @@
       
       allLivestock.forEach(livestock => {
         const badge = document.createElement('span');
-        badge.textContent = livestock;
-        badge.style.cssText = 'padding: 6px 12px; background: #27AE60; color: white; border-radius: 20px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px;';
+        badge.style.cssText = 'padding: 7px 10px; background: rgba(39,174,96,.12); color: #14532d; border: 1.5px solid rgba(39,174,96,.25); border-radius: 999px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 8px; font-weight: 800;';
+        badge.innerHTML = `<span>${escText(livestock)}</span>`;
         
         const removeBtn = document.createElement('button');
         removeBtn.textContent = '×';
-        removeBtn.style.cssText = 'background: rgba(255,255,255,0.3); border: none; color: white; cursor: pointer; border-radius: 50%; width: 20px; height: 20px; font-size: 16px; line-height: 1; padding: 0;';
+        removeBtn.style.cssText = 'background: rgba(20,83,45,0.12); border: none; color: #14532d; cursor: pointer; border-radius: 50%; width: 22px; height: 22px; font-size: 16px; line-height: 1; padding: 0; font-weight: 900;';
         removeBtn.onclick = () => removeLivestock(livestock);
         badge.appendChild(removeBtn);
         
@@ -544,6 +593,7 @@
       });
       
       livestockHidden.value = JSON.stringify(customLivestock);
+      syncPillActive('livestock');
     }
     
     // Add custom crop
@@ -554,13 +604,23 @@
         const cropsSelect = document.getElementById('crops-select');
         const cropsHidden = document.getElementById('crops');
         const customCrops = cropsHidden.value ? JSON.parse(cropsHidden.value) : [];
-        
-        if (!customCrops.includes(crop) && !Array.from(cropsSelect.options).some(opt => opt.value === crop)) {
+
+        if (!Array.from(cropsSelect.options).some(opt => String(opt.value).toLowerCase() === crop.toLowerCase())) {
+          const o = document.createElement('option');
+          o.value = crop; o.textContent = crop; o.selected = true;
+          cropsSelect.appendChild(o);
+          buildPickerPills('crops');
+        } else {
+          Array.from(cropsSelect.options).forEach(opt => { if (String(opt.value).toLowerCase() === crop.toLowerCase()) opt.selected = true; });
+        }
+
+        if (!customCrops.includes(crop)) {
           customCrops.push(crop);
           cropsHidden.value = JSON.stringify(customCrops);
-          updateCropsDisplay();
         }
+        updateCropsDisplay();
         input.value = '';
+        filterPicker('crops','');
       }
     }
     
@@ -595,13 +655,23 @@
         const livestockSelect = document.getElementById('livestock-select');
         const livestockHidden = document.getElementById('livestock');
         const customLivestock = livestockHidden.value ? JSON.parse(livestockHidden.value) : [];
-        
-        if (!customLivestock.includes(livestock) && !Array.from(livestockSelect.options).some(opt => opt.value === livestock)) {
+
+        if (!Array.from(livestockSelect.options).some(opt => String(opt.value).toLowerCase() === livestock.toLowerCase())) {
+          const o = document.createElement('option');
+          o.value = livestock; o.textContent = livestock; o.selected = true;
+          livestockSelect.appendChild(o);
+          buildPickerPills('livestock');
+        } else {
+          Array.from(livestockSelect.options).forEach(opt => { if (String(opt.value).toLowerCase() === livestock.toLowerCase()) opt.selected = true; });
+        }
+
+        if (!customLivestock.includes(livestock)) {
           customLivestock.push(livestock);
           livestockHidden.value = JSON.stringify(customLivestock);
-          updateLivestockDisplay();
         }
+        updateLivestockDisplay();
         input.value = '';
+        filterPicker('livestock','');
       }
     }
     
@@ -958,6 +1028,11 @@
       if (livestockSelect) {
         livestockSelect.addEventListener('change', updateLivestockDisplay);
       }
+
+      buildPickerPills('crops');
+      buildPickerPills('livestock');
+      updateCropsDisplay();
+      updateLivestockDisplay();
       
       // Handle referral source "Other" option
       const referralSource = document.getElementById('referral-source');

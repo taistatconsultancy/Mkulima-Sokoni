@@ -808,6 +808,7 @@ async function loadFeaturedTickerRows() {
     writeFeaturedCache(featuredTickerProducts);
   } catch (e) {
     featuredTickerProducts = [];
+    writeFeaturedCache([]);
   }
 }
 
@@ -1093,6 +1094,9 @@ async function init() {
   }
   if (typeof onFeaturedTickerChanged === 'function') {
     onFeaturedTickerChanged(() => {
+      featuredTickerProducts = [];
+      writeFeaturedCache([]);
+      renderTicker([]);
       loadFeaturedTickerRows().then(() => renderTicker(featuredTickerProducts));
     });
   }
