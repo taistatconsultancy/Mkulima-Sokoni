@@ -46,6 +46,8 @@ def run_migration(phase='all'):
             migrations.append('012_normalize_profile_verification_statuses.sql')
         if phase == 'all' or phase == '13':
             migrations.append('013_add_farmer_profile_geo.sql')
+        if phase == 'all' or phase == '14':
+            migrations.append('014_add_phone_sharing_controls.sql')
         
         # Connect to database
         print("Connecting to Neon Database...")
@@ -131,6 +133,8 @@ if __name__ == '__main__':
         print("Phase 12: Normalize profile verification statuses")
     elif phase == '13':
         print("Phase 13: Add farmer profile geo (lat/lng)")
+    elif phase == '14':
+        print("Phase 14: Add phone sharing controls")
     else:
         print("All Phases")
     print("=" * 50)

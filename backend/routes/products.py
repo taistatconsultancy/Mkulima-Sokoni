@@ -432,8 +432,9 @@ def get_product_detail(product_id):
                        u.first_name,
                        u.last_name,
                        u.email,
-                       u.phone_number,
                        u.firebase_uid,
+                       COALESCE(u.phone_sharing_enabled, FALSE) AS phone_sharing_enabled,
+                       (u.phone_terms_accepted_at IS NOT NULL) AS phone_terms_accepted,
                        u.created_at AS member_since
                 FROM farmer_profiles fp
                 INNER JOIN users u ON fp.user_id = u.id
@@ -451,6 +452,8 @@ def get_product_detail(product_id):
                     and str(seller.get('seller_national_id') or '').strip()
                 )
                 seller.pop('seller_national_id', None)
+                # Never expose phone numbers in public product detail payload.
+                seller.pop('phone_number', None)
                 seller['certification_status_db'] = cert
                 seller['certification_status'] = effective_verification_badge(cert, profile_complete)
                 seller['is_verified'] = seller['certification_status'] == 'verified'

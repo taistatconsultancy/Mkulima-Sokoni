@@ -99,6 +99,11 @@ def _email_base_html(title: str, preheader: str, body_html: str) -> str:
     brand = os.getenv("SMTP_FROM_NAME", "Mkulima Sokoni").strip() or "Mkulima Sokoni"
     landing = _landing_url()
     support_href = f"{landing}#support" if landing else ""
+    support_html = (
+        f"or visit the <a href='{support_href}' style='color:#1B4332;font-weight:700;text-decoration:none;'>support page</a>."
+        if support_href
+        else "or visit the app support section."
+    )
     pre = (preheader or "").strip()
     safe_pre = pre.replace("<", "&lt;").replace(">", "&gt;")
     return f"""\
@@ -122,7 +127,7 @@ def _email_base_html(title: str, preheader: str, body_html: str) -> str:
       <div style="padding:16px 22px;border-top:1px solid #e5e7eb;background:#f9fafb;color:#6b7280;font-size:12px;line-height:1.5;">
         <div>
           Need help? Reply to this email
-          {('or visit the <a href=\"' + support_href + '\" style=\"color:#1B4332;font-weight:700;text-decoration:none;\">support page</a>.') if support_href else 'or visit the app support section.'}
+          {support_html}
         </div>
       </div>
     </div>

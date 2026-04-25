@@ -468,7 +468,8 @@ def get_farmer_profile(firebase_uid):
         profile_dict = dict(profile) if hasattr(profile, 'keys') else profile
         profile_dict['user'] = {
             'email': profile_dict.get('email'),
-            'phone_number': profile_dict.get('phone_number')
+            # Do not expose phone numbers on public profile endpoints.
+            'phone_number': None
         }
         # Remove email and phone_number from main profile (they're in user object)
         profile_dict.pop('email', None)
@@ -656,7 +657,8 @@ def get_buyer_profile(firebase_uid):
         profile_dict = dict(profile) if hasattr(profile, 'keys') else profile
         profile_dict['user'] = {
             'email': profile_dict.get('email'),
-            'phone_number': profile_dict.get('phone_number')
+            # Do not expose phone numbers on public profile endpoints.
+            'phone_number': None
         }
         # Remove email and phone_number from main profile (they're in user object)
         profile_dict.pop('email', None)
@@ -709,7 +711,8 @@ def get_user_profiles(firebase_uid):
             'profiles': profiles,
             'user': {
                 'email': user['email'],
-                'phone_number': user.get('phone_number')
+                # Do not expose phone numbers on public endpoints.
+                'phone_number': None
             }
         }), 200
         

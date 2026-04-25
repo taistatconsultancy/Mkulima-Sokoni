@@ -181,6 +181,76 @@ class User:
         except Exception as e:
             logger.error(f"Error getting user: {str(e)}")
             raise
+
+    @staticmethod
+    def get_phone_sharing_status(firebase_uid: str):
+        """
+        Get the user's phone number + phone sharing flags.
+        """
+        try:
+            query = """
+                SELECT
+                    phone_number,
+                    COALESCE(phone_sharing_enabled, FALSE) AS phone_sharing_enabled,
+                    phone_terms_accepted_at
+                FROM users
+                WHERE firebase_uid = %s
+                LIMIT 1
+            """
+            row = execute_query(query, (firebase_uid,), fetch_one=True)
+            if not row:
+                return None
+            return dict(row)
+        except Exception as e:
+            logger.error(f"Error get_phone_sharing_status: {str(e)}")
+            raise
+
+    @staticmethod
+    def update_phone_sharing_settings(
+        firebase_uid: str,
+        *,
+        phone_number: str | None = None,
+        accept_terms: bool | None = None,
+        enable_sharing: bool | None = None,
+    ):
+        """
+        Update phone number, terms acceptance timestamp, and sharing toggle.
+        - If accept_terms is True: set phone_terms_accepted_at = CURRENT_TIMESTAMP
+        - If accept_terms is False: do not clear acceptance by default (use revoke toggle for sharing)
+        - If enable_sharing is provided: set phone_sharing_enabled accordingly
+        """
+        try:
+            fields = []
+            params = []
+
+            if phone_number is not None:
+                fields.append("phone_number = %s")
+                params.append(phone_number)
+
+            if accept_terms is True:
+                fields.append("phone_terms_accepted_at = CURRENT_TIMESTAMP")
+
+            if enable_sharing is not None:
+                fields.append("phone_sharing_enabled = %s")
+                params.append(bool(enable_sharing))
+
+            if not fields:
+                return User.get_phone_sharing_status(firebase_uid)
+
+            params.append(firebase_uid)
+            query = f"""
+                UPDATE users
+                SET {', '.join(fields)}
+                WHERE firebase_uid = %s
+                RETURNING phone_number,
+                          COALESCE(phone_sharing_enabled, FALSE) AS phone_sharing_enabled,
+                          phone_terms_accepted_at
+            """
+            row = execute_query(query, tuple(params), fetch_one=True)
+            return dict(row) if row else None
+        except Exception as e:
+            logger.error(f"Error update_phone_sharing_settings: {str(e)}")
+            raise
     
     @staticmethod
     def get_user_by_id(user_id):

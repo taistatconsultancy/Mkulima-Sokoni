@@ -22,6 +22,7 @@ from routes.chat import chat_bp
 from routes.cart import cart_bp
 from routes.orders import orders_bp
 from routes.tenders import tenders_bp
+from routes.phone_sharing import phone_bp
 from asgiref.wsgi import WsgiToAsgi
 import logging
 import os
@@ -74,6 +75,7 @@ app.register_blueprint(chat_bp)
 app.register_blueprint(cart_bp)
 app.register_blueprint(orders_bp)
 app.register_blueprint(tenders_bp)
+app.register_blueprint(phone_bp)
 
 @app.route('/api/health')
 def health():
