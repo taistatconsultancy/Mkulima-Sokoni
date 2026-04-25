@@ -145,6 +145,102 @@ def extract_user_id(user):
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
+
+def _normalize_role_slug(raw):
+    s = str(raw or '').strip().lower().replace(' ', '')
+    if s == 'agrodealer':
+        return 'agro-dealer'
+    return s
+
+
+def _resolved_role_slugs_for_user(user):
+    """
+    Authoritative roles from DB: users.role (CSV) plus user_roles junction.
+    Matches logic used elsewhere (e.g. tenders/cart).
+    """
+    if not user:
+        return []
+    slugs = set()
+    for part in str(user.get('role') or '').split(','):
+        n = _normalize_role_slug(part)
+        if n:
+            slugs.add(n)
+    user_id = extract_user_id(user)
+    if user_id:
+        try:
+            for r in User.get_user_roles(user_id) or []:
+                n = _normalize_role_slug(r)
+                if n:
+                    slugs.add(n)
+        except Exception as exc:
+            logger.warning('get_user_roles failed in _resolved_role_slugs_for_user: %s', exc)
+    priority = ['admin', 'farmer', 'agro-dealer', 'buyer']
+    ordered = [x for x in priority if x in slugs]
+    rest = sorted(slugs - set(priority))
+    return ordered + rest
+
+
+def _first_dashboard_for_slugs(slugs):
+    """Same dashboard priority as frontend auth.html."""
+    sset = set(slugs or [])
+    order = [
+        ('admin', 'admin-support.html'),
+        ('farmer', 'farmer.html'),
+        ('agro-dealer', 'agro-dealer.html'),
+        ('buyer', 'buyer.html'),
+    ]
+    for slug, page in order:
+        if slug in sset:
+            return page
+    return 'index.html'
+
+
+@auth_bp.route('/verify-dashboard-session', methods=['POST'])
+def verify_dashboard_session():
+    """
+    Authoritative dashboard access: verifies Firebase ID token, loads user from DB,
+    returns resolved roles. Cannot be satisfied by editing localStorage alone.
+    Body JSON: { id_token, dashboard: 'farmer'|'buyer'|'agro-dealer' }
+    """
+    try:
+        data = request.get_json() or {}
+        id_token = data.get('id_token')
+        dashboard = _normalize_role_slug(data.get('dashboard'))
+
+        if not id_token:
+            return jsonify({'error': 'id_token is required'}), 400
+        if dashboard not in ('farmer', 'buyer', 'agro-dealer'):
+            return jsonify({'error': 'Invalid dashboard'}), 400
+
+        decoded = verify_firebase_token(id_token)
+        if not decoded:
+            return jsonify({'error': 'Invalid or expired token'}), 401
+
+        firebase_uid = (decoded.get('uid') or '').strip()
+        if not firebase_uid:
+            return jsonify({'error': 'Invalid token payload'}), 401
+
+        user = User.get_user_by_firebase_uid(firebase_uid)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        roles = _resolved_role_slugs_for_user(user)
+        allowed = dashboard in set(roles)
+        role_csv = ','.join(roles) if roles else (user.get('role') or '')
+        redirect = _first_dashboard_for_slugs(roles)
+
+        return jsonify({
+            'success': True,
+            'roles': roles,
+            'role': role_csv,
+            'allowed': allowed,
+            'redirect': redirect,
+        }), 200
+    except Exception as e:
+        logger.error('verify_dashboard_session: %s', e, exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
 @auth_bp.route('/register', methods=['POST'])
 def register():
     """

@@ -13,6 +13,7 @@
     window.si = window.si || function () { (window.si.q = window.si.q || []).push(arguments) };
   </script>
   <script defer src="/_vercel/speed-insights/script.js"></script>
+  <script type="module" src="js/dashboard-session-guard.mjs"></script>
   <style>
     :root {
       --forest:#1B4332;--leaf:#40916C;--lime:#74C69D;--gold:#E9C46A;
@@ -186,6 +187,18 @@
     .mk-pagination button:disabled{opacity:.4;cursor:not-allowed;}
 
     .img-preview{max-width:100%;max-height:200px;border-radius:10px;margin-top:8px;display:none;border:2px solid var(--border);}
+    .img-preview.show{display:block;}
+
+    /* Modals (aligned with farmer.html) */
+    .modal-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.55);z-index:9999;}
+    .modal-overlay.active{display:flex;}
+    .modal-box{background:#fff;border-radius:16px;width:min(720px,100%);max-height:90vh;overflow:auto;border:1.5px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,.22);}
+    .modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--cream);}
+    .modal-head h2{margin:0;font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--forest);}
+    .modal-close{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border);background:#fff;cursor:pointer;font-size:18px;font-weight:900;}
+    .modal-body{padding:16px;}
+    .modal-foot{padding:14px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;background:#fff;}
+    .spinner-sm{width:14px;height:14px;border:2px solid rgba(255,255,255,.55);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;display:inline-block;}
     .chat-shell { display:grid; grid-template-columns:320px 1fr; gap:14px; min-height:520px; }
     .chat-list { background:#fff; border:1.5px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; }
     .chat-list-head { padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--cream); }
@@ -494,6 +507,111 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
   </div>
 </div>
 
+<!-- ════════════════════════════
+     EDIT PRODUCT MODAL (Agro-dealer)
+════════════════════════════ -->
+<div id="editDealerProductModal" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>✏️ Edit Product</h2>
+      <button class="modal-close" onclick="closeEditDealerProductModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="editDealerProductForm">
+        <input type="hidden" id="edit-dealer-product-id" />
+        <div class="form-grid">
+          <div class="form-group form-full">
+            <label>Product Name *</label>
+            <input type="text" id="edit-ap-name" required />
+          </div>
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="edit-ap-category" required onchange="syncAgroUnitsByCategoryEdit()">
+              <option value="">Select category</option>
+              <option value="Seeds">Seeds</option>
+              <option value="Seedlings">Seedlings</option>
+              <option value="Fertilizer">Fertilizer</option>
+              <option value="Fertilizers">Fertilizers</option>
+              <option value="Pesticides">Pesticides</option>
+              <option value="Herbicides">Herbicides</option>
+              <option value="Insecticides">Insecticides</option>
+              <option value="Machinery">Machinery</option>
+              <option value="Rent a Machinery">Rent a Machinery</option>
+              <option value="Farm Equipment">Farm Equipment</option>
+              <option value="Irrigation">Irrigation</option>
+              <option value="Animal Feed">Animal Feed</option>
+              <option value="Veterinary">Veterinary</option>
+              <option value="Agro Chemicals">Agro Chemicals</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Price (KSh) *</label>
+            <input type="number" id="edit-ap-price" min="1" required />
+          </div>
+          <div class="form-group">
+            <label>Quantity Available *</label>
+            <input type="number" id="edit-ap-qty" min="1" required />
+          </div>
+          <div class="form-group">
+            <label>Unit *</label>
+            <select id="edit-ap-unit" required></select>
+          </div>
+          <div class="form-group">
+            <label>Location / County *</label>
+            <input type="text" id="edit-ap-location" required />
+          </div>
+          <div class="form-group form-full">
+            <label>Description *</label>
+            <textarea id="edit-ap-desc" required></textarea>
+          </div>
+          <div class="form-group form-full">
+            <label>Current / New Image</label>
+            <label class="file-label" for="edit-ap-image">📷 Click to upload a new image<br><span style="font-size:.72rem;">PNG, JPG up to 5MB</span></label>
+            <input type="file" id="edit-ap-image" accept="image/*" style="display:none;" />
+            <img id="edit-ap-preview" class="img-preview" alt="Preview" />
+            <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+              <button type="button" class="btn-sm" onclick="triggerEditDealerImagePick()">Re-upload / Replace image</button>
+            </div>
+            <div class="form-hint">If you don’t upload a new image, the current image stays. Use <strong>landscape</strong> photos (portrait may crop).</div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn-sm" onclick="closeEditDealerProductModal()" id="cancelEditDealerBtn">Cancel</button>
+      <button type="button" class="btn-sm solid" onclick="submitEditDealerProductForm()" id="saveEditDealerBtn">
+        <span id="saveEditDealerBtnText">Save Changes</span>
+        <span id="saveEditDealerBtnSpinner" style="display:none;"><span class="spinner-sm"></span></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     PRODUCT STATUS MODAL (Agro-dealer)
+════════════════════════════ -->
+<div id="dealerProductStatusModal" class="modal-overlay" onclick="if(event.target===this) closeDealerStatusModal()">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>⚙️ Update Status</h2>
+      <button class="modal-close" onclick="closeDealerStatusModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-weight:800;color:var(--forest);margin-bottom:8px;" id="dealerStatusModalTitle">Product</div>
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:14px;">Choose what you want to do with this product.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn-sm solid" onclick="dealerConfirmStatusChange('active')">Activate</button>
+        <button class="btn-sm" style="border:1.5px solid #ef4444;color:#ef4444;background:#fff;" onclick="dealerConfirmStatusChange('sold_out')">Mark Sold Out</button>
+        <button class="btn-sm" onclick="dealerConfirmStatusChange('draft')">Save as Draft</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button type="button" class="btn-sm" onclick="closeDealerStatusModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── ORDERS ── -->
 <div id="orders" class="page-section">
   <div class="wrap">
@@ -705,6 +823,46 @@ let mkPage = 0;
 const MK_PER_PAGE = 12;
 const PRODUCTS_CACHE_KEY = 'soko_products_cache_v1';
 const FEATURED_CACHE_KEY = 'soko_featured_cache_v1';
+
+async function parseJsonResponse(res) {
+  const text = await res.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch (_) {
+    throw new Error('Unexpected response from server. Please try again.');
+  }
+}
+
+function applyDealerProductServerPatch(updated) {
+  if (!updated || updated.id == null) return;
+  const uid = firebaseUid;
+  const id = String(updated.id);
+  const idx = (myProducts || []).findIndex(p => String(p.id) === id);
+  if (idx >= 0) myProducts[idx] = { ...myProducts[idx], ...updated };
+  else myProducts.push(updated);
+  const grid = document.getElementById('inv-grid');
+  if (grid) renderDealerProducts(grid, myProducts);
+  if (uid) {
+    try {
+      sessionStorage.setItem('dealerMyProductsCache:' + uid, JSON.stringify(myProducts));
+    } catch (_) {}
+  }
+  const mi = (allMarketProducts || []).findIndex(p => String(p.id) === id);
+  if (mi >= 0 && allMarketProducts[mi]) {
+    allMarketProducts[mi] = { ...allMarketProducts[mi], ...updated };
+  }
+}
+
+function readOptionalImageDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve(null);
+    const r = new FileReader();
+    r.onload = e => resolve(e.target.result);
+    r.onerror = () => reject(new Error('Could not read image'));
+    r.readAsDataURL(file);
+  });
+}
 
 function readFeaturedCache() {
   try {
@@ -1264,6 +1422,8 @@ function renderDealerProducts(grid, products) {
   grid.innerHTML = myProducts.slice().sort((a,b) => new Date(b.created_at) - new Date(a.created_at)).map(function(p) {
     const emoji = EMOJI[p.category] || '📦';
     const price = productPriceText(p);
+    const status = String(p.status || 'active').toLowerCase();
+    const statusBtn = `<button class="btn-sm" onclick="openDealerStatusModal('${p.id}')">${status === 'sold_out' ? 'Restock / Status' : 'Status'}</button>`;
     return `<div class="inv-card">
       <div class="inv-card-img">${p.image_url ? `<img src="${p.image_url}" alt="${p.name}"/>` : `<span style="font-size:48px;">${emoji}</span>`}</div>
       <div class="inv-card-body">
@@ -1281,10 +1441,39 @@ function renderDealerProducts(grid, products) {
           ${p.status==='draft'?`<button class="btn-sm" onclick="activateProduct('${p.id}')">Publish</button>`:''}
           <button class="btn-sm" onclick="editDealerProduct('${p.id}')">Edit</button>
           <a href="product-detail.html?id=${p.id}" class="btn-sm" style="text-decoration:none;">View</a>
+          ${statusBtn}
         </div>
       </div>
     </div>`;
   }).join('');
+}
+
+function getDealerProductName(pid) {
+  const p = getDealerProductById(pid);
+  return p ? (p.name || 'Unnamed') : 'Product';
+}
+
+/* ── Status modal (same UX as farmer) ── */
+let dealerStatusModalProductId = null;
+function openDealerStatusModal(productId) {
+  dealerStatusModalProductId = productId;
+  const title = document.getElementById('dealerStatusModalTitle');
+  if (title) title.textContent = `Product: ${getDealerProductName(productId)}`;
+  const m = document.getElementById('dealerProductStatusModal');
+  if (m) m.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeDealerStatusModal() {
+  const m = document.getElementById('dealerProductStatusModal');
+  if (m) m.classList.remove('active');
+  document.body.style.overflow = '';
+  dealerStatusModalProductId = null;
+}
+async function dealerConfirmStatusChange(status) {
+  const id = dealerStatusModalProductId;
+  closeDealerStatusModal();
+  if (!id) return;
+  await updateDealerProductStatus(id, status);
 }
 
 function getDealerProductById(id) {
@@ -1294,24 +1483,156 @@ function getDealerProductById(id) {
 function editDealerProduct(id) {
   const p = getDealerProductById(id);
   if (!p) { uiAlert('Could not find product. Please refresh.', 'Product missing'); return; }
-  // Reuse the add-product form as an "edit" surface (quick + reliable).
-  showPage('inventory');
+  openEditDealerProductModal(p);
+}
+
+function openEditDealerProductModal(p) {
+  document.getElementById('edit-dealer-product-id').value = p.id || '';
+  document.getElementById('edit-ap-name').value = p.name || '';
+  document.getElementById('edit-ap-category').value = p.category || '';
+  syncAgroUnitsByCategoryEdit();
+  document.getElementById('edit-ap-price').value = p.price != null ? p.price : '';
+  document.getElementById('edit-ap-qty').value = p.quantity != null ? p.quantity : '';
+  document.getElementById('edit-ap-unit').value = p.measurement_metric || 'Kg';
+  document.getElementById('edit-ap-location').value = p.location || '';
+  document.getElementById('edit-ap-desc').value = p.description || '';
+
+  // show existing image immediately
+  const prev = document.getElementById('edit-ap-preview');
+  const file = document.getElementById('edit-ap-image');
+  if (file) file.value = '';
+  if (prev) {
+    if (p.image_url) {
+      prev.src = p.image_url;
+      prev.classList.add('show');
+    } else {
+      prev.removeAttribute('src');
+      prev.classList.remove('show');
+    }
+  }
+
+  document.getElementById('editDealerProductModal').classList.add('active');
+}
+
+function closeEditDealerProductModal() {
+  document.getElementById('editDealerProductModal').classList.remove('active');
+  try { document.getElementById('editDealerProductForm').reset(); } catch(e) {}
+  const prev = document.getElementById('edit-ap-preview');
+  if (prev) prev.classList.remove('show');
+}
+
+function triggerEditDealerImagePick() {
+  const inp = document.getElementById('edit-ap-image');
+  if (inp) inp.click();
+}
+
+function setEditDealerSaving(on) {
+  const btn = document.getElementById('saveEditDealerBtn');
+  const txt = document.getElementById('saveEditDealerBtnText');
+  const sp = document.getElementById('saveEditDealerBtnSpinner');
+  const cancel = document.getElementById('cancelEditDealerBtn');
+  if (btn) btn.disabled = on;
+  if (cancel) cancel.disabled = on;
+  if (txt) txt.textContent = on ? 'Saving…' : 'Save Changes';
+  if (sp) sp.style.display = on ? 'inline-flex' : 'none';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('editDealerProductModal');
+  if (modal) modal.addEventListener('click', function(e) {
+    if (e.target === e.currentTarget) closeEditDealerProductModal();
+  });
+  const img = document.getElementById('edit-ap-image');
+  if (img) img.addEventListener('change', function(e) {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = function(ev) {
+      const prev = document.getElementById('edit-ap-preview');
+      if (!prev) return;
+      prev.src = ev.target.result;
+      prev.classList.add('show');
+    };
+    r.readAsDataURL(f);
+  });
+});
+
+function syncAgroUnitsByCategoryEdit() {
+  var cat = (document.getElementById('edit-ap-category')?.value || '').toLowerCase();
+  var unit = document.getElementById('edit-ap-unit');
+  if (!unit) return;
+  var opts = (cat === 'rent a machinery')
+    ? ['Hour', 'Day', 'Week', 'Month']
+    : ['Kg', 'Bag', 'Litre', 'Piece', 'Pack', 'Tonne', 'Tray', 'Sachet', 'Bottle', 'Acre', 'Metre'];
+  unit.innerHTML = opts.map(function(o){ return '<option value="' + o + '">' + o + '</option>'; }).join('');
+}
+
+async function submitEditDealerProductForm() {
+  if (!firebaseUid) { await uiAlert('Please sign in first.', 'Sign in required'); return; }
+  if (profileLocked) { await uiAlert('Complete your profile before editing products.', 'Complete profile'); return; }
+  if (agroAccountRejected) { await uiAlert('Your account is rejected. Contact support before editing listings.', 'Account rejected'); return; }
+
+  const form = document.getElementById('editDealerProductForm');
+  if (!form.checkValidity()) { form.reportValidity(); return; }
+
+  const id = document.getElementById('edit-dealer-product-id').value;
+  if (!id) { await uiAlert('Missing product id', 'Update failed'); return; }
+
+  setEditDealerSaving(true);
+
+  const imageFile = document.getElementById('edit-ap-image').files[0] || null;
+
   try {
-    document.getElementById('ap-name').value = p.name || '';
-    document.getElementById('ap-category').value = p.category || '';
-    syncAgroUnitsByCategory();
-    document.getElementById('ap-price').value = p.price != null ? p.price : '';
-    document.getElementById('ap-qty').value = p.quantity || '';
-    document.getElementById('ap-unit').value = p.measurement_metric || 'Kg';
-    document.getElementById('ap-location').value = p.location || '';
-    document.getElementById('ap-desc').value = p.description || '';
-    // store editing id
-    sessionStorage.setItem('dealer_edit_product_id', String(p.id));
-    window.SokoUI?.toast('Editing product. Update fields then click Publish/Draft to save changes.', 'success');
-    // scroll to form
-    const form = document.getElementById('addProductForm');
-    if (form && form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  } catch (e) {}
+    const imageData = await readOptionalImageDataUrl(imageFile);
+    const data = {
+      firebase_uid: firebaseUid,
+      name: document.getElementById('edit-ap-name').value.trim(),
+      category: document.getElementById('edit-ap-category').value,
+      product_type: 'farm',
+      location: document.getElementById('edit-ap-location').value.trim(),
+      county: document.getElementById('edit-ap-location').value.trim(),
+      measurement_metric: document.getElementById('edit-ap-unit').value,
+      quantity: parseInt(document.getElementById('edit-ap-qty').value || '0', 10),
+      min_order: 1,
+      price: parseFloat(document.getElementById('edit-ap-price').value || '0'),
+      description: document.getElementById('edit-ap-desc').value.trim(),
+    };
+    if (imageData) data.image = imageData;
+
+    const res = await fetch(`${API}/products/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+    const result = await parseJsonResponse(res);
+    if (!res.ok) throw new Error(result.error || 'Failed to update product');
+
+    applyDealerProductServerPatch(result);
+    if (window.SokoMarketplaceSync) window.SokoMarketplaceSync.invalidate();
+    void loadMyProducts();
+    void loadMarketplace();
+    closeEditDealerProductModal();
+    window.SokoUI?.toast('Product updated successfully!', 'success');
+  } catch (e) {
+    await uiAlert(e.message || 'Update failed', 'Update failed');
+  } finally {
+    setEditDealerSaving(false);
+  }
+}
+
+async function updateDealerProductStatus(pid, status) {
+  if (!firebaseUid) return;
+  try {
+    await apiJson(`${API}/products/${encodeURIComponent(pid)}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ firebase_uid: firebaseUid, status })
+    });
+    loadMyProducts();
+    loadMarketplace();
+    if (window.SokoMarketplaceSync) window.SokoMarketplaceSync.invalidate();
+  } catch (e) {
+    await uiAlert(e.message || 'Failed to update status', 'Status update failed');
+  }
 }
 
 async function activateProduct(pid) {
@@ -1360,8 +1681,7 @@ async function submitProduct(status) {
   if (!form.checkValidity()) { form.reportValidity(); return; }
 
   const imageFile = document.getElementById('ap-image').files[0];
-  const editingId = sessionStorage.getItem('dealer_edit_product_id') || '';
-  if (!imageFile && !editingId && status === 'active') { await uiAlert('Please select a product image.', 'Image required'); return; }
+  if (!imageFile && status === 'active') { await uiAlert('Please select a product image.', 'Image required'); return; }
 
   const btn = document.getElementById('ap-submit-btn');
   btn.disabled = true;
@@ -1393,23 +1713,17 @@ async function submitProduct(status) {
       status: status
     };
 
-    // If editing, do PUT /products/:id. Otherwise create via POST /products
-    const isEdit = !!editingId;
-    const url = isEdit ? `${API}/products/${encodeURIComponent(editingId)}` : `${API}/products`;
-    const method = isEdit ? 'PUT' : 'POST';
-    if (!imageData) delete data.image; // don't overwrite existing image when not provided
-    const res = await fetch(url, {
-      method: method,
+    const res = await fetch(`${API}/products`, {
+      method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(data)
     });
     const result = await res.json();
-    if (!res.ok) throw new Error(result.error || (isEdit ? 'Failed to update product' : 'Failed to create product'));
+    if (!res.ok) throw new Error(result.error || 'Failed to create product');
 
-    window.SokoUI?.toast(isEdit ? 'Product updated successfully!' : (status === 'active' ? 'Product published to marketplace!' : 'Product saved as draft!'), 'success');
+    window.SokoUI?.toast(status === 'active' ? 'Product published to marketplace!' : 'Product saved as draft!', 'success');
     form.reset();
     document.getElementById('ap-preview').style.display = 'none';
-    sessionStorage.removeItem('dealer_edit_product_id');
     loadMyProducts();
     loadMarketplace();
     if (window.SokoMarketplaceSync) window.SokoMarketplaceSync.invalidate();

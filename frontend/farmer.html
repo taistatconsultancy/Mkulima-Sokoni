@@ -14,6 +14,7 @@
     window.si = window.si || function () { (window.si.q = window.si.q || []).push(arguments) };
   </script>
   <script defer src="/_vercel/speed-insights/script.js"></script>
+  <script type="module" src="js/dashboard-session-guard.mjs"></script>
 
   <style>
     /* ── DESIGN TOKENS (matches index.html) ── */
@@ -1525,6 +1526,9 @@ function exitSuperUser() {
           <label class="file-label" for="edit-product-image">📷 Click to upload a new image<br><span style="font-size:.72rem;">PNG, JPG up to 5MB</span></label>
           <input type="file" id="edit-product-image" accept="image/*" style="display:none;" />
           <img id="edit-image-preview" class="img-preview" alt="Preview" />
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="triggerEditProductImagePick()">Re-upload / Replace image</button>
+          </div>
           <div class="form-hint">Leave empty to keep the current image. Use <strong>landscape</strong> photos (portrait may crop).</div>
         </div>
       </form>
@@ -2386,6 +2390,53 @@ function exitSuperUser() {
   /* ── Load products ── */
   let myProducts = [];
 
+  async function parseJsonResponse(res) {
+    const text = await res.text();
+    if (!text) return {};
+    try {
+      return JSON.parse(text);
+    } catch (_) {
+      throw new Error('Unexpected response from server. Please try again.');
+    }
+  }
+
+  function applyFarmerMyProductServerPatch(updated) {
+    if (!updated || updated.id == null) return;
+    const userStr = localStorage.getItem('user');
+    let uid = '';
+    try {
+      const user = userStr ? JSON.parse(userStr) : {};
+      uid = user.firebase_uid || user.id || '';
+    } catch (_) {}
+    const id = String(updated.id);
+    const idx = (myProducts || []).findIndex(p => String(p.id) === id);
+    if (idx >= 0) myProducts[idx] = { ...myProducts[idx], ...updated };
+    else myProducts.push(updated);
+    const grid = document.getElementById('products-grid');
+    if (grid) renderMyProducts(grid, myProducts);
+    if (uid) {
+      const cacheKey = 'farmerMyProductsCache:' + uid;
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(myProducts));
+        localStorage.setItem(cacheKey, JSON.stringify(myProducts));
+      } catch (_) {}
+    }
+    const mi = (allMarketProducts || []).findIndex(p => String(p.id) === id);
+    if (mi >= 0 && allMarketProducts[mi]) {
+      allMarketProducts[mi] = { ...allMarketProducts[mi], ...updated };
+    }
+  }
+
+  function readOptionalImageDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      if (!file) return resolve(null);
+      const r = new FileReader();
+      r.onload = e => resolve(e.target.result);
+      r.onerror = () => reject(new Error('Could not read image'));
+      r.readAsDataURL(file);
+    });
+  }
+
   async function loadProducts() {
     const grid = document.getElementById('products-grid');
     const loading = document.getElementById('products-loading');
@@ -2649,9 +2700,21 @@ function exitSuperUser() {
     const img = document.getElementById('edit-product-image');
     if (img) img.value = '';
     const prev = document.getElementById('edit-image-preview');
-    if (prev) prev.classList.remove('show');
+    if (prev) {
+      if (p.image_url) {
+        prev.src = p.image_url;
+        prev.classList.add('show');
+      } else {
+        prev.classList.remove('show');
+      }
+    }
 
     openEditProductModal();
+  }
+
+  function triggerEditProductImagePick() {
+    const inp = document.getElementById('edit-product-image');
+    if (inp) inp.click();
   }
 
   document.getElementById('editProductModal').addEventListener('click', e => {
@@ -2684,26 +2747,26 @@ function exitSuperUser() {
     const id = document.getElementById('edit-product-id').value;
     if (!id) { await uiAlert('Missing product id', 'Update failed'); return; }
 
-    setEditSaveLoading(true);
-    showLoading('Saving changes…', 'Updating product in database');
-
     const productType = document.querySelector('#editProductModal .type-toggle-btn.active').textContent.includes('Livestock') ? 'livestock' : 'farm';
     const imageFile = document.getElementById('edit-product-image').files[0] || null;
 
-    const doSave = async (imageBase64) => {
-      // Support custom category when user selects "Other"
+    setEditSaveLoading(true);
+    showLoading('Saving changes…', 'Updating product in database');
+
+    try {
+      const imageBase64 = await readOptionalImageDataUrl(imageFile);
+
       var selectedCategory = document.getElementById('edit-product-category').value;
       if (String(selectedCategory || '').toLowerCase() === 'other') {
         var otherVal = String(document.getElementById('edit-product-category-other')?.value || '').trim();
         if (!otherVal) {
-          hideLoading();
-          setEditSaveLoading(false);
           document.getElementById('edit-product-category-other')?.focus();
           await uiAlert('Please specify the product category when you select "Other".', 'Missing category');
           return;
         }
         selectedCategory = otherVal;
       }
+
       const data = {
         firebase_uid: firebaseUid,
         name: document.getElementById('edit-product-name').value,
@@ -2734,35 +2797,20 @@ function exitSuperUser() {
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify(data)
       });
-      const result = await res.json();
+      const result = await parseJsonResponse(res);
       if (!res.ok) throw new Error(result.error || 'Failed to update product');
 
-      await loadProducts();
-      await loadMarketplaceListings();
+      applyFarmerMyProductServerPatch(result);
       if (window.SokoMarketplaceSync) window.SokoMarketplaceSync.invalidate();
-      hideLoading();
+      void loadProducts();
+      void loadMarketplaceListings();
       closeEditProductModal();
       window.SokoUI?.toast('Product updated successfully!', 'success');
-    };
-
-    try {
-      if (imageFile) {
-        const reader = new FileReader();
-        reader.onload = async ev => {
-          try { await doSave(ev.target.result); }
-          catch (err) { hideLoading(); await uiAlert(err.message || 'Failed', 'Update failed'); }
-          finally { setEditSaveLoading(false); }
-        };
-        reader.onerror = async () => { setEditSaveLoading(false); hideLoading(); await uiAlert('Could not read image', 'Image error'); };
-        reader.readAsDataURL(imageFile);
-      } else {
-        await doSave(null);
-        setEditSaveLoading(false);
-      }
     } catch (err) {
-      setEditSaveLoading(false);
-      hideLoading();
       await uiAlert(err.message || 'Failed', 'Update failed');
+    } finally {
+      hideLoading();
+      setEditSaveLoading(false);
     }
   }
 
