@@ -47,9 +47,13 @@ async function main() {
   try {
     userStr = localStorage.getItem('user') || '';
   } catch (e) {
+    window.location.replace('index.html');
     return;
   }
-  if (!userStr.trim()) return;
+  if (!userStr.trim()) {
+    window.location.replace('index.html');
+    return;
+  }
 
   let cachedUser = null;
   try {

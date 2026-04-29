@@ -17,6 +17,36 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
+function apiBase() {
+  const h = window.location.hostname || '';
+  if (h === 'localhost' || h === '127.0.0.1' || h.indexOf('192.168.') === 0) {
+    return 'http://localhost:5000/api';
+  }
+  return '/api';
+}
+
+function showAdminDashboard() {
+  document.getElementById('loginGate').classList.add('hidden');
+  document.getElementById('adminPage').style.display = '';
+  if (typeof window.__bootstrapAdminDashboard === 'function') {
+    window.__bootstrapAdminDashboard();
+  }
+}
+
+function hideAdminDashboard() {
+  document.getElementById('loginGate').classList.remove('hidden');
+  document.getElementById('adminPage').style.display = 'none';
+  window.__adminSupportCenterInitialized = false;
+}
+
+async function verifyAdminOnBackend(user) {
+  const token = await user.getIdToken();
+  const res = await fetch(apiBase() + '/auth/admin/stats', {
+    headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+  });
+  return res.ok;
+}
+
 window.__getAdminIdToken = function () {
   return auth.currentUser ? auth.currentUser.getIdToken() : Promise.resolve(null);
 };
@@ -53,17 +83,28 @@ document.getElementById('adminLoginForm').addEventListener('submit', async funct
   }
 });
 
-onAuthStateChanged(auth, function (user) {
+onAuthStateChanged(auth, async function (user) {
   window.__adminUserEmail = user && user.email ? user.email : '';
-  if (user) {
-    document.getElementById('loginGate').classList.add('hidden');
-    document.getElementById('adminPage').style.display = '';
-    if (typeof window.__bootstrapAdminDashboard === 'function') {
-      window.__bootstrapAdminDashboard();
+  if (!user) {
+    hideAdminDashboard();
+    return;
+  }
+  try {
+    const allowed = await verifyAdminOnBackend(user);
+    if (!allowed) {
+      await signOut(auth);
+      var errEl = document.getElementById('loginError');
+      errEl.textContent = 'You do not have admin access.';
+      errEl.style.display = 'block';
+      hideAdminDashboard();
+      return;
     }
-  } else {
-    document.getElementById('loginGate').classList.remove('hidden');
-    document.getElementById('adminPage').style.display = 'none';
-    window.__adminSupportCenterInitialized = false;
+    showAdminDashboard();
+  } catch (e) {
+    console.warn('[admin-support] admin verification failed', e);
+    try {
+      await signOut(auth);
+    } catch (e2) { /* ignore */ }
+    hideAdminDashboard();
   }
 });
