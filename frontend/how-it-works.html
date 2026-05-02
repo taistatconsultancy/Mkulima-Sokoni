@@ -12,6 +12,13 @@
   <script>
     window.si = window.si || function () { (window.si.q = window.si.q || []).push(arguments) };
   </script>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#1B4332" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Mkulima Sokoni" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="/assets/img/logo.jpeg" />
   <script defer src="/_vercel/speed-insights/script.js"></script>
   <style>
     :root{--forest:#1B4332;--leaf:#40916C;--lime:#74C69D;--gold:#E9C46A;--cream:#FAF6EF;--ink:#1A1A18;--muted:#6B705C;--border:#DDD8CE;}
@@ -238,5 +245,6 @@ document.getElementById('yr').textContent=new Date().getFullYear();
   }catch(e){}
 })();
 </script>
+<script src="/js/pwa-install.js"></script>
 </body>
 </html>

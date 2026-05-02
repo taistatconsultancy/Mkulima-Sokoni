@@ -118,6 +118,49 @@ def favicon():
     )
 
 
+@app.route('/apple-touch-icon.png')
+@app.route('/apple-touch-icon-precomposed.png')
+def apple_touch_icon():
+    """iOS Add-to-Home-Screen icon — fall back to the brand logo."""
+    project_root = os.path.dirname(backend_dir)
+    frontend_dir = os.path.join(project_root, 'frontend')
+    return send_from_directory(
+        os.path.join(frontend_dir, 'assets', 'img'),
+        'logo.jpeg',
+        mimetype='image/jpeg',
+    )
+
+
+@app.route('/manifest.webmanifest')
+@app.route('/manifest.json')
+def pwa_manifest():
+    """Serve the root PWA manifest with the correct MIME type."""
+    fd = _frontend_dir()
+    fp = os.path.join(fd, 'manifest.webmanifest')
+    if not os.path.isfile(fp):
+        abort(404)
+    resp = send_from_directory(
+        fd, 'manifest.webmanifest', mimetype='application/manifest+json'
+    )
+    resp.headers['Cache-Control'] = 'public, max-age=600'
+    return resp
+
+
+@app.route('/sw.js')
+def pwa_service_worker():
+    """Serve the PWA service worker from the site root with full-site scope."""
+    fd = _frontend_dir()
+    fp = os.path.join(fd, 'sw.js')
+    if not os.path.isfile(fp):
+        abort(404)
+    resp = send_from_directory(
+        fd, 'sw.js', mimetype='application/javascript; charset=utf-8'
+    )
+    resp.headers['Service-Worker-Allowed'] = '/'
+    resp.headers['Cache-Control'] = 'no-cache'
+    return resp
+
+
 def _frontend_dir():
     project_root = os.path.dirname(backend_dir)
     return os.path.join(project_root, 'frontend')
@@ -171,6 +214,11 @@ _CLEAN_HTML_MAP = {
     'profile-buyer': 'profile-buyer.html',
     'seller-profile': 'seller-profile.html',
     'test-image-upload': 'test-image-upload.html',
+    'install': 'install.html',
+    'get-app': 'install.html',
+    'download': 'install.html',
+    'app': 'install.html',
+    'offline': 'offline.html',
 }
 
 

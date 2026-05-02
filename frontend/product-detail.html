@@ -4,14 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Product Detail | Mkulima sokoni</title>
-  <link rel="icon" type="image/jpeg" href="assets/img/logo.jpeg" />
-  <link rel="shortcut icon" type="image/jpeg" href="assets/img/logo.jpeg" />
+  <link rel="icon" type="image/jpeg" href="/assets/img/logo.jpeg" />
+  <link rel="shortcut icon" type="image/jpeg" href="/assets/img/logo.jpeg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <script>
     window.si = window.si || function () { (window.si.q = window.si.q || []).push(arguments) };
   </script>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#1B4332" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Mkulima Sokoni" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="/assets/img/logo.jpeg" />
   <script defer src="/_vercel/speed-insights/script.js"></script>
   <style>
     :root {
@@ -295,7 +302,7 @@
 
 <header class="topbar">
   <a href="/" class="logo">
-    <div class="logo-mark"><img src="assets/img/logo.jpeg" alt="Mkulima sokoni" /></div>
+    <div class="logo-mark"><img src="/assets/img/logo.jpeg" alt="Mkulima sokoni" width="36" height="36" decoding="async" /></div>
     <div class="logo-label"><strong>Mkulima sokoni</strong><span>From farm to market, fairly.</span></div>
   </a>
   <div class="topbar-actions">
@@ -365,7 +372,7 @@
   <div class="footer-grid">
     <div>
       <div class="footer-flogo">
-        <div class="footer-flogo-mark"><img src="assets/img/logo.jpeg" alt="Mkulima sokoni" /></div>
+        <div class="footer-flogo-mark"><img src="/assets/img/logo.jpeg" alt="Mkulima sokoni" width="100" height="100" decoding="async" /></div>
         <div class="footer-flogo-label"><strong>Mkulima sokoni</strong><span>From farm to market, fairly.</span></div>
       </div>
       <div class="footer-social"><a href="#">f</a><a href="#">𝕏</a><a href="#">💬</a><a href="#">📷</a></div>
@@ -381,7 +388,7 @@
   </div>
 </footer>
 
-<script src="js/ui-feedback.js"></script>
+<script src="/js/ui-feedback.js"></script>
 <script>
 document.getElementById('yr').textContent = new Date().getFullYear();
 
@@ -982,5 +989,6 @@ window.addEventListener('DOMContentLoaded', init);
   }catch(e){}
 })();
 </script>
+<script src="/js/pwa-install.js"></script>
 </body>
 </html>

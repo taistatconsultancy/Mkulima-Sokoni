@@ -21,7 +21,8 @@
           "@type": "ImageObject",
           "url": "https://www.mkulimasokoni.com/assets/img/logo.jpeg"
         },
-        "description": "Kenya's digital marketplace connecting farmers and buyers for fresh vegetables, fruits, and farm produce."
+        "description": "Kenya's digital marketplace connecting farmers and buyers for fresh vegetables, fruits, and farm produce.",
+        "email": "mkulimasokoni254@gmail.com"
       },
       {
         "@type": "WebSite",
@@ -34,8 +35,15 @@
     ]
   }
   </script>
-  <link rel="icon" type="image/jpeg" href="assets/img/logo.jpeg" />
-  <link rel="shortcut icon" type="image/jpeg" href="assets/img/logo.jpeg" />
+  <link rel="icon" type="image/jpeg" href="/assets/img/logo.jpeg" />
+  <link rel="shortcut icon" type="image/jpeg" href="/assets/img/logo.jpeg" />
+  <link rel="apple-touch-icon" href="/assets/img/logo.jpeg" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#1B4332" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Mkulima Sokoni" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -311,6 +319,7 @@
     <input id="productSearch" type="text" placeholder="Search products, counties…" />
   </div>
   <div class="topbar-actions">
+    <a class="topbar-btn" href="/install" id="topbarGetAppBtn" style="text-decoration:none;display:none;">📲 Get app</a>
     <button class="topbar-btn" onclick="location.href='/auth'">Sign In</button>
   </div>
 </header>
@@ -414,7 +423,7 @@
     <div class="support-contact-grid">
       <div class="contact-card">
         <div class="contact-card-icon">📧</div>
-        <div><h4>Email</h4><p>support@mkulimasokoni.ke</p></div>
+        <div><h4>Email</h4><p><a href="mailto:mkulimasokoni254@gmail.com" style="color:inherit;">mkulimasokoni254@gmail.com</a></p></div>
       </div>
       <div class="contact-card">
         <div class="contact-card-icon">📞</div>
@@ -526,6 +535,7 @@
         <li><a href="/how-it-works">How It Works</a></li>
         <li><a href="/market">Marketplace</a></li>
         <li><a href="/auth">Get Started</a></li>
+        <li><a href="/install">📲 Get the App</a></li>
       </ul>
     </div>
 
@@ -884,6 +894,22 @@
       }
     }catch(e){}
   })();
+
+  /* Show "Get app" topbar button when install is possible (Android Chrome / desktop Chrome). */
+  (function(){
+    function refresh(){
+      var btn = document.getElementById('topbarGetAppBtn');
+      if (!btn) return;
+      var canInstall = window.MkInstall && window.MkInstall.canInstall();
+      var installed = window.MkInstall && window.MkInstall.isInstalled();
+      var ios = window.MkInstall && window.MkInstall.isIOS();
+      btn.style.display = (!installed && (canInstall || ios)) ? '' : 'none';
+    }
+    window.addEventListener('mk:install:available', refresh);
+    window.addEventListener('mk:install:done', refresh);
+    setTimeout(refresh, 600);
+  })();
 </script>
+<script src="/js/pwa-install.js"></script>
 </body>
 </html>

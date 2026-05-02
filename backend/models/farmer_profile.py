@@ -9,7 +9,22 @@ logger = logging.getLogger(__name__)
 
 class FarmerProfile:
     """Farmer Profile model for storing farmer-specific information"""
-    
+
+    @staticmethod
+    def normalize_kenya_coords(lat, lng):
+        """
+        Fix accidental latitude/longitude swap (common when easting ~34–37 was saved as latitude).
+        Kenya mainland: lat roughly −5…6, lng roughly 33…42.
+        """
+        try:
+            la = float(lat)
+            ln = float(lng)
+        except (TypeError, ValueError):
+            return lat, lng
+        if 28.0 <= la <= 45.0 and -10.0 <= ln <= 12.0:
+            return ln, la
+        return la, ln
+
     @staticmethod
     def create_profile(user_id, farm_name=None, location=None, county=None, 
                       farm_size_acres=None, farming_experience_years=None,
@@ -216,30 +231,52 @@ class FarmerProfile:
             except Exception:
                 raise ValueError("Invalid lat/lng/radius_km")
             radius_f = max(1.0, min(500.0, radius_f))
+            lat_f, lng_f = FarmerProfile.normalize_kenya_coords(lat_f, lng_f)
 
-            # Haversine distance (km) in SQL, no PostGIS required.
+            # Haversine distance (km); normalize swapped lat/lng in DB before measuring.
             query = """
+                WITH fpw AS (
+                  SELECT
+                    u.firebase_uid,
+                    fp.farm_name,
+                    fp.location,
+                    fp.county,
+                    fp.profile_image_url,
+                    CASE
+                      WHEN fp.latitude BETWEEN 28 AND 45 AND fp.longitude BETWEEN -10 AND 12
+                      THEN fp.longitude
+                      ELSE fp.latitude
+                    END AS plat,
+                    CASE
+                      WHEN fp.latitude BETWEEN 28 AND 45 AND fp.longitude BETWEEN -10 AND 12
+                      THEN fp.latitude
+                      ELSE fp.longitude
+                    END AS plng
+                  FROM farmer_profiles fp
+                  JOIN users u ON u.id = fp.user_id
+                  WHERE fp.latitude IS NOT NULL
+                    AND fp.longitude IS NOT NULL
+                )
                 SELECT
-                  u.firebase_uid,
-                  fp.farm_name,
-                  fp.location,
-                  fp.county,
-                  fp.profile_image_url,
-                  fp.latitude,
-                  fp.longitude,
+                  firebase_uid,
+                  farm_name,
+                  location,
+                  county,
+                  profile_image_url,
+                  plat AS latitude,
+                  plng AS longitude,
                   (
                     6371 * 2 * ASIN(
                       SQRT(
-                        POWER(SIN(RADIANS(fp.latitude - %s) / 2), 2) +
-                        COS(RADIANS(%s)) * COS(RADIANS(fp.latitude)) *
-                        POWER(SIN(RADIANS(fp.longitude - %s) / 2), 2)
+                        LEAST(1.0,
+                          POWER(SIN(RADIANS(plat - %s)) / 2, 2) +
+                          COS(RADIANS(%s)) * COS(RADIANS(plat)) *
+                          POWER(SIN(RADIANS(plng - %s)) / 2, 2)
+                        )
                       )
                     )
                   ) AS distance_km
-                FROM farmer_profiles fp
-                JOIN users u ON u.id = fp.user_id
-                WHERE fp.latitude IS NOT NULL
-                  AND fp.longitude IS NOT NULL
+                FROM fpw
                 ORDER BY distance_km ASC
                 LIMIT %s
             """

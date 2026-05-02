@@ -16,6 +16,13 @@
   <script>
     window.si = window.si || function () { (window.si.q = window.si.q || []).push(arguments) };
   </script>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#1B4332" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Mkulima Sokoni" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="/assets/img/logo.jpeg" />
   <script defer src="/_vercel/speed-insights/script.js"></script>
   <script type="module" src="js/dashboard-session-guard.mjs"></script>
 
@@ -933,7 +940,7 @@ function exitSuperUser() {
       <div class="panel-title">Get in Touch</div>
       <div style="height:12px;"></div>
       <div class="contact-grid">
-        <div class="contact-card"><div class="contact-icon">📧</div><div><h4>Email</h4><p>support@mkulimasokoni.ke</p></div></div>
+        <div class="contact-card"><div class="contact-icon">📧</div><div><h4>Email</h4><p><a href="mailto:mkulimasokoni254@gmail.com" style="color:inherit;">mkulimasokoni254@gmail.com</a></p></div></div>
         <div class="contact-card"><div class="contact-icon">📞</div><div><h4>Phone</h4><p>+254 700 000 000</p></div></div>
         <div class="contact-card"><div class="contact-icon">🕒</div><div><h4>Hours</h4><p>Mon–Fri, 8AM – 6PM</p></div></div>
         <div class="contact-card"><div class="contact-icon">📍</div><div><h4>Office</h4><p>Nairobi, Kenya</p></div></div>
@@ -3078,5 +3085,6 @@ function exitSuperUser() {
     }
   }, true);
 </script>
+<script src="/js/pwa-install.js"></script>
 </body>
 </html>

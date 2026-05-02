@@ -13,6 +13,13 @@
   <script>
     window.si = window.si || function () { (window.si.q = window.si.q || []).push(arguments) };
   </script>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#1B4332" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Mkulima Sokoni" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="/assets/img/logo.jpeg" />
   <script defer src="/_vercel/speed-insights/script.js"></script>
   <script type="module" src="js/dashboard-session-guard.mjs"></script>
 
@@ -1109,8 +1116,8 @@ function exitSuperUser() {
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;" id="nearbyFarmersGrid">
         <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);"><div style="font-size:32px;margin-bottom:8px;">📍</div><p style="font-weight:600;">Finding farmers near you…</p></div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px;">
-        <button class="btn btn-white" type="button" onclick="loadNearbyFarmers(false)">Refresh nearby farmers</button>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:16px;position:relative;z-index:5;">
+        <button class="btn btn-white" type="button" id="refreshNearbyFarmersBtn" style="cursor:pointer;" onclick="loadNearbyFarmers(false, { forceRefresh: true })">Refresh nearby farmers</button>
       </div>
     </div>
   </div>
@@ -1222,7 +1229,7 @@ function exitSuperUser() {
       <div class="panel-title">Get in Touch</div>
       <div style="height:12px;"></div>
       <div class="contact-grid">
-        <div class="contact-card"><div class="contact-icon">📧</div><div><h4>Email</h4><p>support@mkulimasokoni.ke</p></div></div>
+        <div class="contact-card"><div class="contact-icon">📧</div><div><h4>Email</h4><p><a href="mailto:mkulimasokoni254@gmail.com" style="color:inherit;">mkulimasokoni254@gmail.com</a></p></div></div>
         <div class="contact-card"><div class="contact-icon">📞</div><div><h4>Phone</h4><p>+254 700 000 000</p></div></div>
         <div class="contact-card"><div class="contact-icon">🕒</div><div><h4>Hours</h4><p>Mon–Fri, 8AM – 6PM</p></div></div>
         <div class="contact-card"><div class="contact-icon">📍</div><div><h4>Office</h4><p>Nairobi, Kenya</p></div></div>
@@ -4092,7 +4099,9 @@ function exitSuperUser() {
     grid.innerHTML = farmers.map(card).join('');
   }
 
-  async function loadNearbyFarmers(silent = false) {
+  async function loadNearbyFarmers(silent = false, opts) {
+    opts = opts || {};
+    const forceRefresh = opts.forceRefresh === true;
     const grid = document.getElementById('nearbyFarmersGrid');
     const userStr = localStorage.getItem('user');
     if (!userStr) {
@@ -4104,14 +4113,22 @@ function exitSuperUser() {
     if (!uid) return;
     const nearbyCacheKey = 'nearbyFarmersCache:' + uid;
 
-    try {
-      const cached = JSON.parse(localStorage.getItem(nearbyCacheKey) || '[]');
-      if (Array.isArray(cached) && cached.length) {
-        nearbyFarmersCache = cached;
-        renderNearbyFarmers();
-        silent = true;
-      }
-    } catch(e) {}
+    if (forceRefresh) {
+      try { localStorage.removeItem(nearbyCacheKey); } catch (e) {}
+      nearbyFarmersCache = [];
+      silent = false;
+    }
+
+    if (!forceRefresh) {
+      try {
+        const cached = JSON.parse(localStorage.getItem(nearbyCacheKey) || '[]');
+        if (Array.isArray(cached) && cached.length) {
+          nearbyFarmersCache = cached;
+          renderNearbyFarmers();
+          silent = true;
+        }
+      } catch(e) {}
+    }
 
     const setLoading = (msg) => {
       if (!silent && grid) {
@@ -4158,6 +4175,10 @@ function exitSuperUser() {
       await fetchByCounty();
       return;
     }
+    const geoOpts = forceRefresh
+      ? { enableHighAccuracy: true, timeout: 22000, maximumAge: 0 }
+      : { enableHighAccuracy: true, timeout: 12000, maximumAge: 5 * 60 * 1000 };
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
@@ -4172,7 +4193,7 @@ function exitSuperUser() {
       async () => {
         await fetchByCounty();
       },
-      { enableHighAccuracy: false, timeout: 7000, maximumAge: 5 * 60 * 1000 }
+      geoOpts
     );
   }
 
@@ -4455,5 +4476,6 @@ function exitSuperUser() {
     }
   }, true);
 </script>
+<script src="/js/pwa-install.js"></script>
 </body>
 </html>

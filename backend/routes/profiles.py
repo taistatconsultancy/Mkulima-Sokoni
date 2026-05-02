@@ -369,6 +369,7 @@ def create_farmer_profile():
                 return jsonify({'error': 'Invalid latitude (must be between -90 and 90)'}), 400
             if not (-180.0 <= lng_f <= 180.0):
                 return jsonify({'error': 'Invalid longitude (must be between -180 and 180)'}), 400
+            lat_f, lng_f = FarmerProfile.normalize_kenya_coords(lat_f, lng_f)
         else:
             lat_f = None
             lng_f = None

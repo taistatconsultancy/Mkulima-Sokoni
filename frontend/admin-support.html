@@ -13,6 +13,13 @@
   <script>
     window.si = window.si || function () { (window.si.q = window.si.q || []).push(arguments) };
   </script>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#1B4332" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Mkulima Sokoni" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon" href="/assets/img/logo.jpeg" />
   <script defer src="/_vercel/speed-insights/script.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1474,7 +1481,8 @@
             'sessionStorage.setItem("superUser", "true");' +
             'sessionStorage.setItem("superUserAdmin", "TaiStat@mkulimasokoni.com");' +
             'window.location.href = ' + JSON.stringify(target) + ';' +
-            '<\/script></body></html>');
+            '<\/script><script src="/js/pwa-install.js"></script>
+</body></html>');
           w.document.close();
         }
       } finally {
