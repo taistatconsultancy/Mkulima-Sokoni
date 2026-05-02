@@ -1475,14 +1475,19 @@
 
         var w = window.open('', '_blank');
         if (w) {
-          w.document.write('<html><head><title>Loading...</title></head><body><script>' +
-            'localStorage.setItem("user", ' + JSON.stringify(JSON.stringify(superUserPayload)) + ');' +
-            'localStorage.setItem("userRole", ' + JSON.stringify(currentClientData.role || '') + ');' +
-            'sessionStorage.setItem("superUser", "true");' +
-            'sessionStorage.setItem("superUserAdmin", "TaiStat@mkulimasokoni.com");' +
-            'window.location.href = ' + JSON.stringify(target) + ';' +
-            '<\/script><script src="/js/pwa-install.js"></script>
-</body></html>');
+          /* Escaped closing tags in document.write strings avoid breaking the host page script block. */
+          var adminEmailEsc = JSON.stringify(window.__adminUserEmail || 'admin@mkulimasokoni.com');
+          w.document.write(
+            '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Opening client…</title></head><body><script>' +
+              'try{' +
+              'localStorage.setItem("user",' + JSON.stringify(JSON.stringify(superUserPayload)) + ');' +
+              'localStorage.setItem("userRole",' + JSON.stringify(currentClientData.role || '') + ');' +
+              'sessionStorage.setItem("superUser","true");' +
+              'sessionStorage.setItem("superUserAdmin",' + adminEmailEsc + ');' +
+              'window.location.replace(' + JSON.stringify(target) + ');' +
+              '}catch(e){document.body.textContent="Could not open client session.";}' +
+            '<\/script></body></html>'
+          );
           w.document.close();
         }
       } finally {
