@@ -279,7 +279,8 @@
       .inv-card-name{font-size:.82rem;}
       .inv-card-price{font-size:.92rem;}
       .inv-card-meta{font-size:.66rem; gap:6px;}
-      .inv-card-actions .btn-sm,.inv-card-actions a{padding:4px 9px;font-size:.68rem;}
+      .inv-card-actions{flex-wrap:wrap; gap:5px;}
+      .inv-card-actions .btn-sm,.inv-card-actions a{flex:1 1 auto; padding:5px 6px; font-size:.68rem; min-width:0; text-align:center; white-space:nowrap;}
       .mk-card-img{height:96px;font-size:26px;}
       .mk-card-body{padding:9px 10px;}
       .mk-card-name{font-size:.78rem;}
@@ -308,7 +309,7 @@
       .inv-card-price{font-size:.85rem;}
       .inv-card-meta{font-size:.62rem; gap:4px;}
       .inv-card-actions{flex-wrap:wrap; gap:4px;}
-      .inv-card-actions .btn-sm,.inv-card-actions a{flex:1 1 auto; padding:4px 8px; font-size:.66rem; text-align:center;}
+      .inv-card-actions .btn-sm,.inv-card-actions a{flex:1 1 auto; padding:5px 4px; font-size:.64rem; min-width:0; text-align:center; white-space:nowrap;}
       .mk-card-img{height:84px;font-size:22px;}
       .mk-card-body{padding:8px 10px;}
       .mk-card-name{font-size:.74rem;}
@@ -1477,7 +1478,7 @@ function renderDealerProducts(grid, products) {
     const emoji = EMOJI[p.category] || '📦';
     const price = productPriceText(p);
     const status = String(p.status || 'active').toLowerCase();
-    const statusBtn = `<button class="btn-sm" onclick="openDealerStatusModal('${p.id}')">${status === 'sold_out' ? 'Restock / Status' : 'Status'}</button>`;
+    const statusBtn = `<button class="btn-sm" onclick="openDealerStatusModal('${p.id}')">${status === 'sold_out' ? 'Restock' : 'Status'}</button>`;
     return `<div class="inv-card">
       <div class="inv-card-img">${p.image_url ? `<img src="${p.image_url}" alt="${p.name}"/>` : `<span style="font-size:48px;">${emoji}</span>`}</div>
       <div class="inv-card-body">
