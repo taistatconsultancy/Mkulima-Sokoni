@@ -181,18 +181,18 @@ def _resolved_role_slugs_for_user(user):
 
 
 def _first_dashboard_for_slugs(slugs):
-    """Same dashboard priority as frontend auth.html."""
+    """Same dashboard priority as frontend auth.html (extensionless paths)."""
     sset = set(slugs or [])
     order = [
-        ('admin', 'admin-support.html'),
-        ('farmer', 'farmer.html'),
-        ('agro-dealer', 'agro-dealer.html'),
-        ('buyer', 'buyer.html'),
+        ('admin', '/admin-support'),
+        ('farmer', '/farmer'),
+        ('agro-dealer', '/agro-dealer'),
+        ('buyer', '/buyer'),
     ]
     for slug, page in order:
         if slug in sset:
             return page
-    return 'index.html'
+    return '/'
 
 
 @auth_bp.route('/verify-dashboard-session', methods=['POST'])
@@ -926,15 +926,15 @@ def get_dashboard_route():
         roles_list = [r.strip() for r in role.split(',')] if ',' in role else [role]
         
         if 'admin' in roles_list:
-            dashboard = '/admin-support.html'
+            dashboard = '/admin-support'
         elif 'farmer' in roles_list:
-            dashboard = '/farmer.html'
+            dashboard = '/farmer'
         elif 'agro-dealer' in roles_list:
-            dashboard = '/agro-dealer.html'
+            dashboard = '/agro-dealer'
         elif 'buyer' in roles_list:
-            dashboard = '/buyer.html'
+            dashboard = '/buyer'
         else:
-            dashboard = '/index.html'
+            dashboard = '/'
         
         return jsonify({
             'success': True,

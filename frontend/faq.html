@@ -59,12 +59,12 @@
 <body>
 
 <header class="topbar">
-  <a href="index.html" class="logo">
+  <a href="/" class="logo">
     <div class="logo-mark"><img src="assets/img/logo.jpeg" alt="Mkulima sokoni" /></div>
     <div class="logo-label"><strong>Mkulima sokoni</strong><span>From farm to market, fairly.</span></div>
   </a>
   <div class="topbar-actions">
-    <button class="topbar-btn" id="navHomeBtn" onclick="location.href='index.html'">Home</button>
+    <button class="topbar-btn" id="navHomeBtn" onclick="location.href='/'">Home</button>
   </div>
 </header>
 <script>
@@ -73,9 +73,9 @@
     var u = JSON.parse(localStorage.getItem('user')||'null');
     var role = localStorage.getItem('userRole')||'';
     if(u && role){
-      var map = {farmer:'farmer.html',buyer:'buyer.html','agro-dealer':'agro-dealer.html',admin:'admin-support.html'};
+      var map = {farmer:'/farmer',buyer:'/buyer','agro-dealer':'/agro-dealer',admin:'/admin-support'};
       var btn = document.getElementById('navHomeBtn');
-      if(btn){ btn.textContent='Dashboard'; btn.onclick=function(){ location.href=map[role]||'index.html'; }; }
+      if(btn){ btn.textContent='Dashboard'; btn.onclick=function(){ location.href=map[role]||'/'; }; }
     }
   }catch(e){}
 })();
@@ -165,10 +165,10 @@
       </div>
       <div class="footer-social"><a href="#" title="Facebook">f</a><a href="#" title="X / Twitter">𝕏</a><a href="#" title="WhatsApp">💬</a><a href="#" title="Instagram">📷</a></div>
     </div>
-    <div class="footer-col"><h5>About Us</h5><ul><li><a href="about.html#story">Our Story</a></li><li><a href="about.html#mission">Mission &amp; Vision</a></li><li><a href="about.html#team">Team</a></li></ul></div>
-    <div class="footer-col"><h5>Help Center</h5><ul><li><a href="index.html">Home</a></li><li><a href="faq.html">FAQs</a></li><li><a href="faq.html#contact">Contact Us</a></li></ul></div>
-    <div class="footer-col"><h5>Legal</h5><ul><li><a href="terms.html">Terms of Service</a></li><li><a href="privacy.html">Privacy Policy</a></li></ul></div>
-    <div class="footer-col"><h5>Resources</h5><ul><li><a href="how-it-works.html">How It Works</a></li><li><a href="market.html">Marketplace</a></li></ul></div>
+    <div class="footer-col"><h5>About Us</h5><ul><li><a href="/about#story">Our Story</a></li><li><a href="/about#mission">Mission &amp; Vision</a></li><li><a href="/about#team">Team</a></li></ul></div>
+    <div class="footer-col"><h5>Help Center</h5><ul><li><a href="/">Home</a></li><li><a href="/faq">FAQs</a></li><li><a href="/faq#contact">Contact Us</a></li></ul></div>
+    <div class="footer-col"><h5>Legal</h5><ul><li><a href="/terms">Terms of Service</a></li><li><a href="/privacy">Privacy Policy</a></li></ul></div>
+    <div class="footer-col"><h5>Resources</h5><ul><li><a href="/how-it-works">How It Works</a></li><li><a href="/market">Marketplace</a></li></ul></div>
   </div>
   <div class="footer-bottom">
     <p class="footer-copy">© <span id="yr"></span> <strong>Mkulima sokoni</strong>. All rights reserved.</p>
@@ -182,9 +182,9 @@ document.getElementById('yr').textContent=new Date().getFullYear();
   try {
     var u=JSON.parse(localStorage.getItem('user')||'null'), role=localStorage.getItem('userRole')||'';
     if(u&&role){
-      var map={farmer:'farmer.html',buyer:'buyer.html','agro-dealer':'agro-dealer.html',admin:'admin-support.html'};
+      var map={farmer:'/farmer',buyer:'/buyer','agro-dealer':'/agro-dealer',admin:'/admin-support'};
       document.querySelectorAll('footer a').forEach(function(a){
-        if(a.getAttribute('href')==='index.html'&&a.textContent.trim()==='Home'){ a.href=map[role]||'index.html'; a.textContent='Dashboard'; }
+        if(a.getAttribute('href')==='/'&&a.textContent.trim()==='Home'){ a.href=map[role]||'/'; a.textContent='Dashboard'; }
       });
     }
   }catch(e){}

@@ -147,6 +147,33 @@ def sitemap_xml():
     )
 
 
+# Extensionless (pretty) paths -> actual HTML files under frontend/
+# Legacy URLs like /market.html still work via literal file serve below.
+_CLEAN_HTML_MAP = {
+    'home': 'index.html',
+    'market': 'market.html',
+    'auth': 'auth.html',
+    'login': 'auth.html',
+    'sign-in': 'auth.html',
+    'buyer': 'buyer.html',
+    'farmer': 'farmer.html',
+    'agro-dealer': 'agro-dealer.html',
+    'about': 'about.html',
+    'about-us': 'about.html',
+    'faq': 'faq.html',
+    'terms': 'terms.html',
+    'privacy': 'privacy.html',
+    'how-it-works': 'how-it-works.html',
+    'phone-sharing': 'phone-sharing.html',
+    'admin': 'admin-support.html',
+    'admin-support': 'admin-support.html',
+    'profile-farmer': 'profile-farmer.html',
+    'profile-buyer': 'profile-buyer.html',
+    'seller-profile': 'seller-profile.html',
+    'test-image-upload': 'test-image-upload.html',
+}
+
+
 # Serve frontend static files
 @app.route('/')
 def serve_index():
@@ -161,21 +188,33 @@ def serve_frontend(path):
     # Don't serve API routes through this handler
     if path.startswith('api/'):
         return {'error': 'Not found'}, 404
-    
+
     # Get the project root directory (one level up from backend)
     project_root = os.path.dirname(backend_dir)
     frontend_dir = os.path.join(project_root, 'frontend')
-    
-    # Check if it's a file in frontend directory
+
+    # Check if it's a file in frontend directory (includes *.html, js/*, etc.)
     file_path = os.path.join(frontend_dir, path)
     if os.path.isfile(file_path):
         return send_from_directory(frontend_dir, path)
-    
+
     # Try to serve from frontend/js
     if path.startswith('js/'):
         js_file = os.path.join(frontend_dir, 'js', path[3:])
         if os.path.isfile(js_file):
             return send_from_directory(os.path.join(frontend_dir, 'js'), path[3:])
+
+    # Pretty URLs: /product/<id>, /seller/<uid>
+    parts = [p for p in path.split('/') if p]
+    if len(parts) == 2 and parts[0].lower() == 'product':
+        return send_from_directory(frontend_dir, 'product-detail.html')
+    if len(parts) == 2 and parts[0].lower() in ('seller', 'seller-profile'):
+        return send_from_directory(frontend_dir, 'seller-profile.html')
+
+    if len(parts) == 1:
+        key = parts[0].lower()
+        if key in _CLEAN_HTML_MAP:
+            return send_from_directory(frontend_dir, _CLEAN_HTML_MAP[key])
 
     # Never serve index.html for non-HTML file requests (e.g. robots.txt was returning the homepage).
     leaf = path.split('/')[-1]
@@ -186,7 +225,7 @@ def serve_frontend(path):
     # For HTML files that don't exist, serve index.html
     if path.endswith('.html') or '/' not in path:
         return send_from_directory(frontend_dir, 'index.html')
-    
+
     # Default: serve index.html for SPA routing
     return send_from_directory(frontend_dir, 'index.html')
 

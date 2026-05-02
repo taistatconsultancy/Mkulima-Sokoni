@@ -1,5 +1,5 @@
 /**
- * Firebase sign-in for admin-support.html; exposes token for Bearer API calls.
+ * Firebase sign-in for /admin-support; exposes token for Bearer API calls.
  */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';

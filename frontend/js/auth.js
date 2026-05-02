@@ -263,7 +263,7 @@ async function logout() {
     localStorage.removeItem('user');
     localStorage.removeItem('userRole');
     localStorage.removeItem('authToken');
-    window.location.href = 'index.html';
+    window.location.href = '/';
   } catch (error) {
     console.error('Logout error:', error);
     throw error;
@@ -300,7 +300,7 @@ function redirectToDashboard(dashboard) {
   if (dashboard) {
     window.location.href = dashboard;
   } else {
-    window.location.href = '/index.html';
+    window.location.href = '/';
   }
 }
 

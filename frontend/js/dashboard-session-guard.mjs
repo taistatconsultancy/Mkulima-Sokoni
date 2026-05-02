@@ -23,12 +23,17 @@ function apiBase() {
   return '/api';
 }
 
+function pathLeafNorm(p) {
+  const seg = ((p || '').split('/').filter(Boolean).pop() || '').toLowerCase();
+  return seg.replace(/\.html$/i, '');
+}
+
 function pageDashboardRole() {
-  const file = ((window.location.pathname || '').split('/').pop() || '').toLowerCase();
+  const file = pathLeafNorm(window.location.pathname || '');
   const map = {
-    'farmer.html': 'farmer',
-    'agro-dealer.html': 'agro-dealer',
-    'buyer.html': 'buyer',
+    farmer: 'farmer',
+    'agro-dealer': 'agro-dealer',
+    buyer: 'buyer',
   };
   return { file, required: map[file] || null };
 }
@@ -47,11 +52,11 @@ async function main() {
   try {
     userStr = localStorage.getItem('user') || '';
   } catch (e) {
-    window.location.replace('auth.html');
+    window.location.replace('/auth');
     return;
   }
   if (!userStr.trim()) {
-    window.location.replace('auth.html');
+    window.location.replace('/auth');
     return;
   }
 
@@ -63,7 +68,7 @@ async function main() {
       localStorage.removeItem('user');
       localStorage.removeItem('userRole');
     } catch (e2) {}
-    window.location.replace('auth.html');
+    window.location.replace('/auth');
     return;
   }
 
@@ -76,7 +81,7 @@ async function main() {
       localStorage.removeItem('user');
       localStorage.removeItem('userRole');
     } catch (e) {}
-    window.location.replace('auth.html');
+    window.location.replace('/auth');
     return;
   }
 
@@ -86,7 +91,7 @@ async function main() {
       localStorage.removeItem('user');
       localStorage.removeItem('userRole');
     } catch (e) {}
-    window.location.replace('auth.html');
+    window.location.replace('/auth');
     return;
   }
 
@@ -94,7 +99,7 @@ async function main() {
   try {
     idToken = await cu.getIdToken(false);
   } catch (e) {
-    window.location.replace('auth.html');
+    window.location.replace('/auth');
     return;
   }
 
@@ -118,7 +123,7 @@ async function main() {
   }
 
   if (res.status === 401) {
-    window.location.replace('auth.html');
+    window.location.replace('/auth');
     return;
   }
 
@@ -127,7 +132,7 @@ async function main() {
       localStorage.removeItem('user');
       localStorage.removeItem('userRole');
     } catch (e) {}
-    window.location.replace('index.html');
+    window.location.replace('/');
     return;
   }
 
@@ -145,8 +150,13 @@ async function main() {
   }
 
   const red = (data.redirect || '').toString();
-  if (!data.allowed && red && red.toLowerCase() !== file) {
-    window.location.replace(red);
+  const redLeaf = pathLeafNorm(red.startsWith('http') ? (new URL(red).pathname || '') : red);
+  if (!data.allowed && red && redLeaf && redLeaf !== file) {
+    const url =
+      red.startsWith('/') || red.startsWith('http')
+        ? red
+        : '/' + red.replace(/^\/+/, '');
+    window.location.replace(url);
   }
 }
 

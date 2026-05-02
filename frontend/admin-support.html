@@ -220,7 +220,7 @@
         </form>
       </div>
       <p style="text-align:center;margin-top:16px;font-size:.8rem;color:rgba(255,255,255,.4);">
-        <a href="index.html" style="color:#74C69D;">← Back to Mkulima Sokoni</a>
+        <a href="/" style="color:#74C69D;">← Back to Mkulima Sokoni</a>
       </p>
     </div>
   </div>
@@ -237,7 +237,7 @@
           </div>
         </div>
         <div class="nav-links">
-          <a href="admin-support.html" class="nav-link">Dashboard</a>
+          <a href="/admin-support" class="nav-link">Dashboard</a>
           <button class="btn btn-outline" onclick="logout()">Logout</button>
         </div>
       </nav>
@@ -583,14 +583,14 @@
 
     <footer>
       <div style="max-width:1400px;margin:0 auto;padding:0 28px 16px;display:flex;flex-wrap:wrap;gap:20px 40px;font-size:.78rem;">
-        <a href="about.html" style="color:rgba(255,255,255,.5);">About Us</a>
-        <a href="faq.html" style="color:rgba(255,255,255,.5);">FAQs</a>
-        <a href="terms.html" style="color:rgba(255,255,255,.5);">Terms of Service</a>
-        <a href="privacy.html" style="color:rgba(255,255,255,.5);">Privacy Policy</a>
-        <a href="how-it-works.html" style="color:rgba(255,255,255,.5);">How It Works</a>
+        <a href="/about" style="color:rgba(255,255,255,.5);">About Us</a>
+        <a href="/faq" style="color:rgba(255,255,255,.5);">FAQs</a>
+        <a href="/terms" style="color:rgba(255,255,255,.5);">Terms of Service</a>
+        <a href="/privacy" style="color:rgba(255,255,255,.5);">Privacy Policy</a>
+        <a href="/how-it-works" style="color:rgba(255,255,255,.5);">How It Works</a>
       </div>
       <div style="max-width:1400px;margin:0 auto;padding:14px 28px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <p class="footer-text">&copy; <span id="year"></span> <strong>Mkulima Sokoni</strong>. All rights reserved. &middot; <a href="admin-support.html">Dashboard</a></p>
+        <p class="footer-text">&copy; <span id="year"></span> <strong>Mkulima Sokoni</strong>. All rights reserved. &middot; <a href="/admin-support">Dashboard</a></p>
         <span style="font-size:.68rem;color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:3px 10px;">Powered by TaiStat Firm</span>
       </div>
     </footer>
@@ -1441,8 +1441,8 @@
       }
 
       var role = (currentClientData.role || '').toLowerCase();
-      var dashboardMap = { farmer: 'farmer.html', buyer: 'buyer.html', 'agro-dealer': 'agro-dealer.html', agrodealer: 'agro-dealer.html' };
-      var target = dashboardMap[role] || 'buyer.html';
+      var dashboardMap = { farmer: '/farmer', buyer: '/buyer', 'agro-dealer': '/agro-dealer', agrodealer: '/agro-dealer' };
+      var target = dashboardMap[role] || '/buyer';
 
       var superUserPayload = {
         id: currentClientData.id,
@@ -1598,9 +1598,9 @@
     function logout() {
       if (!confirm('Are you sure you want to logout?')) return;
       if (typeof window.__adminSignOut === 'function') {
-        window.__adminSignOut().then(function() { window.location.href = 'index.html'; }).catch(function() { window.location.href = 'index.html'; });
+        window.__adminSignOut().then(function() { window.location.href = '/'; }).catch(function() { window.location.href = '/'; });
       } else {
-        window.location.href = 'index.html';
+        window.location.href = '/';
       }
     }
 

@@ -294,7 +294,7 @@
 <body>
 
 <header class="topbar">
-  <a href="index.html" class="logo">
+  <a href="/" class="logo">
     <div class="logo-mark"><img src="assets/img/logo.jpeg" alt="Mkulima sokoni" /></div>
     <div class="logo-label"><strong>Mkulima sokoni</strong><span>From farm to market, fairly.</span></div>
   </a>
@@ -356,7 +356,7 @@
   <div class="modal-box login-prompt-box">
     <h3>Sign In Required</h3>
     <p>You need to be signed in to use this feature. Create a free account or log in.</p>
-    <a href="auth.html" class="btn btn-primary" style="text-decoration:none;">Sign In / Create Account</a>
+    <a href="/auth" class="btn btn-primary" style="text-decoration:none;">Sign In / Create Account</a>
     <button class="modal-close" onclick="closeModal('loginModal')">Cancel</button>
   </div>
 </div>
@@ -370,10 +370,10 @@
       </div>
       <div class="footer-social"><a href="#">f</a><a href="#">𝕏</a><a href="#">💬</a><a href="#">📷</a></div>
     </div>
-    <div class="footer-col"><h5>About Us</h5><ul><li><a href="about.html#story">Our Story</a></li><li><a href="about.html#mission">Mission &amp; Vision</a></li><li><a href="about.html#team">Team</a></li></ul></div>
-    <div class="footer-col"><h5>Help Center</h5><ul><li><a href="index.html">Home</a></li><li><a href="faq.html">FAQs</a></li><li><a href="faq.html#contact">Contact Us</a></li></ul></div>
-    <div class="footer-col"><h5>Legal</h5><ul><li><a href="terms.html">Terms of Service</a></li><li><a href="privacy.html">Privacy Policy</a></li></ul></div>
-    <div class="footer-col"><h5>Resources</h5><ul><li><a href="how-it-works.html">How It Works</a></li><li><a href="market.html">Marketplace</a></li></ul></div>
+    <div class="footer-col"><h5>About Us</h5><ul><li><a href="/about#story">Our Story</a></li><li><a href="/about#mission">Mission &amp; Vision</a></li><li><a href="/about#team">Team</a></li></ul></div>
+    <div class="footer-col"><h5>Help Center</h5><ul><li><a href="/">Home</a></li><li><a href="/faq">FAQs</a></li><li><a href="/faq#contact">Contact Us</a></li></ul></div>
+    <div class="footer-col"><h5>Legal</h5><ul><li><a href="/terms">Terms of Service</a></li><li><a href="/privacy">Privacy Policy</a></li></ul></div>
+    <div class="footer-col"><h5>Resources</h5><ul><li><a href="/how-it-works">How It Works</a></li><li><a href="/market">Marketplace</a></li></ul></div>
   </div>
   <div class="footer-bottom">
     <p class="footer-copy">© <span id="yr"></span> <strong>Mkulima sokoni</strong>. All rights reserved.</p>
@@ -403,7 +403,12 @@ function openModal(id) { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 function esc(s) { return (s||'').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
 
-function getProductId() { return new URLSearchParams(window.location.search).get('id'); }
+function getProductId() {
+  var q = new URLSearchParams(window.location.search).get('id');
+  if (q) return q;
+  var m = window.location.pathname.match(/\/product\/([^/]+)\/?$/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
 function readProductsCache() {
   try {
     var s = sessionStorage.getItem('productsCache');
@@ -489,7 +494,7 @@ function addToCartFromDetail() {
       });
       var openCart = await uiConfirm('Added to cart. Open cart now?', 'Added to cart', { confirmText: 'Open cart', cancelText: 'Stay here' });
       if (openCart) {
-        location.href = 'buyer.html#cart';
+        location.href = '/buyer#cart';
       }
     } catch(e) {
       await uiAlert(e.message || 'Failed to add to cart', 'Could not add item');
@@ -565,7 +570,7 @@ function renderFarmerCol(seller) {
     : '';
 
   var uid = seller.firebase_uid || '';
-  var profileUrl = 'seller-profile.html?uid=' + encodeURIComponent(uid);
+  var profileUrl = '/seller/' + encodeURIComponent(uid);
 
   document.getElementById('farmerCol').innerHTML =
     '<div class="farmer-card">' +
@@ -599,7 +604,7 @@ function renderSimilar(similar) {
   grid.innerHTML = similar.map(function(s) {
     var sImg = s.image_url ? '<img src="' + esc(s.image_url) + '" alt="" />' : '';
     var sEmoji = !s.image_url ? (EMOJI[s.category]||'🌿') : '';
-    return '<a class="sim-card" href="product-detail.html?id=' + s.id + '" onclick="cacheProduct(event,this,' + "'" + s.id + "'" + ')">' +
+    return '<a class="sim-card" href="/product/' + s.id + '" onclick="cacheProduct(event,this,' + "'" + s.id + "'" + ')">' +
       '<div class="sim-img">' + sImg + sEmoji + '</div>' +
       '<div class="sim-body"><div class="sim-name">' + esc(s.name) + '</div>' +
       '<div class="sim-loc">📍 ' + esc(s.county||s.location||'Kenya') + '</div>' +
@@ -612,7 +617,7 @@ function renderSimilar(similar) {
 async function init() {
   var pid = getProductId();
   if (!pid) {
-    document.getElementById('productCol').innerHTML = '<div class="loading-state"><div class="icon">⚠️</div><h4>No product specified</h4><p><a href="market.html" style="color:var(--leaf);font-weight:600;">Browse the marketplace</a></p></div>';
+    document.getElementById('productCol').innerHTML = '<div class="loading-state"><div class="icon">⚠️</div><h4>No product specified</h4><p><a href="/market" style="color:var(--leaf);font-weight:600;">Browse the marketplace</a></p></div>';
     return;
   }
 
@@ -680,7 +685,7 @@ async function init() {
     } catch(e) {}
   } catch(e) {
     if (!didRenderProduct) {
-      document.getElementById('productCol').innerHTML = '<div class="loading-state"><div class="icon">⚠️</div><h4>Could not load product</h4><p>' + (e.message||'') + '</p><p style="margin-top:10px;"><a href="market.html" style="color:var(--leaf);font-weight:600;">← Back to marketplace</a></p></div>';
+      document.getElementById('productCol').innerHTML = '<div class="loading-state"><div class="icon">⚠️</div><h4>Could not load product</h4><p>' + (e.message||'') + '</p><p style="margin-top:10px;"><a href="/market" style="color:var(--leaf);font-weight:600;">← Back to marketplace</a></p></div>';
     }
     if (!didRenderFarmer) {
       document.getElementById('farmerCol').innerHTML =
@@ -954,13 +959,13 @@ function shareProduct(platform) {
 
 if (!isSignedIn()) {
   document.getElementById('dashBtn').textContent = 'Sign In';
-  document.getElementById('dashBtn').onclick = function(){ location.href='auth.html'; };
+  document.getElementById('dashBtn').onclick = function(){ location.href='/auth'; };
 }
 
 function goToDashboard() {
   var role = localStorage.getItem('userRole') || '';
-  var map = {'farmer':'farmer.html','buyer':'buyer.html','agro-dealer':'agro-dealer.html','admin':'admin-support.html'};
-  location.href = map[role] || 'index.html';
+  var map = {'farmer':'/farmer','buyer':'/buyer','agro-dealer':'/agro-dealer','admin':'/admin-support'};
+  location.href = map[role] || '/';
 }
 
 window.addEventListener('DOMContentLoaded', init);
@@ -969,9 +974,9 @@ window.addEventListener('DOMContentLoaded', init);
   try {
     var u=JSON.parse(localStorage.getItem('user')||'null'), role=localStorage.getItem('userRole')||'';
     if(u&&role){
-      var map={farmer:'farmer.html',buyer:'buyer.html','agro-dealer':'agro-dealer.html',admin:'admin-support.html'};
+      var map={farmer:'/farmer',buyer:'/buyer','agro-dealer':'/agro-dealer',admin:'/admin-support'};
       document.querySelectorAll('footer a').forEach(function(a){
-        if(a.getAttribute('href')==='index.html'&&a.textContent.trim()==='Home'){ a.href=map[role]||'index.html'; a.textContent='Dashboard'; }
+        if(a.getAttribute('href')==='/'&&a.textContent.trim()==='Home'){ a.href=map[role]||'/'; a.textContent='Dashboard'; }
       });
     }
   }catch(e){}

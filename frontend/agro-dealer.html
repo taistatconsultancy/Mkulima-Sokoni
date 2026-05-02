@@ -189,7 +189,7 @@
     .img-preview{max-width:100%;max-height:200px;border-radius:10px;margin-top:8px;display:none;border:2px solid var(--border);}
     .img-preview.show{display:block;}
 
-    /* Modals (aligned with farmer.html) */
+    /* Modals (aligned with /farmer) */
     .modal-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.55);z-index:9999;}
     .modal-overlay.active{display:flex;}
     .modal-box{background:#fff;border-radius:16px;width:min(720px,100%);max-height:90vh;overflow:auto;border:1.5px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,.22);}
@@ -236,7 +236,7 @@
     .messages-nav-dot{display:none;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-left:6px;}
     .messages-nav-dot.show{display:inline-block;}
 
-    /* Footer — matches index.html */
+    /* Footer — matches / */
     footer{background:var(--forest);padding:52px 28px 0;margin-top:40px;}
     .footer-grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.8fr 1fr 1fr 1fr 1fr;gap:40px;padding-bottom:40px;border-bottom:1px solid rgba(255,255,255,.1);}
     .footer-brand-col{display:block;}
@@ -376,12 +376,12 @@
     document.getElementById('suClientName').textContent=((u.first_name||'')+' '+(u.last_name||'')).trim()||u.email||'client';
   }
 })();
-function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.removeItem('superUserAdmin');window.close();setTimeout(()=>window.location.href='admin-support.html',200);}
+function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.removeItem('superUserAdmin');window.close();setTimeout(()=>window.location.href='/admin-support',200);}
 </script>
 
 <header class="topbar">
   <button class="mobile-nav-btn" type="button" onclick="toggleTopbarNav()" aria-label="Open navigation menu">☰</button>
-  <a href="index.html" class="logo">
+  <a href="/" class="logo">
     <div class="logo-mark"><img src="assets/img/logo.jpeg" alt="Mkulima Sokoni" /></div>
     <div class="logo-label"><strong>Mkulima Sokoni</strong><span>Agro-Dealer</span></div>
   </a>
@@ -410,7 +410,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
         </div>
         <div class="dd-item" onclick="showPage('dashboard',this)"><span>🏠</span> Dashboard</div>
         <div class="dd-item" onclick="showPage('profile',this)"><span>⚙️</span> Settings</div>
-        <div class="dd-item" onclick="location.href='phone-sharing.html'"><span>☎</span> Phone sharing</div>
+        <div class="dd-item" onclick="location.href='/phone-sharing'"><span>☎</span> Phone sharing</div>
         <div class="dd-item dd-logout" onclick="logout()"><span>🚪</span> Logout</div>
       </div>
     </div>
@@ -441,13 +441,13 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
         <button class="btn-sm solid" onclick="showPage('add-product',this)">➕ Add New Product</button>
         <button class="btn-sm" onclick="showPage('inventory',this)">📦 View My Products</button>
         <button class="btn-sm" onclick="showPage('marketplace',this)">🛒 Browse Marketplace</button>
-        <a href="market.html" class="btn-sm" style="display:inline-flex;align-items:center;">🛍 Open Market</a>
+        <a href="/market" class="btn-sm" style="display:inline-flex;align-items:center;">🛍 Open Market</a>
       </div>
     </div>
     <div class="section-card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
         <h2 style="margin-bottom:0;">🛒 Marketplace</h2>
-        <a href="market.html" class="btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;">View All →</a>
+        <a href="/market" class="btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;">View All →</a>
       </div>
       <div id="dash-mk-grid" class="mk-grid">
         <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--muted);"><p style="font-weight:600;">Loading marketplace…</p></div>
@@ -560,7 +560,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
         <h2 style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--forest);">🛒 Marketplace</h2>
         <p style="font-size:.85rem;color:var(--muted);">Browse products from farmers and agro-dealers across Kenya</p>
       </div>
-      <a href="market.html" class="btn-sm solid" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;">🛍 Full Marketplace →</a>
+      <a href="/market" class="btn-sm solid" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;">🛍 Full Marketplace →</a>
     </div>
     <div id="mk-grid" class="mk-grid">
       <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);"><div style="font-size:32px;margin-bottom:8px;">🌱</div><p style="font-weight:600;">Loading marketplace…</p></div>
@@ -801,8 +801,8 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
               <input type="tel" id="profile-phone" placeholder="+254 700 000 000" readonly style="background:var(--cream);" />
               <p style="font-size:.72rem;color:var(--muted);margin-top:4px;">Linked from your account</p>
               <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-                <a href="phone-sharing.html" class="btn-sm" style="text-decoration:none;border:1.5px solid var(--border);background:#fff;color:var(--forest);">📜 Phone sharing & Terms</a>
-                <a href="phone-sharing.html" class="btn-sm solid" style="text-decoration:none;">🔒 Revoke phone sharing</a>
+                <a href="/phone-sharing" class="btn-sm" style="text-decoration:none;border:1.5px solid var(--border);background:#fff;color:var(--forest);">📜 Phone sharing & Terms</a>
+                <a href="/phone-sharing" class="btn-sm solid" style="text-decoration:none;">🔒 Revoke phone sharing</a>
               </div>
             </div>
             <div class="form-group"><label>Location *</label><input type="text" id="profile-location" placeholder="e.g. Nakuru" required /></div>
@@ -839,7 +839,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
   </div>
 </div>
 
-<!-- ── FOOTER (matches index.html) ── -->
+<!-- ── FOOTER (matches /) ── -->
 <footer>
   <div class="footer-grid">
     <div class="footer-brand-col">
@@ -851,10 +851,10 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
         <a href="#" title="Facebook">f</a><a href="#" title="X / Twitter">𝕏</a><a href="#" title="WhatsApp">💬</a><a href="#" title="Instagram">📷</a>
       </div>
     </div>
-    <div class="footer-col"><h5>About Us</h5><ul><li><a href="about.html#story">Our Story</a></li><li><a href="about.html#mission">Mission &amp; Vision</a></li><li><a href="about.html#team">Team</a></li></ul></div>
-    <div class="footer-col"><h5>Help Center</h5><ul><li><a href="index.html">Home</a></li><li><a href="faq.html">FAQs</a></li><li><a href="faq.html#contact">Contact Us</a></li></ul></div>
-    <div class="footer-col"><h5>Legal</h5><ul><li><a href="terms.html">Terms of Service</a></li><li><a href="privacy.html">Privacy Policy</a></li></ul></div>
-    <div class="footer-col"><h5>Resources</h5><ul><li><a href="how-it-works.html">How It Works</a></li><li><a href="market.html">Marketplace</a></li></ul></div>
+    <div class="footer-col"><h5>About Us</h5><ul><li><a href="/about#story">Our Story</a></li><li><a href="/about#mission">Mission &amp; Vision</a></li><li><a href="/about#team">Team</a></li></ul></div>
+    <div class="footer-col"><h5>Help Center</h5><ul><li><a href="/">Home</a></li><li><a href="/faq">FAQs</a></li><li><a href="/faq#contact">Contact Us</a></li></ul></div>
+    <div class="footer-col"><h5>Legal</h5><ul><li><a href="/terms">Terms of Service</a></li><li><a href="/privacy">Privacy Policy</a></li></ul></div>
+    <div class="footer-col"><h5>Resources</h5><ul><li><a href="/how-it-works">How It Works</a></li><li><a href="/market">Marketplace</a></li></ul></div>
   </div>
   <div class="footer-bottom">
     <p class="footer-copy">© <span id="yr"></span> <strong>Mkulima Sokoni</strong>. All rights reserved.</p>
@@ -1533,7 +1533,7 @@ function renderDealerProducts(grid, products) {
         <div class="inv-card-actions">
           ${p.status==='draft'?`<button class="btn-sm" onclick="activateProduct('${p.id}')">Publish</button>`:''}
           <button class="btn-sm" onclick="editDealerProduct('${p.id}')">Edit</button>
-          <a href="product-detail.html?id=${p.id}" class="btn-sm" style="text-decoration:none;">View</a>
+          <a href="/product/${p.id}" class="btn-sm" style="text-decoration:none;">View</a>
           ${statusBtn}
         </div>
       </div>
@@ -1959,7 +1959,7 @@ function goToProduct(pid) {
       localStorage.setItem(key, JSON.stringify(myProducts));
     } catch (_) {}
   }
-  window.location.href = 'product-detail.html?id=' + pid;
+  window.location.href = '/product/' + pid;
 }
 
 /* ── Live Ticker ── */
@@ -2629,7 +2629,7 @@ async function logout() {
   localStorage.removeItem('user');
   localStorage.removeItem('userRole');
   localStorage.removeItem('authToken');
-  window.location.href = 'index.html';
+  window.location.href = '/';
 }
 
 window.addEventListener('DOMContentLoaded', init);
@@ -2638,9 +2638,9 @@ window.addEventListener('DOMContentLoaded', init);
   try {
     var u=JSON.parse(localStorage.getItem('user')||'null'), role=localStorage.getItem('userRole')||'';
     if(u&&role){
-      var map={farmer:'farmer.html',buyer:'buyer.html','agro-dealer':'agro-dealer.html',admin:'admin-support.html'};
+      var map={farmer:'/farmer',buyer:'/buyer','agro-dealer':'/agro-dealer',admin:'/admin-support'};
       document.querySelectorAll('footer a').forEach(function(a){
-        if(a.getAttribute('href')==='index.html'&&a.textContent.trim()==='Home'){ a.href=map[role]||'index.html'; a.textContent='Dashboard'; }
+        if(a.getAttribute('href')==='/'&&a.textContent.trim()==='Home'){ a.href=map[role]||'/'; a.textContent='Dashboard'; }
       });
     }
   }catch(e){}

@@ -166,11 +166,11 @@ def _support_app_link(ticket):
     if not base or not ticket:
         return ''
     role = (ticket.get('user_role') or '').strip().lower()
-    page = 'buyer.html'
+    page = 'buyer'
     if role == 'farmer':
-        page = 'farmer.html'
+        page = 'farmer'
     elif role in ('agro-dealer', 'agrodealer'):
-        page = 'agro-dealer.html'
+        page = 'agro-dealer'
     tid = ticket.get('id')
     if tid:
         return f'{base}/{page}?supportTicket={tid}'

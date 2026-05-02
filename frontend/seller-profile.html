@@ -165,12 +165,12 @@
 <body>
 
 <header class="topbar">
-  <a href="index.html" class="logo">
+  <a href="/" class="logo">
     <div class="logo-mark"><img src="assets/img/logo.jpeg" alt="Mkulima sokoni" /></div>
     <div class="logo-label"><strong>Mkulima sokoni</strong><span>From farm to market, fairly.</span></div>
   </a>
   <div class="topbar-actions">
-    <button class="topbar-btn" id="navHomeBtn" onclick="location.href='index.html'">Home</button>
+    <button class="topbar-btn" id="navHomeBtn" onclick="location.href='/'">Home</button>
   </div>
 </header>
 
@@ -234,17 +234,17 @@
   <div class="modal-box">
     <h3>Sign In Required</h3>
     <p>You need to be signed in to contact this farmer or share their profile.</p>
-    <a href="auth.html" class="btn btn-primary" style="text-decoration:none;margin-bottom:8px;">Sign In / Create Account</a>
+    <a href="/auth" class="btn btn-primary" style="text-decoration:none;margin-bottom:8px;">Sign In / Create Account</a>
     <button class="modal-close" onclick="closeModal('loginModal')">Cancel</button>
   </div>
 </div>
 
 <footer>
   <div style="max-width:1140px;margin:0 auto;padding:0 0 24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:24px;">
-    <div><p style="font-size:.82rem;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:8px;">About Us</p><a href="about.html#story" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Our Story</a><a href="about.html#mission" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Mission &amp; Vision</a></div>
-    <div><p style="font-size:.82rem;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:8px;">Help Center</p><a href="faq.html" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">FAQs</a><a href="faq.html#contact" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Contact Us</a></div>
-    <div><p style="font-size:.82rem;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:8px;">Legal</p><a href="terms.html" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Terms of Service</a><a href="privacy.html" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Privacy Policy</a></div>
-    <div><p style="font-size:.82rem;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:8px;">Resources</p><a href="how-it-works.html" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">How It Works</a><a href="market.html" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Marketplace</a></div>
+    <div><p style="font-size:.82rem;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:8px;">About Us</p><a href="/about#story" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Our Story</a><a href="/about#mission" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Mission &amp; Vision</a></div>
+    <div><p style="font-size:.82rem;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:8px;">Help Center</p><a href="/faq" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">FAQs</a><a href="/faq#contact" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Contact Us</a></div>
+    <div><p style="font-size:.82rem;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:8px;">Legal</p><a href="/terms" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Terms of Service</a><a href="/privacy" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Privacy Policy</a></div>
+    <div><p style="font-size:.82rem;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:8px;">Resources</p><a href="/how-it-works" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">How It Works</a><a href="/market" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Marketplace</a></div>
   </div>
   <div class="footer-bottom" style="border-top:1px solid rgba(255,255,255,.1);padding-top:16px;">
     <p class="footer-copy">© <span id="yr"></span> <strong>Mkulima sokoni</strong>. All rights reserved.</p>
@@ -271,7 +271,12 @@ function openModal(id) { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 function esc(s) { return (s||'').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
 
-function getUid() { return new URLSearchParams(window.location.search).get('uid'); }
+function getUid() {
+  var q = new URLSearchParams(window.location.search).get('uid');
+  if (q) return q;
+  var m = window.location.pathname.match(/\/(?:seller|seller-profile)\/([^/]+)\/?$/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
 
 function priceStr(p) {
   if (p.product_type === 'livestock' && p.price_min != null && p.price_max != null)
@@ -284,7 +289,7 @@ async function loadProfile() {
   var uid = getUid();
   if (!uid) {
     document.getElementById('profileName').textContent = 'Profile not found';
-    document.getElementById('mainCol').innerHTML = '<div class="loading-state"><div class="icon">⚠️</div><p>No user specified. <a href="market.html" style="color:var(--leaf);font-weight:600;">Browse marketplace</a></p></div>';
+    document.getElementById('mainCol').innerHTML = '<div class="loading-state"><div class="icon">⚠️</div><p>No user specified. <a href="/market" style="color:var(--leaf);font-weight:600;">Browse marketplace</a></p></div>';
     return;
   }
 
@@ -438,7 +443,7 @@ function renderContactActions(p, u) {
         '<p>This farmer is available via <strong>chat only</strong>. Phone sharing is not enabled.</p>' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">' +
           '<button class="btn btn-primary" id="chatOnlyViewProductsBtn">View listed products</button>' +
-          '<a class="btn btn-outline" href="market.html" style="text-decoration:none;">Open Marketplace</a>' +
+          '<a class="btn btn-outline" href="/market" style="text-decoration:none;">Open Marketplace</a>' +
         '</div>' +
         '<button class="modal-close" id="chatOnlyCloseBtn">Close</button>' +
       '</div>';
@@ -521,7 +526,7 @@ function renderFarmerProducts(uid, products) {
       '<div class="profile-products">' +
       products.map(function(p) {
         var imgInner = p.image_url ? '<img src="' + esc(p.image_url) + '" alt="" />' : (EMOJI[p.category]||'🌿');
-        return '<a class="pp-card" href="product-detail.html?id=' + p.id + '" onclick="cacheProfileProduct(' + "'" + p.id + "'" + ')" style="text-decoration:none;">' +
+        return '<a class="pp-card" href="/product/' + p.id + '" onclick="cacheProfileProduct(' + "'" + p.id + "'" + ')" style="text-decoration:none;">' +
           '<div class="pp-img">' + imgInner + '</div>' +
           '<div class="pp-body"><div class="pp-name">' + esc(p.name) + '</div>' +
           '<div class="pp-price">' + priceStr(p) + '</div></div></a>';
@@ -564,11 +569,11 @@ function shareProfile(platform) {
 
 if (isSignedIn()) {
   var role = localStorage.getItem('userRole')||'';
-  var dmap = {farmer:'farmer.html',buyer:'buyer.html','agro-dealer':'agro-dealer.html',admin:'admin-support.html'};
+  var dmap = {farmer:'/farmer',buyer:'/buyer','agro-dealer':'/agro-dealer',admin:'/admin-support'};
   var btn = document.getElementById('navHomeBtn');
-  if(btn){ btn.textContent = 'Dashboard'; btn.onclick = function(){ location.href = dmap[role]||'index.html'; }; }
+  if(btn){ btn.textContent = 'Dashboard'; btn.onclick = function(){ location.href = dmap[role]||'/'; }; }
   document.querySelectorAll('footer a').forEach(function(a){
-    if(a.getAttribute('href')==='index.html'&&a.textContent.trim()==='Home'){ a.href=dmap[role]||'index.html'; a.textContent='Dashboard'; }
+    if(a.getAttribute('href')==='/'&&a.textContent.trim()==='Home'){ a.href=dmap[role]||'/'; a.textContent='Dashboard'; }
   });
 }
 

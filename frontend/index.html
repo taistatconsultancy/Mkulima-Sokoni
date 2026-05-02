@@ -311,7 +311,7 @@
     <input id="productSearch" type="text" placeholder="Search products, counties…" />
   </div>
   <div class="topbar-actions">
-    <button class="topbar-btn" onclick="location.href='auth.html'">Sign In</button>
+    <button class="topbar-btn" onclick="location.href='/auth'">Sign In</button>
   </div>
 </header>
 
@@ -341,7 +341,7 @@
       </div>
     </div>
     <div class="hero-nav-cards">
-      <a href="auth.html" class="hero-nav-card hnc-farmer">
+      <a href="/auth" class="hero-nav-card hnc-farmer">
         <div class="hnc-icon">🌾</div>
         <div class="hnc-text">
           <div class="hnc-label">For Farmers</div>
@@ -349,7 +349,7 @@
         </div>
         <span class="hnc-arrow">→</span>
       </a>
-      <a href="auth.html" class="hero-nav-card hnc-buyer">
+      <a href="/auth" class="hero-nav-card hnc-buyer">
         <div class="hnc-icon">🛒</div>
         <div class="hnc-text">
           <div class="hnc-label">For Buyers</div>
@@ -357,7 +357,7 @@
         </div>
         <span class="hnc-arrow">→</span>
       </a>
-      <a href="auth.html" class="hero-nav-card hnc-support">
+      <a href="/auth" class="hero-nav-card hnc-support">
         <div class="hnc-icon">🏪</div>
         <div class="hnc-text">
           <div class="hnc-label">For Agro-Dealers</div>
@@ -391,7 +391,7 @@
       <div class="market-head">
         <div class="market-head-left"><h2>Fresh From the Farm</h2></div>
         <div class="market-head-center"><span class="market-count" id="product-count">Loading…</span></div>
-        <div class="market-head-right"><a href="market.html" class="market-view-btn">View Marketplace →</a></div>
+        <div class="market-head-right"><a href="/market" class="market-view-btn">View Marketplace →</a></div>
       </div>
       <div id="products-container">
         <div class="empty-state">
@@ -497,35 +497,35 @@
     <div class="footer-col">
       <h5>About Us</h5>
       <ul>
-        <li><a href="about.html#story">Our Story</a></li>
-        <li><a href="about.html#mission">Mission &amp; Vision</a></li>
-        <li><a href="about.html#team">Team</a></li>
+        <li><a href="/about#story">Our Story</a></li>
+        <li><a href="/about#mission">Mission &amp; Vision</a></li>
+        <li><a href="/about#team">Team</a></li>
       </ul>
     </div>
 
     <div class="footer-col">
       <h5>Help Center</h5>
       <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="faq.html">FAQs</a></li>
-        <li><a href="faq.html#contact">Contact Us</a></li>
+        <li><a href="/">Home</a></li>
+        <li><a href="/faq">FAQs</a></li>
+        <li><a href="/faq#contact">Contact Us</a></li>
       </ul>
     </div>
 
     <div class="footer-col">
       <h5>Legal</h5>
       <ul>
-        <li><a href="terms.html">Terms of Service</a></li>
-        <li><a href="privacy.html">Privacy Policy</a></li>
+        <li><a href="/terms">Terms of Service</a></li>
+        <li><a href="/privacy">Privacy Policy</a></li>
       </ul>
     </div>
 
     <div class="footer-col">
       <h5>Resources</h5>
       <ul>
-        <li><a href="how-it-works.html">How It Works</a></li>
-        <li><a href="market.html">Marketplace</a></li>
-        <li><a href="auth.html">Get Started</a></li>
+        <li><a href="/how-it-works">How It Works</a></li>
+        <li><a href="/market">Marketplace</a></li>
+        <li><a href="/auth">Get Started</a></li>
       </ul>
     </div>
 
@@ -696,7 +696,7 @@
       const thumb = p.image_url
         ? `<img src="${p.image_url.replace(/"/g, '&quot;')}" alt="" loading="lazy" />`
         : (EMOJI[p.category] || '🌿');
-      return `<a href="product-detail.html?id=${p.id}" onclick="try{sessionStorage.setItem('productCache_${p.id}',JSON.stringify(allProducts.find(x=>x.id==='${p.id}')));sessionStorage.setItem('productsCache',JSON.stringify(allProducts))}catch(e){}" class="product-ticker-item" title="${name} — ${loc}">` +
+      return `<a href="/product/${p.id}" onclick="try{sessionStorage.setItem('productCache_${p.id}',JSON.stringify(allProducts.find(x=>x.id==='${p.id}')));sessionStorage.setItem('productsCache',JSON.stringify(allProducts))}catch(e){}" class="product-ticker-item" title="${name} — ${loc}">` +
         `<span class="ticker-thumb">${thumb}</span>` +
         `<span class="ticker-info">` +
         `<span class="ticker-name">${name}</span>` +
@@ -759,7 +759,7 @@
       sessionStorage.setItem('productsCache', JSON.stringify(allProducts));
       localStorage.setItem('soko_products_cache_v1', JSON.stringify(allProducts));
     } catch(e) {}
-    location.href = 'product-detail.html?id=' + p.id;
+    location.href = '/product/' + p.id;
   }
 
   /* ── Product card ── */
@@ -877,9 +877,9 @@
     try {
       var u=JSON.parse(localStorage.getItem('user')||'null'), role=localStorage.getItem('userRole')||'';
       if(u&&role){
-        var map={farmer:'farmer.html',buyer:'buyer.html','agro-dealer':'agro-dealer.html',admin:'admin-support.html'};
+        var map={farmer:'/farmer',buyer:'/buyer','agro-dealer':'/agro-dealer',admin:'/admin-support'};
         document.querySelectorAll('footer a').forEach(function(a){
-          if(a.getAttribute('href')==='index.html'&&a.textContent.trim()==='Home'){ a.href=map[role]||'index.html'; a.textContent='Dashboard'; }
+          if(a.getAttribute('href')==='/'&&a.textContent.trim()==='Home'){ a.href=map[role]||'/'; a.textContent='Dashboard'; }
         });
       }
     }catch(e){}

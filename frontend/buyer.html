@@ -8,7 +8,7 @@
   <link rel="icon" type="image/jpeg" href="assets/img/logo.jpeg" />
   <link rel="shortcut icon" type="image/jpeg" href="assets/img/logo.jpeg" />
 
-  <!-- Google Fonts — matches farmer.html -->
+  <!-- Google Fonts — matches /farmer -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -20,7 +20,7 @@
   <script type="module" src="js/dashboard-session-guard.mjs"></script>
 
   <style>
-    /* ── DESIGN TOKENS (identical to farmer.html) ── */
+    /* ── DESIGN TOKENS (identical to /farmer) ── */
     :root {
       --forest:    #1B4332;
       --leaf:      #40916C;
@@ -475,7 +475,7 @@
     .messages-nav-dot.show{display:inline-block;}
 
     /* ════════════════════════════════════
-       FOOTER — identical to farmer.html
+       FOOTER — identical to /farmer
     ════════════════════════════════════ */
     footer { background: var(--forest); padding: 52px 28px 0; margin-top: 40px; }
     .footer-grid {
@@ -670,7 +670,7 @@ function exitSuperUser() {
   sessionStorage.removeItem('superUser');
   sessionStorage.removeItem('superUserAdmin');
   window.close();
-  setTimeout(function() { window.location.href = 'admin-support.html'; }, 200);
+  setTimeout(function() { window.location.href = '/admin-support'; }, 200);
 }
 </script>
 
@@ -679,7 +679,7 @@ function exitSuperUser() {
 ════════════════════════════ -->
 <header class="topbar">
   <button class="mobile-nav-btn" type="button" onclick="toggleTopbarNav()" aria-label="Open navigation menu">☰</button>
-  <a href="index.html" class="logo">
+  <a href="/" class="logo">
     <div class="logo-mark">
       <img src="assets/img/logo.jpeg" alt="Mkulima Sokoni" />
     </div>
@@ -989,7 +989,7 @@ function exitSuperUser() {
               <input type="tel" id="phone" name="phone" readonly />
               <div class="form-hint">Linked from your account</div>
               <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-                <a href="phone-sharing.html" class="btn btn-outline btn-sm" style="text-decoration:none;">📜 Phone sharing & Terms</a>
+                <a href="/phone-sharing" class="btn btn-outline btn-sm" style="text-decoration:none;">📜 Phone sharing & Terms</a>
               </div>
             </div>
             <div class="form-group form-full">
@@ -1142,31 +1142,31 @@ function exitSuperUser() {
     <div class="footer-col">
       <h5>About Us</h5>
       <ul>
-        <li><a href="about.html#story">Our Story</a></li>
-        <li><a href="about.html#mission">Mission &amp; Vision</a></li>
-        <li><a href="about.html#team">Team</a></li>
+        <li><a href="/about#story">Our Story</a></li>
+        <li><a href="/about#mission">Mission &amp; Vision</a></li>
+        <li><a href="/about#team">Team</a></li>
       </ul>
     </div>
     <div class="footer-col">
       <h5>Help Center</h5>
       <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="faq.html">FAQs</a></li>
-        <li><a href="faq.html#contact">Contact Us</a></li>
+        <li><a href="/">Home</a></li>
+        <li><a href="/faq">FAQs</a></li>
+        <li><a href="/faq#contact">Contact Us</a></li>
       </ul>
     </div>
     <div class="footer-col">
       <h5>Legal</h5>
       <ul>
-        <li><a href="terms.html">Terms of Service</a></li>
-        <li><a href="privacy.html">Privacy Policy</a></li>
+        <li><a href="/terms">Terms of Service</a></li>
+        <li><a href="/privacy">Privacy Policy</a></li>
       </ul>
     </div>
     <div class="footer-col">
       <h5>Resources</h5>
       <ul>
-        <li><a href="how-it-works.html">How It Works</a></li>
-        <li><a href="market.html">Marketplace</a></li>
+        <li><a href="/how-it-works">How It Works</a></li>
+        <li><a href="/market">Marketplace</a></li>
       </ul>
     </div>
   </div>
@@ -1716,7 +1716,7 @@ function exitSuperUser() {
         window.SokoUI?.toast('Complete your profile first to continue.', 'warning');
       }
     }
-    // Support deep links like buyer.html#cart
+    // Support deep links like /buyer#cart
     if (!pageName && location.hash) pageName = location.hash.replace('#', '');
     document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
     const t = document.getElementById(pageName);
@@ -2216,7 +2216,7 @@ function exitSuperUser() {
       const thumb = p.image_url
         ? '<img src="' + p.image_url + '" alt="" loading="lazy" />'
         : (tickerEmoji[p.category] || '🌿');
-      return '<a href="product-detail.html?id=' + p.id + '" onclick="viewProductDetails(\'' + p.id + '\');return false;" class="lt-item">' +
+      return '<a href="/product/' + p.id + '" onclick="viewProductDetails(\'' + p.id + '\');return false;" class="lt-item">' +
         '<span class="lt-thumb">' + thumb + '</span>' +
         '<span class="lt-info">' +
           '<span class="lt-name">' + (p.name||'').replace(/</g,'&lt;') + '</span>' +
@@ -2243,7 +2243,7 @@ function exitSuperUser() {
       btnEl.disabled = true;
       btnEl.textContent = 'Opening…';
     }
-    location.href = 'product-detail.html?id=' + id;
+    location.href = '/product/' + id;
   }
 
   /* ── Cart / Tender / Order actions ── */
@@ -2272,7 +2272,7 @@ function exitSuperUser() {
     const uid = getFirebaseUid();
     if (!uid) {
       await uiAlert('Please sign in to add items to cart.', 'Sign in required');
-      location.href = 'auth.html';
+      location.href = '/auth';
       return;
     }
     let q = quantity;
@@ -2854,7 +2854,7 @@ function exitSuperUser() {
     localStorage.removeItem('user');
     localStorage.removeItem('userRole');
     localStorage.removeItem('authToken');
-    window.location.href = 'index.html';
+    window.location.href = '/';
   }
 
   /* ── Session timeout (30 min) ── */
@@ -3056,9 +3056,9 @@ function exitSuperUser() {
     try {
       var u=JSON.parse(localStorage.getItem('user')||'null'), role=localStorage.getItem('userRole')||'';
       if(u&&role){
-        var map={farmer:'farmer.html',buyer:'buyer.html','agro-dealer':'agro-dealer.html',admin:'admin-support.html'};
+        var map={farmer:'/farmer',buyer:'/buyer','agro-dealer':'/agro-dealer',admin:'/admin-support'};
         document.querySelectorAll('footer a').forEach(function(a){
-          if(a.getAttribute('href')==='index.html'&&a.textContent.trim()==='Home'){ a.href=map[role]||'index.html'; a.textContent='Dashboard'; }
+          if(a.getAttribute('href')==='/'&&a.textContent.trim()==='Home'){ a.href=map[role]||'/'; a.textContent='Dashboard'; }
         });
       }
     }catch(e){}

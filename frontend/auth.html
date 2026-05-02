@@ -276,7 +276,7 @@
     </div>
 
     <div class="back-link">
-      <a href="index.html">← Back to Mkulima Sokoni Home</a>
+      <a href="/">← Back to Mkulima Sokoni Home</a>
     </div>
   </div>
 
@@ -306,19 +306,19 @@
     const API = isProd ? '/api' : 'http://localhost:5000/api';
 
     const ROLE_DASHBOARDS = {
-      'farmer': 'farmer.html',
-      'buyer': 'buyer.html',
-      'agro-dealer': 'agro-dealer.html',
-      'admin': 'admin-support.html'
+      'farmer': '/farmer',
+      'buyer': '/buyer',
+      'agro-dealer': '/agro-dealer',
+      'admin': '/admin-support'
     };
 
     function getDashboard(role) {
-      if (!role) return 'index.html';
+      if (!role) return '/';
       const roles = role.includes(',') ? role.split(',').map(r => r.trim()) : [role];
       for (const r of ['admin','farmer','agro-dealer','buyer']) {
         if (roles.includes(r)) return ROLE_DASHBOARDS[r];
       }
-      return 'index.html';
+      return '/';
     }
 
     function saveAndRedirect(user, role) {
@@ -372,7 +372,7 @@
     function actionCodeSettingsForVerification() {
       // After user clicks verification email, bring them back to role selection flow.
       const base = window.location.origin;
-      const continueUrl = `${base}/auth.html?next=choose-type`;
+      const continueUrl = `${base}/auth?next=choose-type`;
       return {
         url: continueUrl,
         handleCodeInApp: false

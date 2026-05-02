@@ -86,10 +86,10 @@ def _app_public_url() -> str:
 
 def _landing_url() -> str:
     """
-    Landing page for emails (marketing/home). Kept as index.html for static hosting compatibility.
+    Landing page for emails (marketing/home).
     """
     app = _app_public_url()
-    return f"{app}/index.html" if app else ""
+    return f"{app}/" if app else ""
 
 
 def _email_base_html(title: str, preheader: str, body_html: str) -> str:
@@ -180,7 +180,7 @@ def send_welcome_email(to_email: str, first_name: Optional[str] = None) -> bool:
     )
     landing = _landing_url()
     app = _app_public_url()
-    action = f"{app}/auth.html" if app else ""
+    action = f"{app}/auth" if app else ""
     html_body = f"""\
 <h1 style="margin:0 0 10px;font-size:20px;color:#111827;">Welcome{(' ' + name) if name else ''}.</h1>
 <p style="margin:0 0 14px;color:#374151;line-height:1.6;">Your account has been created successfully.</p>
@@ -216,7 +216,7 @@ def send_new_message_email(
     lines += ["", "Mkulima Sokoni Team"]
     landing = _landing_url()
     app = _app_public_url()
-    action = deep_link or (f"{app}/buyer.html#messages" if app else "")
+    action = deep_link or (f"{app}/buyer#messages" if app else "")
     html_body = f"""\
 <h1 style="margin:0 0 10px;font-size:20px;color:#111827;">New message</h1>
 <p style="margin:0 0 14px;color:#374151;line-height:1.6;">You received a new message from <strong>{from_label}</strong>.</p>
@@ -339,7 +339,7 @@ def send_support_verification_request_email(
     )
     landing = _landing_url()
     app = _app_public_url()
-    action = f"{app}/admin-support.html" if app else ""
+    action = f"{app}/admin-support" if app else ""
     safe_name = (name or "—").replace("<", "&lt;").replace(">", "&gt;")
     safe_email = (email or "—").replace("<", "&lt;").replace(">", "&gt;")
     safe_phone = (phone or "—").replace("<", "&lt;").replace(">", "&gt;")
@@ -384,7 +384,7 @@ def send_account_verified_email(to_email: str, first_name: Optional[str] = None)
     )
     landing = _landing_url()
     app = _app_public_url()
-    action = f"{app}/auth.html" if app else ""
+    action = f"{app}/auth" if app else ""
     html_body = f"""\
 <h1 style="margin:0 0 10px;font-size:20px;color:#111827;">Your account is verified</h1>
 <p style="margin:0 0 14px;color:#374151;line-height:1.6;">Good news — your account has been verified by our support team. You can now continue using the app.</p>

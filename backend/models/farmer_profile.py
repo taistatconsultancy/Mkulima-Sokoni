@@ -200,7 +200,7 @@ class FarmerProfile:
         List farmers near a point (lat/lng) with an optional radius cutoff.
         Fallback mode: if county is provided (and lat/lng isn't), return farmers in that county first.
 
-        Returns rows including u.firebase_uid to support linking: seller-profile.html?uid=<firebase_uid>
+        Returns rows including u.firebase_uid to support linking: /seller/<firebase_uid>
         """
         try:
             limit = int(limit or 24)

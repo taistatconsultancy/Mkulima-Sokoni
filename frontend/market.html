@@ -185,7 +185,7 @@
 <body>
 
 <header class="topbar">
-  <a href="index.html" class="logo">
+  <a href="/" class="logo">
     <div class="logo-mark">
       <img src="assets/img/logo.jpeg" alt="Mkulima sokoni logo" />
     </div>
@@ -201,7 +201,7 @@
     <input id="productSearch" type="text" placeholder="Search products, counties…" />
   </div>
   <div class="topbar-actions">
-    <button class="topbar-btn" id="navHomeBtn" onclick="location.href='index.html'">Home</button>
+    <button class="topbar-btn" id="navHomeBtn" onclick="location.href='/'">Home</button>
   </div>
 </header>
 <script>
@@ -210,26 +210,26 @@
     var u = JSON.parse(localStorage.getItem('user')||'null');
     var role = localStorage.getItem('userRole')||'';
     if(u && role){
-      var map = {farmer:'farmer.html',buyer:'buyer.html','agro-dealer':'agro-dealer.html',admin:'admin-support.html'};
+      var map = {farmer:'/farmer',buyer:'/buyer','agro-dealer':'/agro-dealer',admin:'/admin-support'};
       var btn = document.getElementById('navHomeBtn');
-      if(btn){ btn.textContent='Dashboard'; btn.onclick=function(){ location.href=map[role]||'index.html'; }; }
+      if(btn){ btn.textContent='Dashboard'; btn.onclick=function(){ location.href=map[role]||'/'; }; }
       var back = document.getElementById('backToDashboardBtn');
       if (back) {
         back.style.display = '';
-        back.href = map[role] || 'index.html';
+        back.href = map[role] || '/';
       }
       var listBtn = document.getElementById('listProduceBtn');
       if (listBtn) {
-        if (role === 'farmer') listBtn.href = 'farmer.html?action=list-produce';
-        else if (role === 'agro-dealer') listBtn.href = 'agro-dealer.html?action=list-produce';
-        else listBtn.href = map[role] || 'auth.html';
+        if (role === 'farmer') listBtn.href = '/farmer?action=list-produce';
+        else if (role === 'agro-dealer') listBtn.href = '/agro-dealer?action=list-produce';
+        else listBtn.href = map[role] || '/auth';
       }
     }
   }catch(e){}
 })();
 </script>
 
-<!-- ── PRODUCT TICKER (same as index.html) ── -->
+<!-- ── PRODUCT TICKER (same as /) ── -->
 <div class="product-ticker" id="productTicker" aria-hidden="true">
   <div class="product-ticker-track" id="productTickerTrack"></div>
 </div>
@@ -237,7 +237,7 @@
 <section class="market-page-header">
   <div class="market-page-header-inner">
     <div class="market-page-header-left">
-      <a href="index.html" class="home-btn" id="backToDashboardBtn" style="display:none;">
+      <a href="/" class="home-btn" id="backToDashboardBtn" style="display:none;">
         ← Back to Dashboard
       </a>
       <div class="market-page-header-text">
@@ -246,7 +246,7 @@
       </div>
     </div>
     <div class="market-page-header-right">
-      <a href="auth.html" class="list-produce-btn" id="listProduceBtn">
+      <a href="/auth" class="list-produce-btn" id="listProduceBtn">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
         List Your Produce
       </a>
@@ -306,34 +306,34 @@
     <div class="footer-col">
       <h5>About Us</h5>
       <ul>
-        <li><a href="about.html#story">Our Story</a></li>
-        <li><a href="about.html#mission">Mission &amp; Vision</a></li>
-        <li><a href="about.html#team">Team</a></li>
+        <li><a href="/about#story">Our Story</a></li>
+        <li><a href="/about#mission">Mission &amp; Vision</a></li>
+        <li><a href="/about#team">Team</a></li>
       </ul>
     </div>
 
     <div class="footer-col">
       <h5>Help Center</h5>
       <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="faq.html">FAQs</a></li>
-        <li><a href="faq.html#contact">Contact Us</a></li>
+        <li><a href="/">Home</a></li>
+        <li><a href="/faq">FAQs</a></li>
+        <li><a href="/faq#contact">Contact Us</a></li>
       </ul>
     </div>
 
     <div class="footer-col">
       <h5>Legal</h5>
       <ul>
-        <li><a href="terms.html">Terms of Service</a></li>
-        <li><a href="privacy.html">Privacy Policy</a></li>
+        <li><a href="/terms">Terms of Service</a></li>
+        <li><a href="/privacy">Privacy Policy</a></li>
       </ul>
     </div>
 
     <div class="footer-col">
       <h5>Resources</h5>
       <ul>
-        <li><a href="how-it-works.html">How It Works</a></li>
-        <li><a href="market.html">Marketplace</a></li>
+        <li><a href="/how-it-works">How It Works</a></li>
+        <li><a href="/market">Marketplace</a></li>
       </ul>
     </div>
 
@@ -459,7 +459,7 @@
       const thumb = p.image_url
         ? `<img src="${p.image_url.replace(/"/g, '&quot;')}" alt="" loading="lazy" />`
         : (EMOJI[p.category] || '🌿');
-      return `<a href="product-detail.html?id=${p.id}" onclick="try{sessionStorage.setItem('productCache_${p.id}',JSON.stringify(allProducts.find(x=>x.id==='${p.id}')));sessionStorage.setItem('productsCache',JSON.stringify(allProducts))}catch(e){}" class="product-ticker-item" title="${name} — ${loc}">` +
+      return `<a href="/product/${p.id}" onclick="try{sessionStorage.setItem('productCache_${p.id}',JSON.stringify(allProducts.find(x=>x.id==='${p.id}')));sessionStorage.setItem('productsCache',JSON.stringify(allProducts))}catch(e){}" class="product-ticker-item" title="${name} — ${loc}">` +
         `<span class="ticker-thumb">${thumb}</span>` +
         `<span class="ticker-info">` +
         `<span class="ticker-name">${name}</span>` +
@@ -482,7 +482,7 @@
       sessionStorage.setItem('productsCache', JSON.stringify(allProducts));
       localStorage.setItem('soko_products_cache_v1', JSON.stringify(allProducts));
     } catch(e) {}
-    location.href = 'product-detail.html?id=' + pid;
+    location.href = '/product/' + pid;
   }
 
   function productCardHTML(p) {
@@ -521,7 +521,7 @@
         <div class="empty-state">
           <div class="icon">🌱</div>
           <h4>No listings yet</h4>
-          <p>Farmers are adding produce daily — check back soon or <a href="index.html">return home</a>.</p>
+          <p>Farmers are adding produce daily — check back soon or <a href="/">return home</a>.</p>
         </div>`;
       return;
     }
@@ -602,8 +602,8 @@
       var role = localStorage.getItem('userRole') || '';
       var listBtn = document.getElementById('listProduceBtn');
       if (listBtn && role) {
-        if (role === 'farmer') listBtn.href = 'farmer.html?action=list-produce';
-        else if (role === 'agro-dealer') listBtn.href = 'agro-dealer.html?action=list-produce';
+        if (role === 'farmer') listBtn.href = '/farmer?action=list-produce';
+        else if (role === 'agro-dealer') listBtn.href = '/agro-dealer?action=list-produce';
       }
     } catch (e) {}
     loadProducts();
@@ -622,9 +622,9 @@
     try {
       var u=JSON.parse(localStorage.getItem('user')||'null'), role=localStorage.getItem('userRole')||'';
       if(u&&role){
-        var map={farmer:'farmer.html',buyer:'buyer.html','agro-dealer':'agro-dealer.html',admin:'admin-support.html'};
+        var map={farmer:'/farmer',buyer:'/buyer','agro-dealer':'/agro-dealer',admin:'/admin-support'};
         document.querySelectorAll('footer a').forEach(function(a){
-          if(a.getAttribute('href')==='index.html'&&a.textContent.trim()==='Home'){ a.href=map[role]||'index.html'; a.textContent='Dashboard'; }
+          if(a.getAttribute('href')==='/'&&a.textContent.trim()==='Home'){ a.href=map[role]||'/'; a.textContent='Dashboard'; }
         });
       }
     }catch(e){}

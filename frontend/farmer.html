@@ -17,7 +17,7 @@
   <script type="module" src="js/dashboard-session-guard.mjs"></script>
 
   <style>
-    /* ── DESIGN TOKENS (matches index.html) ── */
+    /* ── DESIGN TOKENS (matches /) ── */
     :root {
       --forest:    #1B4332;
       --leaf:      #40916C;
@@ -48,7 +48,7 @@
     a { color: inherit; text-decoration: none; }
 
     /* ════════════════════════════════════
-       TOPBAR  — identical to index.html
+       TOPBAR  — identical to /
     ════════════════════════════════════ */
     .topbar {
       position: sticky; top: 0; z-index: 200;
@@ -762,7 +762,7 @@
     }
 
     /* ════════════════════════════════════
-       FOOTER  — identical to index.html
+       FOOTER  — identical to /
     ════════════════════════════════════ */
     footer { background: var(--forest); padding: 52px 28px 0; margin-top: 40px; }
     .footer-grid {
@@ -998,7 +998,7 @@ function exitSuperUser() {
   sessionStorage.removeItem('superUser');
   sessionStorage.removeItem('superUserAdmin');
   window.close();
-  setTimeout(function() { window.location.href = 'admin-support.html'; }, 200);
+  setTimeout(function() { window.location.href = '/admin-support'; }, 200);
 }
 </script>
 
@@ -1007,7 +1007,7 @@ function exitSuperUser() {
 ════════════════════════════ -->
 <header class="topbar">
   <button class="mobile-nav-btn" type="button" onclick="toggleTopbarNav()" aria-label="Open navigation menu">☰</button>
-  <a href="index.html" class="logo">
+  <a href="/" class="logo">
     <div class="logo-mark">
       <img src="assets/img/logo.jpeg" alt="Mkulima Sokoni" />
     </div>
@@ -1042,7 +1042,7 @@ function exitSuperUser() {
         </div>
         <div class="dd-item" onclick="showPage('dashboard')"><span>🏠</span> Dashboard</div>
         <div class="dd-item" onclick="showPage('profile')"><span>⚙️</span> Settings</div>
-        <div class="dd-item" onclick="location.href='phone-sharing.html'"><span>☎</span> Phone sharing</div>
+        <div class="dd-item" onclick="location.href='/phone-sharing'"><span>☎</span> Phone sharing</div>
         <div class="dd-item dd-logout" onclick="logout()"><span>🚪</span> Logout</div>
       </div>
     </div>
@@ -1068,7 +1068,7 @@ function exitSuperUser() {
         <h1 class="welcome-title" id="welcomeTitle" data-greeting-pending="1" style="visibility:hidden" aria-live="polite">Welcome back! 👋</h1>
         <p class="welcome-sub">Grow, sell, and thrive manage your produce directly with buyers.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
-          <a href="market.html" class="btn btn-white" style="text-decoration:none;">Go to Marketplace →</a>
+          <a href="/market" class="btn btn-white" style="text-decoration:none;">Go to Marketplace →</a>
         </div>
       </div>
       </div>
@@ -1092,7 +1092,7 @@ function exitSuperUser() {
         <div class="section-title">Agro-Dealers 🏪</div>
         <div class="section-subtitle">Farm inputs, seeds, fertilizers and supplies from agro-dealers</div>
       </div>
-      <a href="market.html" class="btn btn-white" style="text-decoration:none;">View Marketplace →</a>
+      <a href="/market" class="btn btn-white" style="text-decoration:none;">View Marketplace →</a>
     </div>
     <div id="agroDealerGrid" class="agro-dealer-grid">
       <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);"><div style="font-size:32px;margin-bottom:8px;">🏪</div><p style="font-weight:600;">Loading agro-dealer products…</p></div>
@@ -1266,8 +1266,8 @@ function exitSuperUser() {
               <input type="tel" id="phone" name="phone" readonly />
               <div class="form-hint">Linked from your account</div>
               <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-                <a href="phone-sharing.html" class="btn btn-outline btn-sm" style="text-decoration:none;">📜 Phone sharing & Terms</a>
-                <a href="phone-sharing.html" class="btn btn-primary btn-sm" style="text-decoration:none;">🔒 Revoke phone sharing</a>
+                <a href="/phone-sharing" class="btn btn-outline btn-sm" style="text-decoration:none;">📜 Phone sharing & Terms</a>
+                <a href="/phone-sharing" class="btn btn-primary btn-sm" style="text-decoration:none;">🔒 Revoke phone sharing</a>
               </div>
             </div>
             <div class="form-group form-full"><label>National ID *</label><input type="text" id="national-id" name="national_id" placeholder="e.g., 12345678" required /></div>
@@ -1608,7 +1608,7 @@ function exitSuperUser() {
 </div>
 
 <!-- ════════════════════════════
-     FOOTER  — matches index.html
+     FOOTER  — matches /
 ════════════════════════════ -->
 <footer>
   <div class="footer-grid">
@@ -1632,31 +1632,31 @@ function exitSuperUser() {
     <div class="footer-col">
       <h5>About Us</h5>
       <ul>
-        <li><a href="about.html#story">Our Story</a></li>
-        <li><a href="about.html#mission">Mission &amp; Vision</a></li>
-        <li><a href="about.html#team">Team</a></li>
+        <li><a href="/about#story">Our Story</a></li>
+        <li><a href="/about#mission">Mission &amp; Vision</a></li>
+        <li><a href="/about#team">Team</a></li>
       </ul>
     </div>
     <div class="footer-col">
       <h5>Help Center</h5>
       <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="faq.html">FAQs</a></li>
-        <li><a href="faq.html#contact">Contact Us</a></li>
+        <li><a href="/">Home</a></li>
+        <li><a href="/faq">FAQs</a></li>
+        <li><a href="/faq#contact">Contact Us</a></li>
       </ul>
     </div>
     <div class="footer-col">
       <h5>Legal</h5>
       <ul>
-        <li><a href="terms.html">Terms of Service</a></li>
-        <li><a href="privacy.html">Privacy Policy</a></li>
+        <li><a href="/terms">Terms of Service</a></li>
+        <li><a href="/privacy">Privacy Policy</a></li>
       </ul>
     </div>
     <div class="footer-col">
       <h5>Resources</h5>
       <ul>
-        <li><a href="how-it-works.html">How It Works</a></li>
-        <li><a href="market.html">Marketplace</a></li>
+        <li><a href="/how-it-works">How It Works</a></li>
+        <li><a href="/market">Marketplace</a></li>
       </ul>
     </div>
   </div>
@@ -2572,7 +2572,7 @@ function exitSuperUser() {
       sessionStorage.setItem('productsCache', JSON.stringify(allMarketProducts && allMarketProducts.length ? allMarketProducts : myProducts || []));
       localStorage.setItem('soko_products_cache_v1', JSON.stringify(allMarketProducts && allMarketProducts.length ? allMarketProducts : myProducts || []));
     } catch(e) {}
-    location.href = 'product-detail.html?id=' + encodeURIComponent(id);
+    location.href = '/product/' + encodeURIComponent(id);
   }
 
   function showProductsEmpty(grid, loading, msg) {
@@ -3921,7 +3921,7 @@ function exitSuperUser() {
     localStorage.removeItem('user');
     localStorage.removeItem('userRole');
     localStorage.removeItem('authToken');
-    window.location.href = 'index.html';
+    window.location.href = '/';
   }
 
   /* ── Session timeout (30 min) ── */
@@ -3944,7 +3944,7 @@ function exitSuperUser() {
       sessionStorage.setItem('productsCache', JSON.stringify(allMarketProducts));
       localStorage.setItem('soko_products_cache_v1', JSON.stringify(allMarketProducts));
     } catch(e) {}
-    location.href = 'product-detail.html?id=' + pid;
+    location.href = '/product/' + pid;
   }
 
   /* ── Marketplace Listings (agro-dealers first, then farmer products) ── */
@@ -4084,7 +4084,7 @@ function exitSuperUser() {
             ${distance ? `<div class="nearby-card-distance">${distance}</div>` : ''}
           </div>
           <div class="nearby-card-foot">
-            <a class="btn btn-white" style="display:inline-flex;justify-content:center;align-items:center;text-decoration:none;" href="seller-profile.html?uid=${uid}">View profile →</a>
+            <a class="btn btn-white" style="display:inline-flex;justify-content:center;align-items:center;text-decoration:none;" href="/seller/${uid}">View profile →</a>
           </div>
         </article>
       `;
@@ -4190,7 +4190,7 @@ function exitSuperUser() {
       const thumb = p.image_url
         ? `<img src="${p.image_url}" alt="" loading="lazy" />`
         : (EMOJI_MK[p.category] || '🌿');
-      return `<a href="product-detail.html?id=${p.id}" onclick="goToMkProduct('${p.id}');return false;" class="ag-ticker-item">` +
+      return `<a href="/product/${p.id}" onclick="goToMkProduct('${p.id}');return false;" class="ag-ticker-item">` +
         `<span class="ag-ticker-thumb">${thumb}</span>` +
         `<span class="ag-ticker-info">` +
           `<span class="ag-ticker-name">${(p.name||'').replace(/</g,'&lt;')}</span>` +
@@ -4433,9 +4433,9 @@ function exitSuperUser() {
     try {
       var u=JSON.parse(localStorage.getItem('user')||'null'), role=localStorage.getItem('userRole')||'';
       if(u&&role){
-        var map={farmer:'farmer.html',buyer:'buyer.html','agro-dealer':'agro-dealer.html',admin:'admin-support.html'};
+        var map={farmer:'/farmer',buyer:'/buyer','agro-dealer':'/agro-dealer',admin:'/admin-support'};
         document.querySelectorAll('footer a').forEach(function(a){
-          if(a.getAttribute('href')==='index.html'&&a.textContent.trim()==='Home'){ a.href=map[role]||'index.html'; a.textContent='Dashboard'; }
+          if(a.getAttribute('href')==='/'&&a.textContent.trim()==='Home'){ a.href=map[role]||'/'; a.textContent='Dashboard'; }
         });
       }
     }catch(e){}

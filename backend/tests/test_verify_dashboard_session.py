@@ -40,7 +40,7 @@ class VerifyDashboardSessionTests(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         data = r.get_json()
         self.assertFalse(data.get('allowed'))
-        self.assertEqual(data.get('redirect'), 'agro-dealer.html')
+        self.assertEqual(data.get('redirect'), '/agro-dealer')
 
     @patch('routes.auth.User.get_user_roles')
     @patch('routes.auth.User.get_user_by_firebase_uid')

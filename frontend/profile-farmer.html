@@ -475,7 +475,7 @@
       </div>
       
       <div class="form-actions">
-        <button type="button" class="btn btn-secondary" onclick="window.location.href='farmer.html'">Cancel</button>
+        <button type="button" class="btn btn-secondary" onclick="window.location.href='/farmer'">Cancel</button>
         <button type="submit" class="btn btn-primary">Save Changes</button>
       </div>
     </form>
@@ -939,7 +939,7 @@
         submitBtn.disabled = false;
         submitBtn.textContent = 'Save Changes';
         setTimeout(() => {
-          window.location.href = 'farmer.html';
+          window.location.href = '/farmer';
         }, 500);
       } catch (error) {
         showAlert(error.message || 'Failed to save profile', 'error');
