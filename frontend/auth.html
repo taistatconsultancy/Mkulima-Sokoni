@@ -1,4 +1,4 @@
-h<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -757,6 +757,52 @@ h<!DOCTYPE html>
         }
       });
     }
+
+    /* Already signed in (e.g. returned to auth or refreshed): route to dashboard — cannot stay on login to URL-hop. */
+    (async function redirectIfAlreadySignedIn() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        if (params.get('next') === 'choose-type') return;
+
+        await auth.authStateReady();
+        const cu = auth.currentUser;
+        if (!cu || !cu.emailVerified) return;
+
+        let userStr = '';
+        try {
+          userStr = localStorage.getItem('user') || '';
+        } catch (_) {
+          return;
+        }
+        if (!userStr.trim()) return;
+
+        let cached = null;
+        try {
+          cached = JSON.parse(userStr);
+        } catch (_) {
+          return;
+        }
+        const cachedUid = String(cached.firebase_uid || cached.id || '').trim();
+        if (!cachedUid || cachedUid !== cu.uid) return;
+
+        const idToken = await cu.getIdToken();
+        const res = await fetch(`${API}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_token: idToken }),
+        });
+        const data = await res.json();
+        if (!res.ok) return;
+
+        if (data.new_user) {
+          showRoleSelectionForm(data.firebase_uid, data.email, data.first_name, data.last_name);
+          return;
+        }
+        saveAndRedirect(data.user, data.user?.role);
+      } catch (_) {
+        /* stay on auth */
+      }
+    })();
   </script>
 </body>
 </html>

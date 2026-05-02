@@ -141,7 +141,23 @@
     .footer-badges { display: flex; gap: 8px; }
     .footer-badge { font-size: .68rem; color: rgba(255,255,255,.35); border: 1px solid rgba(255,255,255,.1); border-radius: 100px; padding: 3px 10px; }
 
+    @media (max-width: 768px) {
+      .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px; }
+      .product-img { height: 96px; font-size: 34px; }
+      .product-body { padding: 9px 11px; }
+      .product-name { font-size: .85rem; }
+      .product-meta-row { font-size: .68rem; }
+      .product-footer { padding: 6px 11px; }
+      .product-btn { padding: 3px 9px; font-size: .68rem; }
+    }
     @media (max-width: 640px) {
+      .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
+      .product-img { height: 88px; font-size: 32px; }
+      .product-body { padding: 8px 10px; }
+      .product-name { font-size: .82rem; }
+      .product-meta-row { font-size: .65rem; }
+      .product-footer { padding: 6px 10px; }
+      .product-btn { padding: 3px 8px; font-size: .65rem; }
       .topbar { padding: 0 14px; }
       .topbar-search { display: none; }
       .product-ticker-item { padding: 6px 16px; gap: 10px; }

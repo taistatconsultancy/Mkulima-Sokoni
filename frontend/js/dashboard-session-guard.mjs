@@ -47,11 +47,11 @@ async function main() {
   try {
     userStr = localStorage.getItem('user') || '';
   } catch (e) {
-    window.location.replace('index.html');
+    window.location.replace('auth.html');
     return;
   }
   if (!userStr.trim()) {
-    window.location.replace('index.html');
+    window.location.replace('auth.html');
     return;
   }
 

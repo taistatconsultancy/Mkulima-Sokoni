@@ -731,7 +731,7 @@ function exitSuperUser() {
 
     <div class="welcome-banner">
       <div class="welcome-text">
-        <h1 class="welcome-title" id="welcomeTitle">Welcome back, <em>Buyer</em>! 🎯</h1>
+        <h1 class="welcome-title" id="welcomeTitle" data-greeting-pending="1" style="visibility:hidden" aria-live="polite">Welcome back! 🎯</h1>
         <p class="welcome-sub">Discover fresh produce directly from Kenyan farmers. Quality guaranteed, prices transparent.</p>
       </div>  
     </div>
@@ -1789,8 +1789,8 @@ function exitSuperUser() {
       var user = JSON.parse(raw);
       var firstName = String(user.first_name || '').trim();
       var lastName = String(user.last_name || '').trim();
-      var fullName = [firstName, lastName].filter(Boolean).join(' ') || user.email || 'Buyer';
-      var shortName = firstName || 'Buyer';
+      var fullName = [firstName, lastName].filter(Boolean).join(' ') || user.email || '…';
+      var shortName = firstName || (user.email ? String(user.email).split('@')[0] : '…');
       var initials = fullName.charAt(0).toUpperCase() || 'B';
       var avatar = document.getElementById('userAvatar');
       var shortEl = document.getElementById('userNameShort');
@@ -1804,20 +1804,42 @@ function exitSuperUser() {
   }
   primeTopbarIdentityFromCache();
 
+  function applyBuyerWelcomeTitle(greetName) {
+    const welcomeTitle = document.getElementById('welcomeTitle');
+    if (!welcomeTitle) return;
+    const emText = (greetName || '').trim() || '…';
+    welcomeTitle.textContent = '';
+    welcomeTitle.appendChild(document.createTextNode('Welcome back, '));
+    const em = document.createElement('em');
+    em.textContent = emText;
+    welcomeTitle.appendChild(em);
+    welcomeTitle.appendChild(document.createTextNode('! 🎯'));
+    welcomeTitle.removeAttribute('data-greeting-pending');
+    welcomeTitle.style.visibility = '';
+  }
+
   /* ── User profile ── */
   async function loadUserProfile() {
+    const welcomeTitle = document.getElementById('welcomeTitle');
     try {
       const userStr = localStorage.getItem('user');
-      if (!userStr) return;
+      if (!userStr) {
+        if (welcomeTitle) {
+          welcomeTitle.removeAttribute('data-greeting-pending');
+          welcomeTitle.style.visibility = '';
+        }
+        return;
+      }
       const user = JSON.parse(userStr);
       const uid = user.firebase_uid || user.id;
       let firstName = user.first_name || '';
       let lastName  = user.last_name  || '';
+      var d = {};
 
       if (uid) {
         try {
           const res = await fetch(`${API_BASE_URL}/profiles/buyer/${uid}`);
-          const d = await res.json();
+          d = await res.json();
           if (d.profile?.user) {
             firstName = d.profile.user.first_name || firstName;
             lastName  = d.profile.user.last_name  || lastName;
@@ -1828,15 +1850,34 @@ function exitSuperUser() {
         } catch {}
       }
 
-      const fullName = [firstName, lastName].filter(Boolean).join(' ') || user.email || 'Buyer';
+      const fullName = [firstName, lastName].filter(Boolean).join(' ') || user.email || '…';
       const initials = fullName.charAt(0).toUpperCase();
+      const shortLabel = (firstName || '').trim() ||
+        (fullName && fullName !== '…' ? fullName.split(/\s+/)[0] : '') ||
+        (user.email ? String(user.email).split('@')[0] : '…');
 
       document.getElementById('userAvatar').textContent      = initials;
-      document.getElementById('userNameShort').textContent   = firstName || 'Buyer';
+      document.getElementById('userNameShort').textContent   = shortLabel;
       document.getElementById('userDisplayName').textContent = fullName;
       document.getElementById('userDisplayEmail').textContent = user.email || '';
-      document.getElementById('welcomeTitle').innerHTML      = `Welcome back, <em>${firstName||'Buyer'}</em>! 🎯`;
-    } catch {}
+
+      const greetName = [firstName, lastName].filter(Boolean).join(' ') ||
+        (d.profile?.company_name ? String(d.profile.company_name).trim() : '') ||
+        (user.email ? String(user.email).split('@')[0] : '');
+      applyBuyerWelcomeTitle(greetName);
+    } catch (e) {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        let gn = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+        if (!gn && user.email) gn = String(user.email).split('@')[0];
+        applyBuyerWelcomeTitle(gn);
+      } catch (e2) {
+        if (welcomeTitle) {
+          welcomeTitle.removeAttribute('data-greeting-pending');
+          welcomeTitle.style.visibility = '';
+        }
+      }
+    }
   }
 
   /* ── Products ── */
@@ -2809,12 +2850,15 @@ function exitSuperUser() {
       const uid = user.firebase_uid || user.id;
       if (!uid) { showPage('dashboard'); _mkGateHide(); return; }
 
+      /* Hide gate before profile API / loadBuyerProfile so the overlay does not block the UI. */
+      _mkGateHide();
+
       // Fast path when we have a recent, versioned "profile required fields OK" cache.
       if (buyerHasProfileOkCached(uid)) {
         profileLocked = false;
         const preferred = location.hash ? location.hash.replace('#','') : 'dashboard';
         showPage(preferred);
-        loadUserProfile();
+        await loadUserProfile();
         loadProducts();
         startProductPolling();
         if (typeof onFeaturedTickerChanged === 'function') {
@@ -2835,7 +2879,6 @@ function exitSuperUser() {
         }
         await loadBuyerProfile();
         updateProfilePrimaryAction();
-        _mkGateHide();
         return;
       }
 
@@ -2859,7 +2902,8 @@ function exitSuperUser() {
       showPage(profileLocked ? 'profile' : preferred);
 
       // Initialize core UX after routing decision
-      loadUserProfile();
+      await loadUserProfile();
+      try { localStorage.setItem(gateKey, String(Date.now())); } catch(e) {}
       loadProducts();
       if (!profileLocked) startProductPolling();
       if (typeof onFeaturedTickerChanged === 'function') {
@@ -2885,8 +2929,6 @@ function exitSuperUser() {
       enforceBuyerProfileCompletion(true);
       updateProfilePrimaryAction();
 
-      try { localStorage.setItem(gateKey, String(Date.now())); } catch(e) {}
-      _mkGateHide();
     } catch (e) {
       window.__mkBootstrapRetry = bootstrapAndRouteBuyer;
       _mkGateFail('We could not load your account. Check your connection and retry.');

@@ -1025,7 +1025,7 @@ function exitSuperUser() {
 
     <div class="welcome-banner">
       <div class="welcome-text">
-        <h1 class="welcome-title" id="welcomeTitle">Welcome back, <em>Farmer</em>! 👋</h1>
+        <h1 class="welcome-title" id="welcomeTitle" data-greeting-pending="1" style="visibility:hidden" aria-live="polite">Welcome back! 👋</h1>
         <p class="welcome-sub">Grow, sell, and thrive manage your produce directly with buyers.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;">
           <a href="market.html" class="btn btn-white" style="text-decoration:none;">Go to Marketplace →</a>
@@ -2198,8 +2198,8 @@ function exitSuperUser() {
       var user = JSON.parse(raw);
       var firstName = String(user.first_name || '').trim();
       var lastName = String(user.last_name || '').trim();
-      var fullName = [firstName, lastName].filter(Boolean).join(' ') || user.email || 'Farmer';
-      var shortName = firstName || 'Farmer';
+      var fullName = [firstName, lastName].filter(Boolean).join(' ') || user.email || '…';
+      var shortName = firstName || (user.email ? String(user.email).split('@')[0] : '…');
       var initials = fullName.charAt(0).toUpperCase() || 'F';
       var avatar = document.getElementById('userAvatar');
       var shortEl = document.getElementById('userNameShort');
@@ -3025,10 +3025,33 @@ function exitSuperUser() {
   }
 
   /* ── User profile ── */
+  function applyFarmerWelcomeTitle(firstName, user) {
+    const welcomeTitle = document.getElementById('welcomeTitle');
+    if (!welcomeTitle) return;
+    const emText = (firstName || '').trim() ||
+      (user && user.email ? String(user.email).split('@')[0] : '') ||
+      '…';
+    welcomeTitle.textContent = '';
+    welcomeTitle.appendChild(document.createTextNode('Welcome back, '));
+    const em = document.createElement('em');
+    em.textContent = emText;
+    welcomeTitle.appendChild(em);
+    welcomeTitle.appendChild(document.createTextNode('! 👋'));
+    welcomeTitle.removeAttribute('data-greeting-pending');
+    welcomeTitle.style.visibility = '';
+  }
+
   async function loadUserProfile() {
+    const welcomeTitle = document.getElementById('welcomeTitle');
     try {
       const userStr = localStorage.getItem('user');
-      if (!userStr) return;
+      if (!userStr) {
+        if (welcomeTitle) {
+          welcomeTitle.removeAttribute('data-greeting-pending');
+          welcomeTitle.style.visibility = '';
+        }
+        return;
+      }
       const user = JSON.parse(userStr);
       const uid = user.firebase_uid || user.id;
       let firstName = user.first_name || '';
@@ -3045,15 +3068,25 @@ function exitSuperUser() {
         } catch {}
       }
 
-      const fullName = [firstName, lastName].filter(Boolean).join(' ') || user.email || 'Farmer';
+      const fullName = [firstName, lastName].filter(Boolean).join(' ') || user.email || '…';
       const initials = fullName.charAt(0).toUpperCase();
 
       document.getElementById('userAvatar').textContent       = initials;
-      document.getElementById('userNameShort').textContent    = firstName || 'Farmer';
+      document.getElementById('userNameShort').textContent    = (firstName || '').trim() || (user.email ? String(user.email).split('@')[0] : '…');
       document.getElementById('userDisplayName').textContent  = fullName;
       document.getElementById('userDisplayEmail').textContent = user.email || '';
-      document.getElementById('welcomeTitle').innerHTML       = `Welcome back, <em>${firstName||'Farmer'}</em>! 👋`;
-    } catch {}
+      applyFarmerWelcomeTitle(firstName, user);
+    } catch (e) {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        applyFarmerWelcomeTitle(user.first_name || '', user);
+      } catch (e2) {
+        if (welcomeTitle) {
+          welcomeTitle.removeAttribute('data-greeting-pending');
+          welcomeTitle.style.visibility = '';
+        }
+      }
+    }
   }
 
   /* ── Farmer profile form ── */
@@ -4187,6 +4220,9 @@ function exitSuperUser() {
       const uid = user.firebase_uid || user.id;
       if (!uid) { showPage('dashboard'); _mkGateHide(); return; }
 
+      /* Hide gate before profile API / loadFarmerProfile so the overlay does not block the UI. */
+      _mkGateHide();
+
       // Fast path when we have a recent, versioned "profile required fields OK" cache.
       if (farmerHasProfileOkCached(uid)) {
         profileLocked = false;
@@ -4196,7 +4232,7 @@ function exitSuperUser() {
 
         applyProductTypeOptions('product');
         applyProductTypeOptions('edit');
-        loadUserProfile();
+        await loadUserProfile();
         loadProducts();
         setTimeout(() => {
           loadMarketplaceListings();
@@ -4215,7 +4251,6 @@ function exitSuperUser() {
         }
         const action = new URLSearchParams(window.location.search).get('action');
         if (action === 'list-produce') addProduct();
-        _mkGateHide();
         return;
       }
 
@@ -4238,7 +4273,8 @@ function exitSuperUser() {
       // Heavy loads only after routing is decided.
       applyProductTypeOptions('product');
       applyProductTypeOptions('edit');
-      loadUserProfile();
+      await loadUserProfile();
+      try { localStorage.setItem(gateKey, String(Date.now())); } catch(e) {}
       loadProducts();
 
       if (!profileLocked) {
@@ -4267,8 +4303,6 @@ function exitSuperUser() {
       const action = new URLSearchParams(window.location.search).get('action');
       if (action === 'list-produce' && !profileLocked) addProduct();
 
-      try { localStorage.setItem(gateKey, String(Date.now())); } catch(e) {}
-      _mkGateHide();
     } catch (e) {
       window.__mkBootstrapRetry = bootstrapAndRouteFarmer;
       _mkGateFail('We could not load your account. Check your connection and retry.');

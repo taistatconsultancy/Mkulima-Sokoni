@@ -364,7 +364,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
 <div id="dashboard" class="page-section active">
   <div class="wrap">
     <div class="dash-hero">
-      <h1>Welcome, <span class="dash-hero-name" id="dealer-name">Agro-Dealer</span> 🏪</h1>
+      <h1>Welcome, <span class="dash-hero-name" id="dealer-name" data-greeting-pending="1" style="visibility:hidden">&nbsp;</span> 🏪</h1>
       <p>Manage your farm inputs, seeds, fertilizers, and equipment listings</p>
     </div>
     <div class="stats-grid">
@@ -1202,8 +1202,8 @@ function primeTopbarIdentityFromCache() {
     var user = JSON.parse(raw);
     var firstName = String(user.first_name || '').trim();
     var lastName = String(user.last_name || '').trim();
-    var fullName = [firstName, lastName].filter(Boolean).join(' ') || user.email || 'Agro-Dealer';
-    var shortName = firstName || 'Dealer';
+    var fullName = [firstName, lastName].filter(Boolean).join(' ') || user.email || '…';
+    var shortName = firstName || (user.email ? String(user.email).split('@')[0] : '…');
     var initials = fullName.charAt(0).toUpperCase() || 'A';
     var avatar = document.getElementById('userAvatar');
     var shortEl = document.getElementById('userNameShort');
@@ -1231,15 +1231,9 @@ async function init() {
     if (user) {
       firebaseUid = user.firebase_uid;
       const name = ((user.first_name||'') + ' ' + (user.last_name||'')).trim();
-      const initials = ((user.first_name||'?')[0] + (user.last_name||'')[0]).toUpperCase();
-      document.getElementById('dealer-name').textContent = name || 'Agro-Dealer';
       document.getElementById('profile-email').value = user.email || '';
       document.getElementById('profile-owner').value = name || '';
       if (user.phone_number) document.getElementById('profile-phone').value = user.phone_number;
-      document.getElementById('userAvatar').textContent = initials || '?';
-      document.getElementById('userNameShort').textContent = user.first_name || 'Dealer';
-      document.getElementById('userDisplayName').textContent = name || 'Agro-Dealer';
-      document.getElementById('userDisplayEmail').textContent = user.email || '';
     }
   } catch(e) {}
 
@@ -1258,7 +1252,6 @@ async function init() {
       loadFeaturedTickerRows().then(() => renderTicker(featuredTickerProducts));
     });
   }
-  await loadProfile();
   if (window.SokoSupportCenter) {
     window.SokoSupportCenter.initUserSupport({
       rootId: 'agroDealerSupportCenterRoot',
@@ -1884,13 +1877,51 @@ function renderTicker(products) {
 }
 
 /* ── Profile ── */
+function applyAgroGreetingFromProfile(prof) {
+  var lsUser = {};
+  try { lsUser = JSON.parse(localStorage.getItem('user') || '{}'); } catch (e) { lsUser = {}; }
+  var pu = prof.user || {};
+  var fn = String(pu.first_name || '').trim();
+  var ln = String(pu.last_name || '').trim();
+  var displayName = [fn, ln].filter(Boolean).join(' ');
+  if (!displayName && prof.farm_name) displayName = String(prof.farm_name).trim();
+  if (!displayName) displayName = (((lsUser.first_name || '') + ' ' + (lsUser.last_name || '')).trim());
+  if (!displayName && lsUser.email) displayName = String(lsUser.email).split('@')[0];
+  if (!displayName) displayName = 'Agro-Dealer';
+
+  var shortName = fn || (displayName.split(/\s+/)[0]) || (lsUser.email ? String(lsUser.email).split('@')[0] : '…');
+  var initials = (fn && ln)
+    ? (fn.charAt(0) + ln.charAt(0)).toUpperCase()
+    : displayName.charAt(0).toUpperCase();
+
+  var dn = document.getElementById('dealer-name');
+  if (dn) {
+    dn.textContent = displayName;
+    dn.removeAttribute('data-greeting-pending');
+    dn.style.visibility = '';
+  }
+  var av = document.getElementById('userAvatar');
+  if (av) av.textContent = initials || '?';
+  var sn = document.getElementById('userNameShort');
+  if (sn) sn.textContent = shortName;
+  var ud = document.getElementById('userDisplayName');
+  if (ud) ud.textContent = displayName;
+  var ue = document.getElementById('userDisplayEmail');
+  if (ue) ue.textContent = lsUser.email || '';
+
+  var po = document.getElementById('profile-owner');
+  if (po && displayName && displayName !== 'Agro-Dealer') po.value = displayName;
+}
+
 async function loadProfile() {
   if (!firebaseUid) return;
   try {
     const res = await fetch(`${API}/profiles/farmer/${firebaseUid}`);
+    let data = {};
+    try { data = await res.json(); } catch (e2) { data = {}; }
+    const prof = data.profile || data || {};
+    applyAgroGreetingFromProfile(prof);
     if (!res.ok) return;
-    const data = await res.json();
-    const prof = data.profile || data;
     var prevGate = sessionStorage.getItem(AGRO_GATE_STATUS_KEY);
     var hasReq = Boolean(
       String(prof.farm_name || '').trim() &&
@@ -1911,7 +1942,9 @@ async function loadProfile() {
     if (stEl) stEl.textContent = stDb.charAt(0).toUpperCase() + stDb.slice(1).toLowerCase();
     applyAgroAccountStatusUi(stDb, false);
     updateAgroProfileWarning(prof, stDb);
-  } catch(e) {}
+  } catch(e) {
+    try { applyAgroGreetingFromProfile({}); } catch(e2) {}
+  }
 }
 
 function switchProfileTab(name, btn) {
