@@ -361,7 +361,6 @@
     <input id="productSearch" type="text" placeholder="Search products, counties…" />
   </div>
   <div class="topbar-actions">
-    <a class="topbar-btn" href="/install" id="topbarGetAppBtn" style="text-decoration:none;display:none;">📲 Get app</a>
     <button class="topbar-btn" onclick="location.href='/auth'">Sign In</button>
   </div>
 </header>
@@ -935,21 +934,6 @@
         });
       }
     }catch(e){}
-  })();
-
-  /* Show "Get app" topbar button when install is possible (Android Chrome / desktop Chrome). */
-  (function(){
-    function refresh(){
-      var btn = document.getElementById('topbarGetAppBtn');
-      if (!btn) return;
-      var canInstall = window.MkInstall && window.MkInstall.canInstall();
-      var installed = window.MkInstall && window.MkInstall.isInstalled();
-      var ios = window.MkInstall && window.MkInstall.isIOS();
-      btn.style.display = (!installed && (canInstall || ios)) ? '' : 'none';
-    }
-    window.addEventListener('mk:install:available', refresh);
-    window.addEventListener('mk:install:done', refresh);
-    setTimeout(refresh, 600);
   })();
 </script>
 <script src="/js/pwa-install.js"></script>
