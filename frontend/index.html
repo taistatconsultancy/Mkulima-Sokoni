@@ -259,6 +259,50 @@
       .hero-nav-card { flex: 1; min-width: 130px; }
     }
     @media (max-width: 768px) {
+      .hero-pills { display: none; }
+      /* Dashboard CTAs: three buttons in one horizontal row on tablets / phones */
+      .hero-nav-cards {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 6px;
+        align-items: stretch;
+      }
+      .hero-nav-card {
+        flex: 1 1 0;
+        min-width: 0;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        text-align: center;
+        padding: 10px 4px;
+        gap: 5px;
+      }
+      .hero-nav-card:hover { transform: translateY(-3px); }
+      .hero-nav-card .hnc-icon {
+        width: 34px;
+        height: 34px;
+        font-size: 16px;
+      }
+      .hero-nav-card .hnc-text {
+        flex: none;
+        width: 100%;
+      }
+      .hero-nav-card .hnc-label {
+        font-size: .52rem;
+        letter-spacing: .06em;
+      }
+      .hero-nav-card .hnc-title {
+        font-size: .58rem;
+        line-height: 1.2;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .hero-nav-card .hnc-arrow {
+        font-size: .68rem;
+        margin-top: 1px;
+      }
       .market-head .market-head-left { flex: 0 1 auto; }
       .market-head .market-head-center { flex: 0 1 auto; }
       .market-head .market-head-right { flex: 1 1 auto; justify-content: flex-end; display: flex; }
@@ -291,8 +335,6 @@
       .support-contact-grid { grid-template-columns: 1fr; }
       .form-grid { grid-template-columns: 1fr; }
       .form-full { grid-column: 1; }
-      .hero-nav-cards { flex-direction: column; }
-      .hero-nav-card { min-width: unset; }
       footer { padding: 36px 16px 0; }
       .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
       .footer-bottom { flex-direction: column; align-items: flex-start; }
