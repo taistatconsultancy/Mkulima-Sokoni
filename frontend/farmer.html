@@ -641,6 +641,16 @@
       flex-shrink: 0;
     }
     .agro-dealer-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; margin-bottom:30px; }
+    /* "Farmers near you" tightened layout for phone */
+    .nearby-card { background:#fff; border:1.5px solid var(--border); border-radius:14px; overflow:hidden; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; }
+    .nearby-card-head { display:flex; gap:10px; align-items:center; padding:12px 12px 0; }
+    .nearby-card-avatar { width:40px; height:40px; border-radius:12px; overflow:hidden; background:linear-gradient(135deg,var(--forest),var(--leaf)); display:grid; place-items:center; flex-shrink:0; box-shadow:0 4px 12px rgba(27,67,50,.12); }
+    .nearby-card-info { min-width:0; flex:1; }
+    .nearby-card-name { font-weight:800; color:var(--ink); font-size:.86rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .nearby-card-loc { font-size:.74rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .nearby-card-distance { font-size:.7rem; font-weight:800; color:var(--leaf); background:rgba(64,145,108,.10); padding:3px 8px; border-radius:999px; white-space:nowrap; flex-shrink:0; }
+    .nearby-card-foot { padding:10px 12px 12px; margin-top:auto; }
+    .nearby-card-foot .btn { width:100%; padding:7px 10px; font-size:.78rem; }
     .chat-item-main { flex: 1; min-width: 0; }
     .chat-item-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
     .chat-item-name { font-weight: 800; font-size: .84rem; color: var(--ink); }
@@ -851,13 +861,36 @@
       footer { padding: 36px 16px 0; }
       .footer-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
       .footer-bottom { flex-direction: column; align-items: flex-start; }
+      /* Two-column card layout on phones/tablets */
+      .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px; }
+      .agro-dealer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px; }
+      #nearbyFarmersGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 10px !important; }
+      .product-image { height: 110px; font-size: 36px; }
+      .product-body { padding: 10px 11px; }
+      .product-title { font-size: .85rem; }
+      .product-meta { font-size: .66rem; }
+      .product-footer { padding: 7px 11px; gap: 6px; }
+      .product-footer .btn,
+      .product-footer .btn-sm { padding: 4px 9px; font-size: .68rem; }
     }
     @media (max-width: 480px) {
       .stats-grid { grid-template-columns: 1fr; }
-      .products-grid { grid-template-columns: 1fr; }
-      .product-footer { flex-direction: column; align-items: stretch; }
-      .product-footer .btn { width: 100%; }
-      .product-meta { flex-wrap: wrap; gap: 6px; }
+      .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
+      .agro-dealer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px; }
+      #nearbyFarmersGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; }
+      .product-image { height: 96px; font-size: 30px; }
+      .product-body { padding: 8px 10px; }
+      .product-title { font-size: .8rem; }
+      .product-meta { font-size: .62rem; flex-wrap: wrap; gap: 4px; }
+      .product-footer { padding: 6px 10px; gap: 4px; }
+      .product-date { font-size: .6rem; }
+      .nearby-card-head { padding: 10px 10px 0; gap: 8px; }
+      .nearby-card-avatar { width: 36px; height: 36px; }
+      .nearby-card-name { font-size: .8rem; }
+      .nearby-card-loc { font-size: .68rem; }
+      .nearby-card-distance { font-size: .62rem; padding: 2px 6px; }
+      .nearby-card-foot { padding: 8px 10px 10px; }
+      .nearby-card-foot .btn { padding: 6px 8px; font-size: .72rem; }
       .chat-list-head, .chat-thread-head, .chat-thread-foot { padding: 10px; }
       .chat-thread-body { padding: 10px; }
       .chat-item { padding: 10px; }
@@ -874,7 +907,9 @@
       #accountStatusBadgeLabel { display: none; }
       .user-menu-btn { padding-right: 6px; }
       .user-menu-btn .name { display: none; }
-      .agro-dealer-grid { grid-template-columns: 1fr; }
+      .products-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px; }
+      .agro-dealer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px; }
+      #nearbyFarmersGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px !important; }
       #marketGrid { grid-template-columns: 1fr !important; }
     }
 
@@ -4011,19 +4046,17 @@ function exitSuperUser() {
         ? `<img src="${f.profile_image_url}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" />`
         : `<div style="font-weight:800;color:#fff;">${name.trim().charAt(0).toUpperCase() || 'F'}</div>`;
       return `
-        <article style="background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;">
-          <div style="display:flex;gap:12px;align-items:center;padding:14px 14px 0;">
-            <div style="width:44px;height:44px;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,var(--forest),var(--leaf));display:grid;place-items:center;flex-shrink:0;box-shadow:0 6px 18px rgba(27,67,50,.12);">
-              ${avatar}
+        <article class="nearby-card">
+          <div class="nearby-card-head">
+            <div class="nearby-card-avatar">${avatar}</div>
+            <div class="nearby-card-info">
+              <div class="nearby-card-name">${name}</div>
+              <div class="nearby-card-loc">📍 ${loc || 'Kenya'}</div>
             </div>
-            <div style="min-width:0;flex:1;">
-              <div style="font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
-              <div style="font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 ${loc || 'Kenya'}</div>
-            </div>
-            ${distance ? `<div style="font-size:.72rem;font-weight:800;color:var(--leaf);background:rgba(64,145,108,.10);padding:4px 10px;border-radius:999px;white-space:nowrap;">${distance}</div>` : ''}
+            ${distance ? `<div class="nearby-card-distance">${distance}</div>` : ''}
           </div>
-          <div style="padding:12px 14px 14px;margin-top:auto;">
-            <a class="btn btn-white" style="display:inline-flex;justify-content:center;align-items:center;width:100%;text-decoration:none;" href="seller-profile.html?uid=${uid}">View profile →</a>
+          <div class="nearby-card-foot">
+            <a class="btn btn-white" style="display:inline-flex;justify-content:center;align-items:center;text-decoration:none;" href="seller-profile.html?uid=${uid}">View profile →</a>
           </div>
         </article>
       `;
