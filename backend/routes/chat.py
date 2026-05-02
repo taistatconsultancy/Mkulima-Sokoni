@@ -1,13 +1,13 @@
 """
 Chat routes for buyer–farmer messaging.
 """
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, g
 from models.chat import Conversation, Message
 from models.product import Product
 from models.user import User
 from models.farmer_profile import FarmerProfile
 from utils.account_access import is_rejected_user
-from utils.mailer import send_new_message_email
+from utils.mailer import send_new_message_email, send_admin_direct_email, smtp_enabled
 from auth.admin_auth import decode_token_if_admin
 from database import execute_query
 import logging
@@ -250,6 +250,7 @@ def send_message(conversation_id):
 def admin_list_conversations():
     """
     Admin: list conversations with optional search.
+    Excludes conversations that have no messages yet (last_message_at is null).
     Query params:
       - q: search across participant emails/names (best-effort)
       - limit, offset
@@ -306,6 +307,7 @@ def admin_list_conversations():
               su.email ILIKE %s OR
               fp.farm_name ILIKE %s
             )
+            AND c.last_message_at IS NOT NULL
             ORDER BY COALESCE(c.last_message_at, c.created_at) DESC
             LIMIT %s OFFSET %s
         """
@@ -407,3 +409,56 @@ def admin_send_message(conversation_id):
     except Exception as e:
         logger.error(f"admin_send_message error: {str(e)}", exc_info=True)
         return jsonify({"error": "Failed to send message"}), 500
+
+
+@chat_bp.route("/admin/direct-message", methods=["POST"])
+def admin_send_direct_message():
+    """
+    Admin: send a branded email to any registered user by email address.
+    Expects JSON: { email, body, subject? }
+    Requires admin Firebase Bearer token.
+    """
+    decoded, err = decode_token_if_admin()
+    if err:
+        return err
+
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip()
+    body = (data.get("body") or "").strip()
+    subject = (data.get("subject") or "").strip()
+
+    if not email:
+        return jsonify({"error": "email is required"}), 400
+    if not body:
+        return jsonify({"error": "Message body is required"}), 400
+
+    user = User.get_user_by_email(email)
+    if not user:
+        return jsonify({"error": "No user found with that email"}), 404
+
+    to_email = (user.get("email") or email).strip()
+    admin_email = (decoded.get("email") or "").strip() or None
+    default_subject = "Message from Mkulima Sokoni Admin Support"
+    final_subject = subject or default_subject
+
+    req_id = getattr(g, "request_id", "-")
+    enabled = smtp_enabled()
+    logger.info(
+        "admin_direct_message request_id=%s admin_email=%s recipient=%s body_len=%s smtp_enabled=%s",
+        req_id,
+        admin_email or "-",
+        to_email,
+        len(body),
+        enabled,
+    )
+
+    dispatched = send_admin_direct_email(to_email, final_subject, body, admin_email=admin_email)
+
+    return jsonify(
+        {
+            "success": True,
+            "sent_to": to_email,
+            "smtp_enabled": enabled,
+            "email_dispatched": dispatched if enabled else False,
+        }
+    ), 200

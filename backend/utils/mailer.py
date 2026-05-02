@@ -232,6 +232,71 @@ def send_new_message_email(
     return send_email(to_email, subject, "\n".join(lines), html=html)
 
 
+def send_admin_direct_email(
+    to_email: str,
+    subject: str,
+    body_text: str,
+    admin_email: Optional[str] = None,
+) -> bool:
+    """
+    Branded email from Admin Support to any registered user (SMTP-configured).
+    Returns True if SMTP sent successfully, False if disabled/skipped/failed.
+    """
+    body = (body_text or "").strip()
+    if not body:
+        return False
+
+    subj = (subject or "").strip() or "Message from Mkulima Sokoni Admin Support"
+
+    text_lines = [
+        "You have a message from Mkulima Sokoni Admin Support.",
+        "",
+        body,
+        "",
+    ]
+    ae_plain = (admin_email or "").strip()
+    if ae_plain:
+        text_lines.extend(["Sent by admin account:", ae_plain, ""])
+    text_lines.append("Mkulima Sokoni Team")
+    text = "\n".join(text_lines)
+
+    safe_body = (
+        body.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\r\n", "\n")
+        .replace("\r", "\n")
+    )
+    html_body_paragraphs = safe_body.replace("\n", "<br>")
+
+    admin_note = ""
+    if ae_plain:
+        ae_safe = (
+            ae_plain.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
+        admin_note = (
+            '<p style="margin:16px 0 0;color:#6b7280;font-size:13px;">'
+            f"Sent by: <strong>{ae_safe}</strong></p>"
+        )
+
+    html_body = f"""\
+<h1 style="margin:0 0 10px;font-size:20px;color:#111827;">Message from Admin Support</h1>
+<p style="margin:0 0 14px;color:#374151;line-height:1.6;">The Mkulima Sokoni support team sent you the following message:</p>
+<div style="margin:0 0 16px;padding:12px 14px;border:1px solid #e5e7eb;border-radius:12px;background:#f9fafb;color:#111827;line-height:1.6;">
+  {html_body_paragraphs}
+</div>
+{admin_note}
+<div style="margin-top:18px;color:#6b7280;font-size:13px;">Thanks,<br /><strong>Mkulima Sokoni Team</strong></div>
+"""
+    pre = body.replace("\n", " ").strip()
+    if len(pre) > 120:
+        pre = pre[:117] + "..."
+    html = _email_base_html("Admin Support Message", pre, html_body)
+    return send_email(to_email, subj, text, html=html)
+
+
 def _split_emails(raw: Optional[str]) -> list[str]:
     if not raw:
         return []

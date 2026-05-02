@@ -450,6 +450,28 @@
 
         <!-- Chat Tab -->
         <div id="chat" class="tab-content">
+          <div class="section-card" style="margin-bottom:18px;">
+            <h2 class="section-title">Send Direct Message to User</h2>
+            <p style="color:var(--muted);margin-bottom:14px;">Sends a branded email from Mkulima Sokoni Admin Support to any registered user by their email address.</p>
+            <div id="direct-msg-feedback" style="display:none;padding:10px 14px;border-radius:9px;font-size:.85rem;margin-bottom:14px;"></div>
+            <div style="display:grid;gap:12px;max-width:640px;">
+              <div>
+                <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Recipient email</label>
+                <input id="direct-msg-email" type="email" placeholder="user@example.com" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:.88rem;font-family:'DM Sans',sans-serif;background:var(--cream);" />
+              </div>
+              <div>
+                <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Subject <span style="font-weight:400;">(optional)</span></label>
+                <input id="direct-msg-subject" type="text" placeholder="Message from Mkulima Sokoni Admin Support" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:.88rem;font-family:'DM Sans',sans-serif;background:var(--cream);" />
+              </div>
+              <div>
+                <label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:4px;">Message</label>
+                <textarea id="direct-msg-body" placeholder="Write your message…" rows="4" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:.88rem;font-family:'DM Sans',sans-serif;background:var(--cream);resize:vertical;"></textarea>
+              </div>
+              <div>
+                <button type="button" class="btn btn-primary btn-sm" id="direct-msg-send-btn">Send email</button>
+              </div>
+            </div>
+          </div>
           <div class="section-card">
             <h2 class="section-title">Chat Viewer 💬</h2>
             <p style="color:var(--muted);margin-bottom:18px;">View buyer–seller conversations and messages. This is an admin-only viewer.</p>
@@ -1032,8 +1054,74 @@
       activeConversationId: null,
       loadingList: false,
       loadingThread: false,
-      sending: false
+      sending: false,
+      sendingDirect: false
     };
+
+    function showDirectMsgFeedback(ok, msg) {
+      var el = document.getElementById('direct-msg-feedback');
+      if (!el) return;
+      el.style.display = 'block';
+      if (ok) {
+        el.style.background = '#ecfdf5';
+        el.style.color = '#065f46';
+        el.style.border = '1px solid #a7f3d0';
+      } else {
+        el.style.background = '#fef2f2';
+        el.style.color = '#991b1b';
+        el.style.border = '1px solid #fecaca';
+      }
+      el.textContent = msg || '';
+    }
+
+    async function sendAdminDirectMessage() {
+      var emailEl = document.getElementById('direct-msg-email');
+      var subjEl = document.getElementById('direct-msg-subject');
+      var bodyEl = document.getElementById('direct-msg-body');
+      var btn = document.getElementById('direct-msg-send-btn');
+      if (!emailEl || !bodyEl || !btn) return;
+      var email = (emailEl.value || '').trim();
+      var subject = (subjEl && subjEl.value || '').trim();
+      var body = (bodyEl.value || '').trim();
+      if (!email) {
+        showDirectMsgFeedback(false, 'Please enter the user\'s email address.');
+        return;
+      }
+      if (!body) {
+        showDirectMsgFeedback(false, 'Please enter a message body.');
+        return;
+      }
+      if (adminChatState.sendingDirect) return;
+      adminChatState.sendingDirect = true;
+      btn.disabled = true;
+      var idle = btn.textContent;
+      btn.textContent = 'Sending…';
+      try {
+        var payload = { email: email, body: body };
+        if (subject) payload.subject = subject;
+        var res = await authFetch(API_BASE + '/chat/admin/direct-message', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        var data = await res.json().catch(function () { return {}; });
+        if (!res.ok) throw new Error(data.error || 'Failed to send');
+        var msg = 'Message queued for ' + (data.sent_to || email) + '.';
+        if (!data.smtp_enabled) {
+          showDirectMsgFeedback(false, msg + ' Email is currently disabled on the server (SMTP not enabled).');
+        } else if (!data.email_dispatched) {
+          showDirectMsgFeedback(false, msg + ' The server could not send the email (check SMTP configuration).');
+        } else {
+          showDirectMsgFeedback(true, msg);
+          bodyEl.value = '';
+        }
+      } catch (e) {
+        showDirectMsgFeedback(false, e.message || 'Send failed');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = idle;
+        adminChatState.sendingDirect = false;
+      }
+    }
 
     function escapeHtmlLoose(s) {
       return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -1190,6 +1278,9 @@
       var refreshBtn = document.getElementById('admin-chat-refresh-btn');
       var sendBtn = document.getElementById('admin-chat-send-btn');
       var search = document.getElementById('admin-chat-search');
+      var directBtn = document.getElementById('direct-msg-send-btn');
+      var directEmail = document.getElementById('direct-msg-email');
+      var directSubject = document.getElementById('direct-msg-subject');
       if (refreshBtn && !refreshBtn.dataset.bound) {
         refreshBtn.dataset.bound = 'true';
         refreshBtn.addEventListener('click', function () { loadAdminChatConversations(false); });
@@ -1204,6 +1295,28 @@
           if (e.key === 'Enter') {
             e.preventDefault();
             loadAdminChatConversations(false);
+          }
+        });
+      }
+      if (directBtn && !directBtn.dataset.dmBound) {
+        directBtn.dataset.dmBound = 'true';
+        directBtn.addEventListener('click', function () { sendAdminDirectMessage(); });
+      }
+      if (directEmail && !directEmail.dataset.dmBound) {
+        directEmail.dataset.dmBound = 'true';
+        directEmail.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            sendAdminDirectMessage();
+          }
+        });
+      }
+      if (directSubject && !directSubject.dataset.dmBound) {
+        directSubject.dataset.dmBound = 'true';
+        directSubject.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            sendAdminDirectMessage();
           }
         });
       }
