@@ -1734,9 +1734,21 @@ function exitSuperUser() {
     stopCommercePolling();
     stopBuyerInboxPolling();
     if (pageName === 'dashboard') {
-      loadProducts();
-      startProductPolling();
-      refreshCartBadge();
+      var prodHost = document.getElementById('products-container');
+      var alreadyRendered =
+        prodHost &&
+        (prodHost.querySelector('.category-section') || prodHost.querySelector('.product-card')) &&
+        allProducts &&
+        allProducts.length;
+      if (alreadyRendered) {
+        refreshCartBadge();
+        startProductPolling();
+        loadProducts({ soft: true });
+      } else {
+        loadProducts();
+        startProductPolling();
+        refreshCartBadge();
+      }
     }
     if (pageName === 'cart') {
       setTimeout(() => loadBuyerCart(), 220);
@@ -1952,46 +1964,87 @@ function exitSuperUser() {
   const categoryOrder = ['Vegetables', ...agroDealerCategories, 'Fruits','Cereals','Livestock','Dairy','Tea','Nuts','Legumes','Herbs','Potatoes','Other'];
   const categoryEmoji = { Vegetables:'🥬', Fruits:'🍋', Cereals:'🌾', Livestock:'🐄', Dairy:'🥛', Tea:'🍵', Nuts:'🥜', Legumes:'🫘', Herbs:'🌿', Potatoes:'🥔', Other:'📦' };
 
-  async function loadProducts() {
+  function markBuyerSessionDashReady(uid) {
+    try {
+      if (uid) sessionStorage.setItem('mk_sess_buyer_ready_' + String(uid), '1');
+    } catch (_) {}
+  }
+
+  /** When returning from product detail in the same session, paint marketplace from disk before routing so Dashboard is instant (no spinner flash). */
+  function hydrateBuyerProductsFromSession(uid) {
+    if (!uid || sessionStorage.getItem('mk_sess_buyer_ready_' + String(uid)) !== '1') return;
     const container = document.getElementById('products-container');
     if (!container) return;
-
-    // Instant render from cache (do not await ticker network first)
     const cached = readProductsCache();
     if (cached && cached.length) {
       allProducts = cached;
       lastProductCount = cached.length;
       renderProducts(cached);
     }
-
-    // Instant ticker from cache, then refresh
     const featuredCached = readFeaturedCache();
     if (featuredCached && featuredCached.length) {
       featuredTickerProducts = featuredCached;
       renderLiveTicker(featuredCached);
     }
-    loadFeaturedTickerRows().then(() => renderLiveTicker(featuredTickerProducts));
+  }
 
-    if (!allProducts.length) {
-      container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:52px 20px;gap:14px;"><div class="spinner"></div><p style="color:var(--muted);font-weight:600;">Loading available products…</p></div>';
+  let _buyerLoadProductsPromise = null;
+  async function loadProducts(opts) {
+    if (_buyerLoadProductsPromise && !(opts && opts.force)) {
+      return _buyerLoadProductsPromise;
     }
+    _buyerLoadProductsPromise = (async () => {
+      const soft = opts && opts.soft === true;
+      const container = document.getElementById('products-container');
+      if (!container) return;
 
-    // Fetch fresh data in background
-    try {
-      const res = await fetch(`${API_BASE_URL}/products?status=active`);
-      if (!res.ok) throw new Error('Failed');
-      const products = await res.json();
-      allProducts = products;
-      lastProductCount = products.length;
-      writeProductsCache(products);
-      renderProducts(products);
-      await loadFeaturedTickerRows();
-      renderLiveTicker(featuredTickerProducts);
-    } catch {
-      if (!allProducts.length) {
-        container.innerHTML = '<div class="empty-state"><div class="icon">🌱</div><h4>No products found</h4><p style="font-size:.82rem;">Check back soon as farmers add fresh produce.</p></div>';
+      // Instant render from cache (do not await ticker network first)
+      const cached = readProductsCache();
+      if (cached && cached.length) {
+        allProducts = cached;
+        lastProductCount = cached.length;
+        renderProducts(cached);
       }
-    }
+
+      // Instant ticker from cache, then refresh
+      const featuredCached = readFeaturedCache();
+      if (featuredCached && featuredCached.length) {
+        featuredTickerProducts = featuredCached;
+        renderLiveTicker(featuredCached);
+      }
+      loadFeaturedTickerRows().then(() => renderLiveTicker(featuredTickerProducts));
+
+      if (!allProducts.length && !soft) {
+        container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:52px 20px;gap:14px;"><div class="spinner"></div><p style="color:var(--muted);font-weight:600;">Loading available products…</p></div>';
+      }
+
+      let uidForMark = '';
+      try {
+        const u = JSON.parse(localStorage.getItem('user') || '{}');
+        uidForMark = u.firebase_uid || u.id || '';
+      } catch (_) {}
+
+      // Fetch fresh data in background
+      try {
+        const res = await fetch(`${API_BASE_URL}/products?status=active`);
+        if (!res.ok) throw new Error('Failed');
+        const products = await res.json();
+        allProducts = products;
+        lastProductCount = products.length;
+        writeProductsCache(products);
+        renderProducts(products);
+        await loadFeaturedTickerRows();
+        renderLiveTicker(featuredTickerProducts);
+        markBuyerSessionDashReady(uidForMark);
+      } catch {
+        if (!allProducts.length) {
+          container.innerHTML = '<div class="empty-state"><div class="icon">🌱</div><h4>No products found</h4><p style="font-size:.82rem;">Check back soon as farmers add fresh produce.</p></div>';
+        }
+      }
+    })().finally(() => {
+      _buyerLoadProductsPromise = null;
+    });
+    return _buyerLoadProductsPromise;
   }
 
   function renderProducts(products) {
@@ -2848,7 +2901,9 @@ function exitSuperUser() {
     } catch(e) {}
     const gateKey = 'mk_bootstrap_last_buyer_' + (uidForKey || 'anon');
     const last = parseInt(localStorage.getItem(gateKey) || '0', 10) || 0;
-    const shouldShowGate = !last || (Date.now() - last) > (24 * 60 * 60 * 1000);
+    const sessDashReady = uidForKey && sessionStorage.getItem('mk_sess_buyer_ready_' + uidForKey) === '1';
+    const shouldShowGate =
+      (!last || (Date.now() - last) > (24 * 60 * 60 * 1000)) && !sessDashReady;
     if (shouldShowGate) _mkGateShow('Checking your profile…');
     try {
       const userStr = localStorage.getItem('user');
@@ -2864,13 +2919,16 @@ function exitSuperUser() {
       /* Hide gate before profile API / loadBuyerProfile so the overlay does not block the UI. */
       _mkGateHide();
 
+      hydrateBuyerProductsFromSession(uid);
+
       // Fast path when we have a recent, versioned "profile required fields OK" cache.
       if (buyerHasProfileOkCached(uid)) {
         profileLocked = false;
         const preferred = location.hash ? location.hash.replace('#','') : 'dashboard';
         showPage(preferred);
         await loadUserProfile();
-        loadProducts();
+        if (!(preferred === 'dashboard' && !profileLocked)) loadProducts();
+        else loadProducts({ soft: sessDashReady });
         startProductPolling();
         if (typeof onFeaturedTickerChanged === 'function') {
           onFeaturedTickerChanged(() => {
@@ -2915,7 +2973,8 @@ function exitSuperUser() {
       // Initialize core UX after routing decision
       await loadUserProfile();
       try { localStorage.setItem(gateKey, String(Date.now())); } catch(e) {}
-      loadProducts();
+      if (profileLocked || preferred !== 'dashboard') loadProducts();
+      else loadProducts({ soft: sessDashReady });
       if (!profileLocked) startProductPolling();
       if (typeof onFeaturedTickerChanged === 'function') {
         onFeaturedTickerChanged(() => {

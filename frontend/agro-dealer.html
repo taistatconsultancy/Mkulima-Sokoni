@@ -1301,9 +1301,10 @@ async function init() {
 
   await bootstrapAndRouteAgro();
 
+  var agroSessReady = firebaseUid && sessionStorage.getItem('mk_sess_agro_ready_' + String(firebaseUid)) === '1';
   if (!profileLocked) {
-    loadMyProducts();
-    loadMarketplace();
+    loadMyProducts({ soft: agroSessReady });
+    loadMarketplace({ soft: agroSessReady });
     startMarketplacePolling();
   }
   if (typeof onFeaturedTickerChanged === 'function') {
@@ -1348,7 +1349,8 @@ async function bootstrapAndRouteAgro(){
   var gateKey = 'mk_bootstrap_last_agro_' + uidForKey;
   var last = 0;
   try { last = parseInt(localStorage.getItem(gateKey) || '0', 10) || 0; } catch(e) { last = 0; }
-  var shouldShowGate = !last || (Date.now() - last) > (24 * 60 * 60 * 1000);
+  var sessDashReady = firebaseUid && sessionStorage.getItem('mk_sess_agro_ready_' + String(firebaseUid)) === '1';
+  var shouldShowGate = (!last || (Date.now() - last) > (24 * 60 * 60 * 1000)) && !sessDashReady;
   if (shouldShowGate) _mkGateShow('Checking your profile…');
   try {
     if (!firebaseUid) {
@@ -1360,6 +1362,7 @@ async function bootstrapAndRouteAgro(){
     // Once a user has completed required profile fields, never re-check again.
     if (agroHasProfileOkCached(firebaseUid)) {
       profileLocked = false;
+      hydrateAgroDealerFromSession(firebaseUid);
       showPage('dashboard');
       await loadProfile();
       _mkGateHide();
@@ -1377,6 +1380,7 @@ async function bootstrapAndRouteAgro(){
     );
     profileLocked = !res.ok || !hasRequired;
     if (hasRequired) agroSetProfileOkCached(firebaseUid);
+    if (!profileLocked) hydrateAgroDealerFromSession(firebaseUid);
     showPage(profileLocked ? 'profile' : 'dashboard');
     await loadProfile();
     enforceAgroProfileCompletion(true);
@@ -1432,14 +1436,46 @@ document.addEventListener('visibilitychange', function() {
   if (msgSec && msgSec.classList.contains('active') && firebaseUid) loadDealerInbox(true);
 });
 
+function markAgroSessionDashReady(uid) {
+  try {
+    if (uid) sessionStorage.setItem('mk_sess_agro_ready_' + String(uid), '1');
+  } catch (_) {}
+}
+
+/** Same-tab session revisit: paint inventory + marketplace from storage before first paint so returning from product detail feels instant. */
+function hydrateAgroDealerFromSession(uid) {
+  if (!uid || sessionStorage.getItem('mk_sess_agro_ready_' + String(uid)) !== '1') return;
+  const grid = document.getElementById('inv-grid');
+  if (!grid) return;
+  const cacheKey = 'dealerMyProductsCache:' + uid;
+  try {
+    const cached = JSON.parse(sessionStorage.getItem(cacheKey) || localStorage.getItem(cacheKey) || '[]');
+    if (Array.isArray(cached) && cached.length) renderDealerProducts(grid, cached);
+  } catch (_) {}
+  const cachedMk = readProductsCache();
+  if (cachedMk && cachedMk.length) {
+    allMarketProducts = cachedMk;
+    var sm = document.getElementById('stat-market');
+    if (sm) sm.textContent = String(cachedMk.length);
+    renderMkPage();
+    renderDashMk();
+  }
+  const featuredCached = readFeaturedCache();
+  if (featuredCached && featuredCached.length) {
+    featuredTickerProducts = featuredCached;
+    renderTicker(featuredCached);
+  }
+}
+
 /* ── Load my products ── */
-async function loadMyProducts() {
+async function loadMyProducts(opts) {
+  const soft = opts && opts.soft === true;
   if (!firebaseUid) return;
   const grid = document.getElementById('inv-grid');
   const cacheKey = 'dealerMyProductsCache:' + firebaseUid;
   try {
     try {
-      const cached = JSON.parse(sessionStorage.getItem(cacheKey) || '[]');
+      const cached = JSON.parse(sessionStorage.getItem(cacheKey) || localStorage.getItem(cacheKey) || '[]');
       if (Array.isArray(cached) && cached.length) {
         renderDealerProducts(grid, cached);
       }
@@ -1451,10 +1487,12 @@ async function loadMyProducts() {
     myProducts = products || [];
     try {
       sessionStorage.setItem(cacheKey, JSON.stringify(myProducts));
+      localStorage.setItem(cacheKey, JSON.stringify(myProducts));
     } catch (_) {}
     renderDealerProducts(grid, myProducts);
+    markAgroSessionDashReady(firebaseUid);
   } catch(e) {
-    if (!myProducts || !myProducts.length) {
+    if (!soft && (!myProducts || !myProducts.length)) {
       grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🌱</div><h4>No products yet</h4><p>Add your first product to start selling</p></div>';
     }
   }
@@ -1792,7 +1830,8 @@ async function submitProduct(status) {
 }
 
 /* ── Marketplace ── */
-async function loadMarketplace() {
+async function loadMarketplace(opts) {
+  const soft = opts && opts.soft === true;
   const grid = document.getElementById('mk-grid');
   // Instant render from cache (no network blocking)
   const cached = readProductsCache();
@@ -1821,8 +1860,9 @@ async function loadMarketplace() {
     renderDashMk();
     await loadFeaturedTickerRows();
     renderTicker(featuredTickerProducts);
+    markAgroSessionDashReady(firebaseUid);
   } catch(e) {
-    if (!allMarketProducts.length) grid.innerHTML = '<div style="grid-column:1/-1;" class="empty-state"><div class="icon">😕</div><h4>Could not load marketplace</h4></div>';
+    if (!soft && !allMarketProducts.length) grid.innerHTML = '<div style="grid-column:1/-1;" class="empty-state"><div class="icon">😕</div><h4>Could not load marketplace</h4></div>';
   }
 }
 
@@ -1912,6 +1952,13 @@ function goToProduct(pid) {
   }
   sessionStorage.setItem('productsCache', JSON.stringify(allMarketProducts));
   localStorage.setItem('soko_products_cache_v1', JSON.stringify(allMarketProducts));
+  if (firebaseUid && myProducts && myProducts.length) {
+    try {
+      const key = 'dealerMyProductsCache:' + firebaseUid;
+      sessionStorage.setItem(key, JSON.stringify(myProducts));
+      localStorage.setItem(key, JSON.stringify(myProducts));
+    } catch (_) {}
+  }
   window.location.href = 'product-detail.html?id=' + pid;
 }
 

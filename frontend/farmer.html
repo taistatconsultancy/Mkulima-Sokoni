@@ -2477,7 +2477,29 @@ function exitSuperUser() {
     });
   }
 
-  async function loadProducts() {
+  function markFarmerSessionDashReady(uid) {
+    try {
+      if (uid) sessionStorage.setItem('mk_sess_farmer_ready_' + String(uid), '1');
+    } catch (_) {}
+  }
+
+  /** Same-session return from product detail: paint My Products from cache before routing so the dashboard is instant. */
+  function hydrateFarmerProductsFromSession(uid) {
+    if (!uid || sessionStorage.getItem('mk_sess_farmer_ready_' + String(uid)) !== '1') return;
+    const grid = document.getElementById('products-grid');
+    if (!grid) return;
+    const cacheKey = 'farmerMyProductsCache:' + uid;
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(cacheKey) || localStorage.getItem(cacheKey) || '[]');
+      if (Array.isArray(cached) && cached.length) {
+        myProducts = cached;
+        renderMyProducts(grid, cached);
+      }
+    } catch (_) {}
+  }
+
+  async function loadProducts(opts) {
+    const soft = opts && opts.soft === true;
     const grid = document.getElementById('products-grid');
     const loading = document.getElementById('products-loading');
     if (!grid) return;
@@ -2508,9 +2530,10 @@ function exitSuperUser() {
         localStorage.setItem(cacheKey, JSON.stringify(myProducts));
       } catch (_) {}
       renderMyProducts(grid, myProducts);
+      markFarmerSessionDashReady(uid);
     } catch {
       if (loading) loading.style.display = 'none';
-      if (!grid.querySelector('.product-card')) {
+      if (!soft && !grid.querySelector('.product-card')) {
         grid.querySelectorAll('.product-card,[data-empty]').forEach(el => el.remove());
         showProductsEmpty(grid, null, 'Error loading products — please refresh the page.');
       }
@@ -4241,7 +4264,9 @@ function exitSuperUser() {
     } catch(e) {}
     const gateKey = 'mk_bootstrap_last_farmer_' + (uidForKey || 'anon');
     const last = parseInt(localStorage.getItem(gateKey) || '0', 10) || 0;
-    const shouldShowGate = !last || (Date.now() - last) > (24 * 60 * 60 * 1000);
+    const sessDashReady = uidForKey && sessionStorage.getItem('mk_sess_farmer_ready_' + uidForKey) === '1';
+    const shouldShowGate =
+      (!last || (Date.now() - last) > (24 * 60 * 60 * 1000)) && !sessDashReady;
     if (shouldShowGate) _mkGateShow('Checking your profile…');
     try {
       // Load public config early (does not block routing).
@@ -4261,6 +4286,8 @@ function exitSuperUser() {
       /* Hide gate before profile API / loadFarmerProfile so the overlay does not block the UI. */
       _mkGateHide();
 
+      hydrateFarmerProductsFromSession(uid);
+
       // Fast path when we have a recent, versioned "profile required fields OK" cache.
       if (farmerHasProfileOkCached(uid)) {
         profileLocked = false;
@@ -4271,7 +4298,7 @@ function exitSuperUser() {
         applyProductTypeOptions('product');
         applyProductTypeOptions('edit');
         await loadUserProfile();
-        loadProducts();
+        loadProducts({ soft: sessDashReady });
         setTimeout(() => {
           loadMarketplaceListings();
           updateMarketplacePollingState();
@@ -4313,7 +4340,7 @@ function exitSuperUser() {
       applyProductTypeOptions('edit');
       await loadUserProfile();
       try { localStorage.setItem(gateKey, String(Date.now())); } catch(e) {}
-      loadProducts();
+      loadProducts({ soft: sessDashReady });
 
       if (!profileLocked) {
         setTimeout(() => {
