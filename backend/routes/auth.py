@@ -5,12 +5,16 @@ from flask import Blueprint, request, jsonify
 from models.user import User
 from models.farmer_profile import FarmerProfile
 from models.buyer_profile import BuyerProfile
-from auth.firebase_auth import verify_firebase_token, get_firebase_user
+from auth.firebase_auth import (
+    verify_firebase_token,
+    get_firebase_user,
+    generate_email_verification_link_for_email,
+)
 from auth.admin_auth import decode_token_if_admin
 from models.verification_audit import VerificationAudit, AdminImpersonationLog, AuthLoginAudit
 from services.admin_verification_service import apply_verification_change
 from utils.cloudinary_service import delete_image
-from utils.mailer import send_welcome_email, send_account_verified_email
+from utils.mailer import send_welcome_email, send_account_verified_email, send_email_verification_email
 import logging
 import uuid
 import re
@@ -306,17 +310,41 @@ def register():
         except Exception as e:
             logger.warning(f"Could not auto-create profiles: {str(e)}")
 
-        # Send welcome email (best-effort)
+        # Email verification: prefer Firebase oob link via our SMTP (reliable branded delivery)
+        verification_email_sent = False
         try:
-            send_welcome_email(email, first_name=first_name)
+            verify_link = generate_email_verification_link_for_email(email)
+            if verify_link:
+                verification_email_sent = send_email_verification_email(
+                    email, verify_link, first_name=first_name
+                )
+                if verification_email_sent:
+                    logger.info("Verification email sent via SMTP to %s", email)
+                else:
+                    logger.warning(
+                        "Verification link generated but SMTP did not send (check SMTP_ENABLED / credentials)"
+                    )
+            else:
+                logger.warning(
+                    "Could not generate email verification link (Firebase Admin service account required)"
+                )
         except Exception as e:
-            logger.warning("Welcome email skipped/failed: %s", e)
-        
-        return jsonify({
-            'success': True,
-            'user': user,
-            'message': 'User registered successfully'
-        }), 201
+            logger.warning("Verification email path failed: %s", e)
+
+        if not verification_email_sent:
+            try:
+                send_welcome_email(email, first_name=first_name)
+            except Exception as e:
+                logger.warning("Welcome email skipped/failed: %s", e)
+
+        return jsonify(
+            {
+                "success": True,
+                "user": user,
+                "message": "User registered successfully",
+                "verification_email_sent": verification_email_sent,
+            }
+        ), 201
         
     except Exception as e:
         logger.error(f"Registration error: {str(e)}")

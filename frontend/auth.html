@@ -610,10 +610,26 @@
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Registration failed');
 
-        // Send verification email and prompt user to verify
-        try { await sendEmailVerification(cred.user, actionCodeSettingsForVerification()); } catch (_) {}
+        // If backend did not send our SMTP verification email, ask Firebase to send its template
+        if (!data.verification_email_sent) {
+          try {
+            await sendEmailVerification(cred.user, actionCodeSettingsForVerification());
+          } catch (evErr) {
+            console.warn('sendEmailVerification', evErr);
+            showSuccess(
+              'Account created. We could not send a verification email automatically. Sign in and use “Resend verification email”, or ask support if this keeps happening.'
+            );
+            setLoading(btn, false, 'Create Account');
+            showVerifyOverlay(cred.user);
+            return;
+          }
+        }
         setLoading(btn, false, 'Create Account');
-        showSuccess('Account created. Please check your email to verify your account.');
+        showSuccess(
+          data.verification_email_sent
+            ? 'Account created. Check your inbox for an email with a link to verify your address.'
+            : 'Account created. Please check your email to verify your account.'
+        );
         showVerifyOverlay(cred.user);
       } catch (err) {
         setLoading(btn, false, 'Create Account');

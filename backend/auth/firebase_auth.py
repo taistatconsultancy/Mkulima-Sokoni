@@ -205,3 +205,30 @@ def get_firebase_user(uid):
         logger.error(f"Error getting Firebase user: {str(e)}")
         return None
 
+
+def generate_email_verification_link_for_email(email: str):
+    """
+    Build a Firebase-hosted email verification URL (oobCode) for custom SMTP delivery.
+    Requires Firebase Admin SDK with service-account credentials (not project-only init).
+    Returns None on failure.
+    """
+    if not email or not str(email).strip():
+        return None
+    if not _firebase_admin_available:
+        logger.warning("generate_email_verification_link_for_email: Firebase Admin not available")
+        return None
+    try:
+        base = (_strip_env_quotes(os.getenv("APP_PUBLIC_URL", "")) or _strip_env_quotes(os.getenv("PUBLIC_APP_URL", ""))).strip().rstrip("/")
+        if base:
+            settings = auth.ActionCodeSettings(
+                url=f"{base}/auth?next=choose-type",
+                handle_code_in_app=False,
+            )
+            link = auth.generate_email_verification_link(email.strip(), settings)
+        else:
+            link = auth.generate_email_verification_link(email.strip())
+        return link
+    except Exception as e:
+        logger.warning("generate_email_verification_link_for_email failed: %s", e)
+        return None
+
