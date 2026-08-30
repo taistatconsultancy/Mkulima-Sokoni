@@ -398,6 +398,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
     <button class="topbar-nav-link" onclick="showPage('add-product',this)">➕ Add Product</button>
     <button class="topbar-nav-link" onclick="showPage('orders',this)">🛒 Orders</button>
     <button class="topbar-nav-link" onclick="showPage('tenders',this)">📋 Tenders</button>
+    <button class="topbar-nav-link" onclick="showPage('analytics',this)">📊 Analytics</button>
     <button class="topbar-nav-link" onclick="showPage('messages',this)">💬 Messages <span id="dealerMessagesNavDot" class="messages-nav-dot"></span></button>
     <button class="topbar-nav-link" onclick="showPage('support',this)">💬 Support</button>
   </nav>
@@ -717,6 +718,21 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
   </div>
 </div>
 
+<!-- ── ANALYTICS ── -->
+<div id="analytics" class="page-section">
+  <div class="wrap">
+    <div class="section-card">
+      <h2>📊 Analytics</h2>
+      <p class="sub">Upcoming feature</p>
+      <div style="text-align:center;padding:40px 20px;color:var(--muted);">
+        <div style="font-size:32px;margin-bottom:8px;">📊</div>
+        <h4 style="margin:0 0 6px;color:var(--forest);">Upcoming feature</h4>
+        <p style="font-size:.82rem;margin:0;">We're building insights for orders, listings, and sales.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── MESSAGES ── -->
 <div id="messages" class="page-section">
   <div class="wrap">
@@ -790,7 +806,7 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
       <h2>👤 Business Profile</h2>
       <p class="sub">Manage your agro-dealer business information</p>
       <div id="profileCompletionWarning" style="display:none;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;padding:10px 12px;border-radius:10px;margin-bottom:12px;font-size:.85rem;font-weight:600;">
-        Complete mandatory fields (Company Name, Location, County, National ID). Your account stays pending until admin verifies it.
+        Complete mandatory fields (Company Name, Location, County). Your account stays pending until admin verifies it.
       </div>
       <form id="profileForm" onsubmit="saveProfile(event)">
         <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:16px;overflow-x:auto;">
@@ -814,7 +830,6 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
             </div>
             <div class="form-group"><label>Location *</label><input type="text" id="profile-location" placeholder="e.g. Nakuru" required /></div>
             <div class="form-group"><label>County *</label><input type="text" id="profile-county" placeholder="e.g. Nakuru" required /></div>
-            <div class="form-group"><label>National ID *</label><input type="text" id="profile-national-id" placeholder="e.g. 12345678" required /></div>
             <div class="form-group"><label>Verification status</label><p id="profile-verification-status" style="font-weight:600;color:var(--forest);margin:0;">—</p></div>
           </div>
         </div>
@@ -970,7 +985,7 @@ function writeProductsCache(products) {
 }
 const AGRO_PROFILE_TAB_ORDER = ['basic', 'business', 'additional'];
 const AGRO_PROFILE_REQUIRED_FIELDS = {
-  basic: ['profile-business', 'profile-location', 'profile-county', 'profile-national-id'],
+  basic: ['profile-business', 'profile-location', 'profile-county'],
   business: [],
   additional: []
 };
@@ -1382,8 +1397,7 @@ async function bootstrapAndRouteAgro(){
     var hasRequired = Boolean(
       String(p.farm_name || '').trim() &&
       String(p.location || '').trim() &&
-      String(p.county || '').trim() &&
-      String(p.national_id || '').trim()
+      String(p.county || '').trim()
     );
     profileLocked = !res.ok || !hasRequired;
     if (hasRequired) agroSetProfileOkCached(firebaseUid);
@@ -1412,8 +1426,7 @@ async function enforceAgroProfileCompletion(silent) {
     const hasRequired = Boolean(
       String(p.farm_name || '').trim() &&
       String(p.location || '').trim() &&
-      String(p.county || '').trim() &&
-      String(p.national_id || '').trim()
+      String(p.county || '').trim()
     );
     profileLocked = !hasRequired;
     if (profileLocked) {
@@ -1422,7 +1435,7 @@ async function enforceAgroProfileCompletion(silent) {
         : 'pending';
       sessionStorage.setItem(AGRO_GATE_STATUS_KEY, String(lockStatus).toLowerCase());
       showPage('profile');
-      if (!silent) window.SokoUI?.toast('Complete your profile details (company name, location, county, national ID) to continue.', 'warning');
+      if (!silent) window.SokoUI?.toast('Complete your profile details (company name, location, county) to continue.', 'warning');
       return;
     }
     agroSetProfileOkCached(firebaseUid);
@@ -1772,7 +1785,7 @@ function syncAgroUnitsByCategory() {
 
 async function submitProduct(status) {
   if (!firebaseUid) { await uiAlert('Please sign in first.', 'Sign in required'); return; }
-  if (profileLocked) { await uiAlert('Complete your profile (company name, location, county, national ID) before listing products.', 'Complete profile'); return; }
+  if (profileLocked) { await uiAlert('Complete your profile (company name, location, county) before listing products.', 'Complete profile'); return; }
   if (status === 'active' && agroAccountRejected) {
     await uiAlert('Your account is rejected. Contact support before publishing listings.', 'Account rejected');
     return;
@@ -2042,13 +2055,11 @@ async function loadProfile() {
     var hasReq = Boolean(
       String(prof.farm_name || '').trim() &&
       String(prof.location || '').trim() &&
-      String(prof.county || '').trim() &&
-      String(prof.national_id || '').trim()
+      String(prof.county || '').trim()
     );
     if (prof.farm_name) document.getElementById('profile-business').value = prof.farm_name;
     if (prof.location) document.getElementById('profile-location').value = prof.location;
     if (prof.county) document.getElementById('profile-county').value = prof.county;
-    if (prof.national_id) document.getElementById('profile-national-id').value = prof.national_id;
     if (prof.bio) document.getElementById('profile-about').value = prof.bio;
     var stDb = window.SokoStatus && window.SokoStatus.read
       ? window.SokoStatus.read(prof, 'farmer')
@@ -2170,8 +2181,7 @@ function updateAgroProfileWarning(profile, statusRaw) {
   var complete = Boolean(
     String(profile?.farm_name || '').trim() &&
     String(profile?.location || '').trim() &&
-    String(profile?.county || '').trim() &&
-    String(profile?.national_id || '').trim()
+    String(profile?.county || '').trim()
   );
   el.style.display = (!complete || !verified) ? 'block' : 'none';
 }
@@ -2188,7 +2198,6 @@ async function saveProfile(e) {
       farm_name: document.getElementById('profile-business').value.trim(),
       location: document.getElementById('profile-location').value.trim(),
       county: document.getElementById('profile-county').value.trim(),
-      national_id: document.getElementById('profile-national-id').value.trim(),
       bio: document.getElementById('profile-about').value.trim()
     };
     const res = await fetch(`${API}/profiles/farmer`, {

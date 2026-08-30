@@ -1028,8 +1028,8 @@ function exitSuperUser() {
     <button class="topbar-nav-link active" onclick="showPage('dashboard',this)">🏠 Dashboard</button>
     <button class="topbar-nav-link" onclick="showPage('tenders',this)">📋 Tenders</button>
     <button class="topbar-nav-link" onclick="showPage('orders',this)">🛒 Orders</button>
-    <button class="topbar-nav-link" onclick="showPage('messages',this)">💬 Messages <span class="nav-unread-dot" id="messagesNavDot"></span></button>
     <button class="topbar-nav-link" onclick="showPage('analytics',this)">📊 Analytics</button>
+    <button class="topbar-nav-link" onclick="showPage('messages',this)">💬 Messages <span class="nav-unread-dot" id="messagesNavDot"></span></button>
     <button class="topbar-nav-link" onclick="showPage('support',this)">💬 Support</button>
   </nav>
 
@@ -1140,6 +1140,23 @@ function exitSuperUser() {
     </div>
   </div>
 
+  <!-- ── ANALYTICS ── -->
+  <div id="analytics" class="page-section">
+    <div class="section-header">
+      <div class="section-header-text">
+        <div class="section-title">Analytics 📊</div>
+        <div class="section-subtitle">Upcoming feature</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="empty-state">
+        <div class="icon">📊</div>
+        <h4>Upcoming feature</h4>
+        <p style="font-size:.82rem;">We’re building insights for orders, tenders, and sales.</p>
+      </div>
+    </div>
+  </div>
+
   <!-- ── MESSAGES ── -->
   <div id="messages" class="page-section">
     <div class="section-header">
@@ -1175,23 +1192,6 @@ function exitSuperUser() {
           </div>
           <div class="chat-note">Unread messages show a red badge. Opening a thread marks it as read.</div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── ANALYTICS ── -->
-  <div id="analytics" class="page-section">
-    <div class="section-header">
-      <div class="section-header-text">
-        <div class="section-title">Analytics 📊</div>
-        <div class="section-subtitle">Upcoming feature</div>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="empty-state">
-        <div class="icon">📊</div>
-        <h4>Upcoming feature</h4>
-        <p style="font-size:.82rem;">We’re building insights for orders, tenders, and sales.</p>
       </div>
     </div>
   </div>
@@ -1249,7 +1249,7 @@ function exitSuperUser() {
     <div class="panel">
       <div id="profileAlert" class="alert"></div>
       <div id="profileCompletionWarning" class="alert error show" style="display:none;">
-        Complete mandatory fields (Farm Name, Location, County, National ID). Your account remains pending until verified.
+        Complete mandatory fields (Farm Name, Location, County). Your account remains pending until verified.
       </div>
 
       <div class="profile-tabs">
@@ -1276,25 +1276,6 @@ function exitSuperUser() {
                 <a href="/phone-sharing" class="btn btn-outline btn-sm" style="text-decoration:none;">📜 Phone sharing & Terms</a>
                 <a href="/phone-sharing" class="btn btn-primary btn-sm" style="text-decoration:none;">🔒 Revoke phone sharing</a>
               </div>
-            </div>
-            <div class="form-group form-full"><label>National ID *</label><input type="text" id="national-id" name="national_id" placeholder="e.g., 12345678" required /></div>
-            <div class="form-group">
-              <label>Upload ID Front</label>
-              <label class="file-label" for="id-front">📎 Click to upload front side</label>
-              <input type="file" id="id-front" name="id_front" accept="image/*" style="display:none;" />
-              <div id="id-front-preview" style="display:none;"><img id="id-front-img" src="" style="max-width:100%;max-height:130px;border-radius:8px;margin-top:6px;border:1.5px solid var(--border);" /></div>
-            </div>
-            <div class="form-group">
-              <label>Upload ID Back</label>
-              <label class="file-label" for="id-back">📎 Click to upload back side</label>
-              <input type="file" id="id-back" name="id_back" accept="image/*" style="display:none;" />
-              <div id="id-back-preview" style="display:none;"><img id="id-back-img" src="" style="max-width:100%;max-height:130px;border-radius:8px;margin-top:6px;border:1.5px solid var(--border);" /></div>
-            </div>
-            <div class="form-group form-full">
-              <label>Profile Selfie</label>
-              <label class="file-label" for="profile-selfie">🤳 Click to upload a clear selfie</label>
-              <input type="file" id="profile-selfie" name="profile_selfie" accept="image/*" style="display:none;" />
-              <div id="selfie-preview" style="display:none;"><img id="selfie-img" src="" style="max-width:180px;max-height:180px;border-radius:8px;margin-top:6px;border:1.5px solid var(--border);" /></div>
             </div>
           </div>
         </div>
@@ -3174,7 +3155,7 @@ function exitSuperUser() {
   }
   const PROFILE_TAB_ORDER = ['basic', 'farm', 'experience', 'additional'];
   const PROFILE_TAB_REQUIRED_FIELDS = {
-    basic: ['farm-name', 'location', 'county', 'national-id'],
+    basic: ['farm-name', 'location', 'county'],
     farm: [],
     experience: [],
     additional: []
@@ -3235,14 +3216,13 @@ function exitSuperUser() {
         const hasReq = Boolean(
           String(p.farm_name || '').trim() &&
           String(p.location || '').trim() &&
-          String(p.county || '').trim() &&
-          String(p.national_id || '').trim()
+          String(p.county || '').trim()
         );
         const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-        set('farm-name',''); set('location',''); set('county',''); set('national-id','');
+        set('farm-name',''); set('location',''); set('county','');
         set('ward',''); set('farm-size',''); set('farming-experience',''); set('bio','');
         set('farm-name', p.farm_name); set('location', p.location); set('county', p.county);
-        set('national-id', p.national_id); set('ward', p.ward);
+        set('ward', p.ward);
         set('farm-size', p.farm_size_acres); set('farming-experience', p.farming_experience_years);
         const csDb = window.SokoStatus && window.SokoStatus.read
           ? window.SokoStatus.read(p, 'farmer')
@@ -3264,9 +3244,6 @@ function exitSuperUser() {
         set('profile-image', currentImageUrl);
         if (p.user) { set('email', p.user.email || user.email); set('phone', p.user.phone_number || user.phone_number); }
         else { set('email', user.email); set('phone', user.phone_number); }
-        if (p.id_front_url)      { document.getElementById('id-front-img').src = p.id_front_url; document.getElementById('id-front-preview').style.display='block'; }
-        if (p.id_back_url)       { document.getElementById('id-back-img').src  = p.id_back_url;  document.getElementById('id-back-preview').style.display='block'; }
-        if (p.profile_selfie_url){ document.getElementById('selfie-img').src   = p.profile_selfie_url; document.getElementById('selfie-preview').style.display='block'; }
         if (p.crops) {
           const crops = typeof p.crops === 'string' ? JSON.parse(p.crops) : p.crops;
           const sel = document.getElementById('crops-select');
@@ -3385,7 +3362,6 @@ function exitSuperUser() {
               farm_name: profile.farm_name,
               location: profile.location,
               county: profile.county,
-              national_id: profile.national_id,
               ward: profile.ward || null,
               crops: profile.crops || null,
               livestock: profile.livestock || null,
@@ -3472,7 +3448,6 @@ function exitSuperUser() {
         farm_name: profile.farm_name,
         location: profile.location,
         county: profile.county,
-        national_id: profile.national_id,
         ward: profile.ward || null,
         crops: profile.crops || null,
         livestock: profile.livestock || null,
@@ -3521,19 +3496,12 @@ function exitSuperUser() {
         ...(JSON.parse(document.getElementById('livestock').value||'[]'))];
 
       const toBase64 = f => new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(f); });
-      const idFront = document.getElementById('id-front').files[0];
-      const idBack  = document.getElementById('id-back').files[0];
-      const selfie  = document.getElementById('profile-selfie').files[0];
 
       const body = {
         firebase_uid: uid,
         farm_name: document.getElementById('farm-name').value,
         location:  document.getElementById('location').value,
         county:    document.getElementById('county').value,
-        national_id: document.getElementById('national-id').value,
-        id_front:  idFront ? await toBase64(idFront) : null,
-        id_back:   idBack  ? await toBase64(idBack)  : null,
-        profile_selfie: selfie ? await toBase64(selfie) : null,
         ward: document.getElementById('ward').value || null,
         crops: selectedCrops.length ? JSON.stringify([...new Set(selectedCrops)]) : null,
         livestock: selectedLv.length ? JSON.stringify([...new Set(selectedLv)]) : null,
@@ -3705,8 +3673,7 @@ function exitSuperUser() {
     const complete = Boolean(
       String(profile?.farm_name || '').trim() &&
       String(profile?.location || '').trim() &&
-      String(profile?.county || '').trim() &&
-      String(profile?.national_id || '').trim()
+      String(profile?.county || '').trim()
     );
     warning.style.display = (!complete || !verified) ? 'block' : 'none';
   }
@@ -3896,18 +3863,6 @@ function exitSuperUser() {
   });
 
   /* ── Profile image preview ── */
-  document.getElementById('id-front').addEventListener('change', e => {
-    const f = e.target.files[0]; if (!f) return;
-    const r = new FileReader(); r.onload = ev => { document.getElementById('id-front-img').src = ev.target.result; document.getElementById('id-front-preview').style.display='block'; }; r.readAsDataURL(f);
-  });
-  document.getElementById('id-back').addEventListener('change', e => {
-    const f = e.target.files[0]; if (!f) return;
-    const r = new FileReader(); r.onload = ev => { document.getElementById('id-back-img').src = ev.target.result; document.getElementById('id-back-preview').style.display='block'; }; r.readAsDataURL(f);
-  });
-  document.getElementById('profile-selfie').addEventListener('change', e => {
-    const f = e.target.files[0]; if (!f) return;
-    const r = new FileReader(); r.onload = ev => { document.getElementById('selfie-img').src = ev.target.result; document.getElementById('selfie-preview').style.display='block'; }; r.readAsDataURL(f);
-  });
   function removeProfileImage() {
     document.getElementById('profile-image').value = '';
     currentImageUrl = '';
@@ -4346,8 +4301,7 @@ function exitSuperUser() {
       const hasRequired = Boolean(
         String(p.farm_name || '').trim() &&
         String(p.location || '').trim() &&
-        String(p.county || '').trim() &&
-        String(p.national_id || '').trim()
+        String(p.county || '').trim()
       );
       profileLocked = !res.ok || !hasRequired;
       if (hasRequired) farmerSetProfileOkCached(uid);
@@ -4421,8 +4375,7 @@ function exitSuperUser() {
       const hasRequired = Boolean(
         String(p.farm_name || '').trim() &&
         String(p.location || '').trim() &&
-        String(p.county || '').trim() &&
-        String(p.national_id || '').trim()
+        String(p.county || '').trim()
       );
       profileLocked = !hasRequired;
       if (profileLocked) {

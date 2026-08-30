@@ -270,30 +270,6 @@
           <input type="tel" id="phone" name="phone" readonly style="background: #f3f4f6;">
           <p class="help-text">Phone number is linked from your account</p>
         </div>
-        
-        <div class="form-group">
-          <label for="national-id">National ID *</label>
-          <input type="text" id="national-id" name="national_id" placeholder="e.g., 12345678" required>
-        </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label for="id-front">Upload ID Front *</label>
-            <input type="file" id="id-front" name="id_front" accept="image/*">
-            <p class="help-text">Upload front side of your ID</p>
-            <div id="id-front-preview" style="margin-top: 8px; display: none;">
-              <img id="id-front-img" src="" alt="ID Front Preview" style="max-width: 100%; max-height: 150px; border-radius: 8px; border: 2px solid #e5e7eb;">
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="id-back">Upload ID Back *</label>
-            <input type="file" id="id-back" name="id_back" accept="image/*">
-            <p class="help-text">Upload back side of your ID</p>
-            <div id="id-back-preview" style="margin-top: 8px; display: none;">
-              <img id="id-back-img" src="" alt="ID Back Preview" style="max-width: 100%; max-height: 150px; border-radius: 8px; border: 2px solid #e5e7eb;">
-            </div>
-          </div>
-        </div>
       </div>
       
       <!-- Business Details Tab -->
@@ -429,7 +405,6 @@
           document.getElementById('company-name').value = profile.company_name || '';
           document.getElementById('location').value = profile.location || '';
           document.getElementById('county').value = profile.county || '';
-          document.getElementById('national-id').value = profile.national_id || '';
           document.getElementById('business-type').value = profile.business_type || '';
           document.getElementById('business-registration').value = profile.business_registration_number || '';
           var verificationStatus = window.SokoStatus && window.SokoStatus.read
@@ -447,20 +422,6 @@
               document.getElementById('referral-other-container').style.display = 'block';
               document.getElementById('referral-other').value = profile.referral_other || '';
             }
-          }
-          
-          // Load image previews if URLs exist
-          if (profile.id_front_url) {
-            const preview = document.getElementById('id-front-preview');
-            const img = document.getElementById('id-front-img');
-            img.src = profile.id_front_url;
-            preview.style.display = 'block';
-          }
-          if (profile.id_back_url) {
-            const preview = document.getElementById('id-back-preview');
-            const img = document.getElementById('id-back-img');
-            img.src = profile.id_back_url;
-            preview.style.display = 'block';
           }
         }
         
@@ -525,27 +486,10 @@
         return;
       }
       
-      // Handle file uploads (convert to base64 for now - backend should handle file storage)
-      const idFrontFile = document.getElementById('id-front').files[0];
-      const idBackFile = document.getElementById('id-back').files[0];
-      
-      let idFrontBase64 = null;
-      let idBackBase64 = null;
-      
-      if (idFrontFile) {
-        idFrontBase64 = await fileToBase64(idFrontFile);
-      }
-      if (idBackFile) {
-        idBackBase64 = await fileToBase64(idBackFile);
-      }
-      
       const formData = {
         company_name: document.getElementById('company-name').value,
         location: document.getElementById('location').value,
         county: document.getElementById('county').value,
-        national_id: document.getElementById('national-id').value,
-        id_front: idFrontBase64,
-        id_back: idBackBase64,
         business_type: document.getElementById('business-type').value,
         business_registration_number: document.getElementById('business-registration').value,
         verification_status: document.getElementById('verification-status').value,
@@ -587,42 +531,6 @@
     // Image preview handlers
     window.addEventListener('DOMContentLoaded', function() {
       loadProfile();
-      
-      // ID Front preview
-      const idFrontInput = document.getElementById('id-front');
-      if (idFrontInput) {
-        idFrontInput.addEventListener('change', function(e) {
-          const file = e.target.files[0];
-          if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-              const preview = document.getElementById('id-front-preview');
-              const img = document.getElementById('id-front-img');
-              img.src = e.target.result;
-              preview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-          }
-        });
-      }
-      
-      // ID Back preview
-      const idBackInput = document.getElementById('id-back');
-      if (idBackInput) {
-        idBackInput.addEventListener('change', function(e) {
-          const file = e.target.files[0];
-          if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-              const preview = document.getElementById('id-back-preview');
-              const img = document.getElementById('id-back-img');
-              img.src = e.target.result;
-              preview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-          }
-        });
-      }
     });
   </script>
 <script src="/js/pwa-install.js"></script>

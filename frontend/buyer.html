@@ -703,8 +703,8 @@ function exitSuperUser() {
       🛒 Cart <span id="cartNavBadge" style="display:none;margin-left:6px;min-width:18px;height:18px;padding:0 6px;border-radius:999px;background:var(--lime);color:#16302b;font-weight:800;font-size:.72rem;align-items:center;justify-content:center;"></span>
     </button>
     <button class="topbar-nav-link" onclick="showPage('orders',this)">🧾 Orders</button>
-    <button class="topbar-nav-link" onclick="showPage('messages',this)">💬 Messages <span id="buyerMessagesNavDot" class="messages-nav-dot"></span></button>
     <button class="topbar-nav-link" onclick="showPage('analytics',this)">📊 Analytics</button>
+    <button class="topbar-nav-link" onclick="showPage('messages',this)">💬 Messages <span id="buyerMessagesNavDot" class="messages-nav-dot"></span></button>
     <button class="topbar-nav-link" onclick="showPage('support',this)">💬 Support</button>
   </nav>
 
@@ -960,7 +960,7 @@ function exitSuperUser() {
     <div class="panel">
       <div id="profileAlert" class="alert"></div>
       <div id="profileCompletionWarning" class="alert error show" style="display:none;">
-        Complete mandatory fields (Company/Farm Name, Location, County, National ID). Your account remains pending until verified.
+        Complete mandatory fields (Company/Farm Name, Location, County). Your account remains pending until verified.
       </div>
 
       <div class="profile-tabs">
@@ -997,26 +997,6 @@ function exitSuperUser() {
               <div class="form-hint">Linked from your account</div>
               <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
                 <a href="/phone-sharing" class="btn btn-outline btn-sm" style="text-decoration:none;">📜 Phone sharing & Terms</a>
-              </div>
-            </div>
-            <div class="form-group form-full">
-              <label>National ID *</label>
-              <input type="text" id="national-id" name="national_id" placeholder="e.g., 12345678" required />
-            </div>
-            <div class="form-group">
-              <label>Upload ID Front</label>
-              <label class="file-label" for="id-front">📎 Click to upload front side</label>
-              <input type="file" id="id-front" name="id_front" accept="image/*" style="display:none;" />
-              <div id="id-front-preview" style="display:none;">
-                <img id="id-front-img" src="" style="max-width:100%;max-height:130px;border-radius:8px;margin-top:6px;border:1.5px solid var(--border);" />
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Upload ID Back</label>
-              <label class="file-label" for="id-back">📎 Click to upload back side</label>
-              <input type="file" id="id-back" name="id_back" accept="image/*" style="display:none;" />
-              <div id="id-back-preview" style="display:none;">
-                <img id="id-back-img" src="" style="max-width:100%;max-height:130px;border-radius:8px;margin-top:6px;border:1.5px solid var(--border);" />
               </div>
             </div>
           </div>
@@ -2698,8 +2678,7 @@ function exitSuperUser() {
     const complete = Boolean(
       String(profile?.company_name || '').trim() &&
       String(profile?.location || '').trim() &&
-      String(profile?.county || '').trim() &&
-      String(profile?.national_id || '').trim()
+      String(profile?.county || '').trim()
     );
     warning.style.display = (!complete || !verified) ? 'block' : 'none';
   }
@@ -2734,14 +2713,12 @@ function exitSuperUser() {
         const hasReq = Boolean(
           String(p.company_name || '').trim() &&
           String(p.location || '').trim() &&
-          String(p.county || '').trim() &&
-          String(p.national_id || '').trim()
+          String(p.county || '').trim()
         );
         const set = (id, val) => { const el = document.getElementById(id); if(el) el.value = val||''; };
         set('company-name', p.company_name);
         set('location', p.location);
         set('county', p.county);
-        set('national-id', p.national_id);
         set('business-type', p.business_type);
         set('business-registration', p.business_registration_number);
         const vsDb = window.SokoStatus && window.SokoStatus.read
@@ -2764,8 +2741,6 @@ function exitSuperUser() {
         set('profile-image', currentImageUrl);
         if (p.user) { set('email', p.user.email || user.email); set('phone', p.user.phone_number || user.phone_number); }
         else { set('email', user.email); set('phone', user.phone_number); }
-        if (p.id_front_url) { document.getElementById('id-front-img').src = p.id_front_url; document.getElementById('id-front-preview').style.display='block'; }
-        if (p.id_back_url)  { document.getElementById('id-back-img').src  = p.id_back_url;  document.getElementById('id-back-preview').style.display='block'; }
       }
     } catch(err) { console.error(err); }
     finally {
@@ -2788,18 +2763,11 @@ function exitSuperUser() {
       const uid = user.firebase_uid || user.id;
       if (!uid) { showAlert('Authentication required','error'); return; }
 
-      const toBase64 = f => new Promise((res,rej) => { const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(f); });
-      const idFront = document.getElementById('id-front').files[0];
-      const idBack  = document.getElementById('id-back').files[0];
-
       const body = {
         firebase_uid: uid,
         company_name: document.getElementById('company-name').value,
         location:     document.getElementById('location').value,
         county:       document.getElementById('county').value,
-        national_id:  document.getElementById('national-id').value,
-        id_front:  idFront ? await toBase64(idFront) : null,
-        id_back:   idBack  ? await toBase64(idBack)  : null,
         business_type: document.getElementById('business-type').value,
         business_registration_number: document.getElementById('business-registration').value,
         bio: document.getElementById('bio').value,
@@ -2842,18 +2810,6 @@ function exitSuperUser() {
     document.getElementById('profile-image-preview').innerHTML = '<span style="font-size:.75rem;color:var(--muted);">No image</span>';
     document.getElementById('remove-profile-image').style.display = 'none';
   }
-
-  /* ── ID preview handlers ── */
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('id-front').addEventListener('change', e => {
-      const f = e.target.files[0]; if(!f) return;
-      const r = new FileReader(); r.onload = ev => { document.getElementById('id-front-img').src=ev.target.result; document.getElementById('id-front-preview').style.display='block'; }; r.readAsDataURL(f);
-    });
-    document.getElementById('id-back').addEventListener('change', e => {
-      const f = e.target.files[0]; if(!f) return;
-      const r = new FileReader(); r.onload = ev => { document.getElementById('id-back-img').src=ev.target.result; document.getElementById('id-back-preview').style.display='block'; }; r.readAsDataURL(f);
-    });
-  });
 
   /* ── Logout ── */
   async function logout(skip=false) {
@@ -2969,8 +2925,7 @@ function exitSuperUser() {
       const hasRequired = Boolean(
         String(p.company_name || '').trim() &&
         String(p.location || '').trim() &&
-        String(p.county || '').trim() &&
-        String(p.national_id || '').trim()
+        String(p.county || '').trim()
       );
       profileLocked = !res.ok || !hasRequired;
       if (hasRequired) buyerSetProfileOkCached(uid);
@@ -3031,8 +2986,7 @@ function exitSuperUser() {
       const hasRequired = Boolean(
         String(p.company_name || '').trim() &&
         String(p.location || '').trim() &&
-        String(p.county || '').trim() &&
-        String(p.national_id || '').trim()
+        String(p.county || '').trim()
       );
       profileLocked = !hasRequired;
       if (profileLocked) {

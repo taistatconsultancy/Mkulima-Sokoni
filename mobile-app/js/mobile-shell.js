@@ -155,16 +155,14 @@
       return Boolean(
         String(prof.company_name || "").trim() &&
         String(prof.location || "").trim() &&
-        String(prof.county || "").trim() &&
-        String(prof.national_id || "").trim()
+        String(prof.county || "").trim()
       );
     }
     // farmer + agro-dealer use farmer profile
     return Boolean(
       String(prof.farm_name || "").trim() &&
       String(prof.location || "").trim() &&
-      String(prof.county || "").trim() &&
-      String(prof.national_id || "").trim()
+      String(prof.county || "").trim()
     );
   }
 
@@ -202,8 +200,8 @@
         title: "Complete your profile to continue",
         sub:
           role === "buyer"
-            ? "Required: company name, location, county, and national ID."
-            : "Required: farm name/company name, location, county, and national ID.",
+            ? "Required: company name, location, and county."
+            : "Required: farm name/company name, location, and county.",
         loading: false,
         actions: true,
         primaryLabel: "Complete profile on dashboard",
