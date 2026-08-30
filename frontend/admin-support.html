@@ -282,6 +282,12 @@
             <div class="stat-value" id="stat-verified">—</div>
             <div class="stat-change" id="stat-verified-pct">Loading…</div>
           </div>
+          <div class="stat-card">
+            <div class="stat-icon">💬</div>
+            <div class="stat-label">Open Messages</div>
+            <div class="stat-value" id="stat-unreplied">—</div>
+            <div class="stat-change">Awaiting admin reply</div>
+          </div>
         </div>
 
         <div class="tabs">
@@ -604,6 +610,7 @@
               <div class="stat-card"><div class="stat-icon">🌾</div><div class="stat-label">Total Products</div><div class="stat-value" id="an-total-products">—</div><div class="stat-change" id="an-active-products">Loading…</div></div>
               <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">Verified Users</div><div class="stat-value" id="an-verified">—</div><div class="stat-change" id="an-verified-pct">Loading…</div></div>
               <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-label">Pending Verification</div><div class="stat-value" id="an-pending">—</div><div class="stat-change">Requires action</div></div>
+              <div class="stat-card"><div class="stat-icon">💬</div><div class="stat-label">Open Messages</div><div class="stat-value" id="an-unreplied">—</div><div class="stat-change">Awaiting admin reply</div></div>
             </div>
           </div>
         </div>
@@ -678,8 +685,8 @@
     /* ── Live Stats ── */
     function setStatsErrorState(msg) {
       var valueIds = [
-        'stat-total-users', 'stat-pending', 'stat-products', 'stat-verified',
-        'an-total-users', 'an-pending', 'an-total-products', 'an-verified'
+        'stat-total-users', 'stat-pending', 'stat-products', 'stat-verified', 'stat-unreplied',
+        'an-total-users', 'an-pending', 'an-total-products', 'an-verified', 'an-unreplied'
       ];
       valueIds.forEach(function(id) {
         var el = document.getElementById(id);
@@ -700,6 +707,7 @@
       document.getElementById('stat-active-products').textContent = fmt(s && s.active_products) + ' active';
       document.getElementById('stat-verified').textContent = fmt(verifiedUsers);
       document.getElementById('stat-verified-pct').textContent = pct + '% verified';
+      document.getElementById('stat-unreplied').textContent = fmt(s && s.open_unreplied_messages);
 
       document.getElementById('an-total-users').textContent = fmt(totalUsers);
       document.getElementById('an-new-week').textContent = '+' + fmt(s && s.new_this_week) + ' this week';
@@ -708,6 +716,7 @@
       document.getElementById('an-verified').textContent = fmt(verifiedUsers);
       document.getElementById('an-verified-pct').textContent = pct + '% verified';
       document.getElementById('an-pending').textContent = fmt(s && s.pending_verification);
+      document.getElementById('an-unreplied').textContent = fmt(s && s.open_unreplied_messages);
     }
 
     async function loadAdminStats(retryCount) {

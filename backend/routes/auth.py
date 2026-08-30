@@ -690,13 +690,17 @@ def admin_stats():
             fetch_one=True
         )['c']
 
+        from models.support_ticket import SupportTicket
+        open_unreplied_messages = SupportTicket.count_open_unreplied()
+
         return jsonify({
             'total_users': total_users,
             'new_this_week': new_this_week,
             'pending_verification': pending_verification,
             'verified_users': verified_users,
             'total_products': total_products,
-            'active_products': active_products
+            'active_products': active_products,
+            'open_unreplied_messages': open_unreplied_messages,
         }), 200
 
     except Exception as e:

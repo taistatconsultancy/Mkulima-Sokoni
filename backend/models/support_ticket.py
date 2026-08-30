@@ -515,6 +515,25 @@ class SupportTicket:
         return dict(stats)
 
     @staticmethod
+    def count_open_unreplied():
+        """Tickets that are open/in progress and waiting on an admin reply."""
+        query = """
+            SELECT COUNT(*) AS c
+            FROM support_tickets st
+            LEFT JOIN LATERAL (
+                SELECT sender_type
+                FROM support_ticket_messages
+                WHERE ticket_id = st.id AND is_internal_note = FALSE
+                ORDER BY created_at DESC
+                LIMIT 1
+            ) last_msg ON TRUE
+            WHERE st.status IN ('open', 'in_progress')
+              AND COALESCE(last_msg.sender_type, 'user') = 'user'
+        """
+        row = execute_query(query, fetch_one=True) or {}
+        return int(row.get('c') or 0)
+
+    @staticmethod
     def create_admin_outreach_ticket(user_id, subject, message, admin_name='Admin Support'):
         """Create a support ticket opened by admin and send first admin message."""
         user = User.get_user_by_id(user_id)
