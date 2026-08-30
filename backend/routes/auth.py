@@ -14,7 +14,7 @@ from auth.admin_auth import decode_token_if_admin
 from models.verification_audit import VerificationAudit, AdminImpersonationLog, AuthLoginAudit
 from services.admin_verification_service import apply_verification_change
 from utils.cloudinary_service import delete_image
-from utils.mailer import send_welcome_email, send_account_verified_email, send_email_verification_email
+from utils.mailer import send_welcome_email, send_account_verified_email, send_account_rejected_email, send_email_verification_email
 import logging
 import uuid
 import re
@@ -791,19 +791,26 @@ def admin_patch_verification(user_id):
         except Exception as sms_exc:
             logger.warning('Verification SMS notification failed (non-fatal): %s', sms_exc)
 
-        # Email user on approval (best-effort)
+        # Email user on approval or rejection (best-effort)
         try:
-            if (result.get('new_status') or '').lower() == 'verified':
-                user_row = User.get_user_by_id(user_id)
-                if user_row:
-                    to_email = (user_row.get('email') or '').strip()
-                    if to_email:
+            new_status = (result.get('new_status') or '').lower()
+            user_row = User.get_user_by_id(user_id)
+            if user_row:
+                to_email = (user_row.get('email') or '').strip()
+                if to_email:
+                    if new_status == 'verified':
                         send_account_verified_email(
                             to_email,
                             first_name=user_row.get('first_name'),
                         )
+                    elif new_status == 'rejected':
+                        send_account_rejected_email(
+                            to_email,
+                            first_name=user_row.get('first_name'),
+                            reason=reason,
+                        )
         except Exception as e:
-            logger.warning('Verification approval email skipped/failed (non-fatal): %s', e)
+            logger.warning('Verification status email skipped/failed (non-fatal): %s', e)
 
         return jsonify({'success': True, **result}), 200
     except ValueError as exc:

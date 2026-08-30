@@ -7,6 +7,7 @@ from models.farmer_profile import FarmerProfile
 from utils.cloudinary_service import upload_base64_image, delete_image
 from auth.admin_auth import decode_token_if_admin
 from utils.profile_verification_display import effective_verification_badge
+from utils.profile_completeness import farmer_profile_complete
 import logging
 import re
 from urllib.parse import urlparse
@@ -449,7 +450,6 @@ def get_product_detail(product_id):
                        fp.farm_name,
                        fp.location AS seller_location,
                        fp.county AS seller_county,
-                       fp.national_id AS seller_national_id,
                        fp.bio,
                        fp.profile_image_url,
                        fp.certification_status,
@@ -470,13 +470,11 @@ def get_product_detail(product_id):
                 seller = dict(result)
                 seller['profile_id'] = str(seller['profile_id'])
                 cert = (seller.get('certification_status') or '').lower()
-                profile_complete = bool(
-                    str(seller.get('farm_name') or '').strip()
-                    and str(seller.get('seller_location') or '').strip()
-                    and str(seller.get('seller_county') or '').strip()
-                    and str(seller.get('seller_national_id') or '').strip()
-                )
-                seller.pop('seller_national_id', None)
+                profile_complete = farmer_profile_complete({
+                    'farm_name': seller.get('farm_name'),
+                    'location': seller.get('seller_location'),
+                    'county': seller.get('seller_county'),
+                })
                 # Never expose phone numbers in public product detail payload.
                 seller.pop('phone_number', None)
                 seller['certification_status_db'] = cert

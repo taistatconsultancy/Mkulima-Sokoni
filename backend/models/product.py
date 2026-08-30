@@ -163,7 +163,6 @@ class Product:
             conditions.append("NULLIF(TRIM(COALESCE(fp.farm_name, '')), '') IS NOT NULL")
             conditions.append("NULLIF(TRIM(COALESCE(fp.location, '')), '') IS NOT NULL")
             conditions.append("NULLIF(TRIM(COALESCE(fp.county, '')), '') IS NOT NULL")
-            conditions.append("NULLIF(TRIM(COALESCE(fp.national_id, '')), '') IS NOT NULL")
             
             where_clause = " AND ".join(conditions)
             params.extend([limit, offset])
@@ -236,7 +235,6 @@ class Product:
                 "NULLIF(TRIM(COALESCE(fp.farm_name, '')), '') IS NOT NULL",
                 "NULLIF(TRIM(COALESCE(fp.location, '')), '') IS NOT NULL",
                 "NULLIF(TRIM(COALESCE(fp.county, '')), '') IS NOT NULL",
-                "NULLIF(TRIM(COALESCE(fp.national_id, '')), '') IS NOT NULL",
             ]
             params = [status]
             if category:

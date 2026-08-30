@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import smtplib
 import ssl
+import html as html_module
 from email.message import EmailMessage
 from email.utils import formataddr
 from typing import Optional, Iterable
@@ -499,5 +500,44 @@ def send_account_verified_email(to_email: str, first_name: Optional[str] = None)
 <div style="margin-top:18px;color:#6b7280;font-size:13px;">Thanks,<br /><strong>Mkulima Sokoni Team</strong></div>
 """
     html = _email_base_html("Account verified", "Your account is verified.", html_body)
+    return send_email(to_email, subject, text, html=html)
+
+
+def send_account_rejected_email(
+    to_email: str,
+    first_name: Optional[str] = None,
+    reason: Optional[str] = None,
+) -> bool:
+    name = (first_name or "").strip()
+    greet = f"Hi {name}," if name else "Hi,"
+    reason_text = (reason or "Please review your profile details and resubmit for verification.").strip()
+    reason_safe = html_module.escape(reason_text)
+    subject = "Update on your Mkulima Sokoni verification"
+    text = "\n".join(
+        [
+            greet,
+            "",
+            "Your account verification could not be approved at this time.",
+            f"Reason: {reason_text}",
+            "",
+            "Please update your profile and contact support if you need help.",
+            "",
+            "Thanks,",
+            "Mkulima Sokoni Team",
+        ]
+    )
+    landing = _landing_url()
+    app = _app_public_url()
+    action = f"{app}/auth" if app else ""
+    html_body = f"""\
+<h1 style="margin:0 0 10px;font-size:20px;color:#111827;">Verification update</h1>
+<p style="margin:0 0 14px;color:#374151;line-height:1.6;">Your account verification could not be approved at this time.</p>
+<p style="margin:0 0 14px;color:#374151;line-height:1.6;"><strong>Reason:</strong> {reason_safe}</p>
+<p style="margin:0 0 14px;color:#374151;line-height:1.6;">Please update your profile and resubmit for review.</p>
+{(_button_html('Update your profile', action) if action else '')}
+{(_plain_link_html('Landing page', landing) if landing else '')}
+<div style="margin-top:18px;color:#6b7280;font-size:13px;">Thanks,<br /><strong>Mkulima Sokoni Team</strong></div>
+"""
+    html = _email_base_html("Verification update", "Your verification could not be approved.", html_body)
     return send_email(to_email, subject, text, html=html)
 

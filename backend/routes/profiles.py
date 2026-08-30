@@ -8,6 +8,7 @@ from models.buyer_profile import BuyerProfile
 from auth.firebase_auth import verify_firebase_token
 from utils.cloudinary_service import upload_image_from_url
 from utils.mailer import resolve_support_team_emails, send_support_verification_request_email
+from utils.profile_completeness import farmer_profile_complete, buyer_profile_complete
 import logging
 import uuid
 from typing import Optional
@@ -26,24 +27,6 @@ def _user_submitted_verification_status(raw):
     if s == 'pending':
         return 'pending'
     return None
-
-
-def _farmer_profile_complete(data):
-    return bool(
-        str(data.get('farm_name') or '').strip() and
-        str(data.get('location') or '').strip() and
-        str(data.get('county') or '').strip() and
-        str(data.get('national_id') or '').strip()
-    )
-
-
-def _buyer_profile_complete(data):
-    return bool(
-        str(data.get('company_name') or '').strip() and
-        str(data.get('location') or '').strip() and
-        str(data.get('county') or '').strip() and
-        str(data.get('national_id') or '').strip()
-    )
 
 
 def _maybe_notify_support_profile_submitted(
@@ -351,7 +334,7 @@ def create_farmer_profile():
                 logger.info(f"Uploaded profile selfie to Cloudinary: {profile_selfie_url}")
         
         cert_status = _user_submitted_verification_status(data.get('certification_status'))
-        if not _farmer_profile_complete(data):
+        if not farmer_profile_complete(data):
             cert_status = 'pending'
 
         # Optional geo coordinates (validated). These are privacy-rounded client-side.
@@ -440,7 +423,7 @@ def create_farmer_profile():
             submitted_pending=submitted_pending,
             prev_status=prev_status,
             new_status=new_status,
-            profile_complete=_farmer_profile_complete(data),
+            profile_complete=farmer_profile_complete(data),
         )
         
         return jsonify({
@@ -571,7 +554,7 @@ def create_buyer_profile():
                 logger.info(f"Uploaded ID back to Cloudinary: {id_back_url}")
         
         buyer_vstatus = _user_submitted_verification_status(data.get('verification_status'))
-        if not _buyer_profile_complete(data):
+        if not buyer_profile_complete(data):
             buyer_vstatus = 'pending'
         # Check if profile exists
         if BuyerProfile.profile_exists(user_id):
@@ -629,7 +612,7 @@ def create_buyer_profile():
             submitted_pending=submitted_pending,
             prev_status=prev_status,
             new_status=new_status,
-            profile_complete=_buyer_profile_complete(data),
+            profile_complete=buyer_profile_complete(data),
         )
         
         return jsonify({
