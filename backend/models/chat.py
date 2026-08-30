@@ -146,6 +146,36 @@ class Conversation:
             logger.error(f"Error in Conversation.get_by_id_for_user: {str(e)}")
             raise
 
+    @staticmethod
+    def count_admin_unreplied_conversations():
+        """
+        Conversations with unread buyer/seller messages (matches admin chat red badges).
+        """
+        try:
+            query = """
+                SELECT COUNT(*) AS c
+                FROM conversations c
+                JOIN farmer_profiles fp ON fp.id = c.farmer_profile_id
+                LEFT JOIN LATERAL (
+                    SELECT
+                        COUNT(*) FILTER (
+                            WHERE m.is_read = FALSE AND m.sender_user_id <> c.buyer_user_id
+                        )::int AS unread_for_buyer,
+                        COUNT(*) FILTER (
+                            WHERE m.is_read = FALSE AND m.sender_user_id <> fp.user_id
+                        )::int AS unread_for_seller
+                    FROM messages m
+                    WHERE m.conversation_id = c.id
+                ) uc ON TRUE
+                WHERE c.last_message_at IS NOT NULL
+                  AND (COALESCE(uc.unread_for_buyer, 0) + COALESCE(uc.unread_for_seller, 0)) > 0
+            """
+            row = execute_query(query, fetch_one=True) or {}
+            return int(row.get('c') or 0)
+        except Exception as e:
+            logger.error(f"Error in Conversation.count_admin_unreplied_conversations: {str(e)}")
+            raise
+
 
 class Message:
     """Represents a chat message in a conversation."""

@@ -690,8 +690,8 @@ def admin_stats():
             fetch_one=True
         )['c']
 
-        from models.support_ticket import SupportTicket
-        open_unreplied_messages = SupportTicket.count_open_unreplied()
+        from models.chat import Conversation
+        open_unreplied_messages = Conversation.count_admin_unreplied_conversations()
 
         return jsonify({
             'total_users': total_users,
