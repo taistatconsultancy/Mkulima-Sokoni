@@ -26,7 +26,8 @@ class FarmerProfile:
         return la, ln
 
     @staticmethod
-    def create_profile(user_id, farm_name=None, location=None, county=None, 
+    def create_profile(user_id, farm_name=None, location=None, county=None,
+                      latitude=None, longitude=None,
                       farm_size_acres=None, farming_experience_years=None,
                       certification_status='pending', bio=None, profile_image_url=None,
                       national_id=None, id_front_url=None, id_back_url=None,
@@ -44,14 +45,14 @@ class FarmerProfile:
             # Use explicit UUID casting in the query
             query = """
                 INSERT INTO farmer_profiles 
-                (user_id, farm_name, location, county, farm_size_acres, 
+                (user_id, farm_name, location, county, latitude, longitude, farm_size_acres, 
                  farming_experience_years, certification_status, bio, profile_image_url,
                  national_id, id_front_url, id_back_url, profile_selfie_url, ward, crops, livestock,
                  referral_source, referral_other, created_at, updated_at)
-                VALUES (%s::uuid, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                VALUES (%s::uuid, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 RETURNING *
             """
-            params = (user_id, farm_name, location, county, farm_size_acres,
+            params = (user_id, farm_name, location, county, latitude, longitude, farm_size_acres,
                      farming_experience_years, certification_status, bio, profile_image_url,
                      national_id, id_front_url, id_back_url, profile_selfie_url, ward, crops, livestock,
                      referral_source, referral_other)
