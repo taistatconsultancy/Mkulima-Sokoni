@@ -157,6 +157,7 @@
     .form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:.86rem;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--cream);outline:none;transition:all .2s;}
     .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--leaf);background:#fff;box-shadow:0 0 0 3px rgba(64,145,108,.1);}
     .field-invalid{border-color:#dc2626 !important;box-shadow:0 0 0 3px rgba(220,38,38,.12) !important;}
+    .profile-tab-btn.tab-locked{opacity:.45;cursor:not-allowed;pointer-events:none;color:var(--muted) !important;border-bottom-color:transparent !important;}
     .form-group textarea{resize:vertical;min-height:80px;}
     .form-submit{padding:12px 24px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--forest),var(--leaf));color:#fff;font-size:.88rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;box-shadow:0 4px 14px rgba(27,67,50,.22);}
     .form-submit:hover{opacity:.92;transform:translateY(-2px);}
@@ -346,6 +347,7 @@
     .bootstrap-retry.show{display:block;}
     .bootstrap-retry .btn-sm{width:100%;}
   </style>
+  <link rel="stylesheet" href="/css/site-chrome.css" />
 </head>
 <body>
 
@@ -869,18 +871,26 @@ function exitSuperUser(){sessionStorage.removeItem('superUser');sessionStorage.r
         <div class="footer-flogo-mark"><img src="assets/img/logo.jpeg" alt="Mkulima Sokoni logo" /></div>
         <div class="footer-flogo-label"><strong>Mkulima Sokoni</strong><span>From farm to market, fairly.</span></div>
       </div>
-      <div class="footer-social">
-        <a href="#" title="Facebook">f</a><a href="#" title="X / Twitter">𝕏</a><a href="#" title="WhatsApp">💬</a><a href="#" title="Instagram">📷</a>
-      </div>
-    </div>
+</div>
     <div class="footer-col"><h5>About Us</h5><ul><li><a href="/about#story">Our Story</a></li><li><a href="/about#mission">Mission &amp; Vision</a></li><li><a href="/about#team">Team</a></li></ul></div>
     <div class="footer-col"><h5>Help Center</h5><ul><li><a href="/">Home</a></li><li><a href="/faq">FAQs</a></li><li><a href="/faq#contact">Contact Us</a></li></ul></div>
     <div class="footer-col"><h5>Legal</h5><ul><li><a href="/terms">Terms of Service</a></li><li><a href="/privacy">Privacy Policy</a></li></ul></div>
     <div class="footer-col"><h5>Resources</h5><ul><li><a href="/how-it-works">How It Works</a></li><li><a href="/market">Marketplace</a></li></ul></div>
   </div>
-  <div class="footer-bottom">
-    <p class="footer-copy">© <span id="yr"></span> <strong>Mkulima Sokoni</strong>. All rights reserved.</p>
-    <div class="footer-badges"><span class="footer-badge">Powered by TaiStat Firm</span></div>
+    <div class="footer-bottom site-bottom-bar">
+    <div class="site-social-links">
+      <a href="https://www.facebook.com/profile.php?id=61590622072682" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on Facebook">
+        <img src="/assets/img/icons/facebook.svg" alt="" />
+      </a>
+      <a href="https://www.tiktok.com/@mkulimasokoni" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on TikTok">
+        <img src="/assets/img/icons/tiktok.svg" alt="" />
+      </a>
+    </div>
+    <p class="footer-copy">© <span class="yr" id="yr"></span> <strong>Mkulima Sokoni</strong>. All rights reserved.</p>
+    <a class="site-powered-by" href="https://taistat.com/" target="_blank" rel="noopener noreferrer">
+      <img src="/assets/img/taistat-logo.png" alt="TaiStat Firm" />
+      <span>Powered by TaiStat Firm</span>
+    </a>
   </div>
 </footer>
 
@@ -2069,12 +2079,72 @@ async function loadProfile() {
     if (stEl) stEl.textContent = stDb.charAt(0).toUpperCase() + stDb.slice(1).toLowerCase();
     applyAgroAccountStatusUi(stDb, false);
     updateAgroProfileWarning(prof, stDb);
+    updateAgroProfileTabLockState();
   } catch(e) {
     try { applyAgroGreetingFromProfile({}); } catch(e2) {}
   }
+  updateAgroProfileTabLockState();
+}
+
+function getAgroTabNameFromBtn(btn) {
+  var onclick = (btn && btn.getAttribute('onclick')) || '';
+  var m = onclick.match(/switchProfileTab\('([^']+)'/);
+  return m ? m[1] : null;
+}
+
+function isAgroProfileTabComplete(tabName) {
+  var fields = AGRO_PROFILE_REQUIRED_FIELDS[tabName] || [];
+  if (!fields.length) return true;
+  return fields.every(function(id) {
+    var field = document.getElementById(id);
+    return field && String(field.value || '').trim();
+  });
+}
+
+function getFirstIncompleteAgroTabIndex() {
+  for (var i = 0; i < AGRO_PROFILE_TAB_ORDER.length; i++) {
+    var tab = AGRO_PROFILE_TAB_ORDER[i];
+    var fields = AGRO_PROFILE_REQUIRED_FIELDS[tab] || [];
+    if (fields.length && !isAgroProfileTabComplete(tab)) return i;
+  }
+  return AGRO_PROFILE_TAB_ORDER.length;
+}
+
+function updateAgroProfileTabLockState() {
+  var unlockThrough = getFirstIncompleteAgroTabIndex();
+  document.querySelectorAll('#profile .profile-tab-btn').forEach(function(btn) {
+    var tabName = getAgroTabNameFromBtn(btn);
+    if (!tabName) return;
+    var idx = AGRO_PROFILE_TAB_ORDER.indexOf(tabName);
+    var locked = idx > unlockThrough;
+    btn.classList.toggle('tab-locked', locked);
+    btn.setAttribute('aria-disabled', locked ? 'true' : 'false');
+  });
+}
+
+function canSwitchToAgroTab(targetName) {
+  var targetIdx = AGRO_PROFILE_TAB_ORDER.indexOf(targetName);
+  if (targetIdx < 0) return true;
+  for (var i = 0; i < targetIdx; i++) {
+    var tab = AGRO_PROFILE_TAB_ORDER[i];
+    var fields = AGRO_PROFILE_REQUIRED_FIELDS[tab] || [];
+    if (fields.length && !validateAgroProfileTab(tab)) return false;
+  }
+  return true;
+}
+
+function getActiveAgroProfileTab() {
+  var active = document.querySelector('#profile .profile-tab-btn.active');
+  if (!active) return 'basic';
+  var name = getAgroTabNameFromBtn(active);
+  return name || 'basic';
 }
 
 function switchProfileTab(name, btn) {
+  var current = getActiveAgroProfileTab();
+  var currentIdx = AGRO_PROFILE_TAB_ORDER.indexOf(current);
+  var targetIdx = AGRO_PROFILE_TAB_ORDER.indexOf(name);
+  if (targetIdx > currentIdx && !canSwitchToAgroTab(name)) return;
   document.querySelectorAll('#profile .profile-tab-btn').forEach(function(b){
     b.classList.remove('active');
     b.style.color = 'var(--muted)';
@@ -2093,6 +2163,7 @@ function switchProfileTab(name, btn) {
   var activeIndex = AGRO_PROFILE_TAB_ORDER.indexOf(name);
   if (backBtn) backBtn.style.display = activeIndex > 0 ? '' : 'none';
   if (saveBtn) saveBtn.textContent = name === 'additional' ? 'Save Changes' : 'Next';
+  updateAgroProfileTabLockState();
 }
 
 function markAgroFieldInvalid(field) {
@@ -2148,6 +2219,7 @@ function wireAgroRequiredFieldValidation() {
     if (!field) return;
     field.addEventListener('input', function(){
       if (String(field.value || '').trim()) clearAgroFieldInvalid(field);
+      updateAgroProfileTabLockState();
     });
   });
 }
@@ -2677,5 +2749,6 @@ document.addEventListener('click', function(e) {
 }, true);
 </script>
 <script src="/js/pwa-install.js"></script>
+<script src="/js/site-chrome.js"></script>
 </body>
 </html>

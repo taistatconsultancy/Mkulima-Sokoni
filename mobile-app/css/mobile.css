@@ -229,9 +229,30 @@ img { max-width: 100%; height: auto; }
   backdrop-filter: blur(4px);
   border-top: 1px solid var(--border);
   padding: 10px 12px;
+  z-index: 15;
 }
 
 .sticky-cta .btn { width: 100%; }
+
+.site-app-footer {
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.site-app-footer .footer-copy {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .site-app-footer.site-bottom-bar {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .site-app-footer .site-powered-by {
+    align-self: center;
+  }
+}
 
 .notice {
   border: 1px dashed #cbd5e1;

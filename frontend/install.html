@@ -27,7 +27,7 @@
     }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
     html{scroll-behavior:smooth;}
-    body{font-family:'DM Sans',system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.55;min-height:100vh;}
+    body{font-family:'DM Sans',system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.55;min-height:100vh;padding-bottom:calc(72px + env(safe-area-inset-bottom, 0px));}
     a{color:inherit;text-decoration:none;}
     .topbar{position:sticky;top:0;z-index:50;background:var(--forest);color:#fff;display:flex;align-items:center;gap:12px;padding:12px 18px;}
     .topbar img{width:34px;height:34px;border-radius:9px;background:#fff;}
@@ -95,6 +95,7 @@
     footer{padding:30px 20px 36px;text-align:center;color:var(--muted);font-size:.78rem;}
     footer a{color:var(--forest);font-weight:700;}
   </style>
+  <link rel="stylesheet" href="/css/site-chrome.css" />
 </head>
 <body>
   <header class="topbar">
@@ -174,7 +175,23 @@
     · <a href="/">Back to home</a>
   </footer>
 
+  <footer class="site-bottom-bar site-bottom-bar--fixed" aria-label="Site links">
+    <div class="site-social-links">
+      <a href="https://www.facebook.com/profile.php?id=61590622072682" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on Facebook">
+        <img src="/assets/img/icons/facebook.svg" alt="" />
+      </a>
+      <a href="https://www.tiktok.com/@mkulimasokoni" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on TikTok">
+        <img src="/assets/img/icons/tiktok.svg" alt="" />
+      </a>
+    </div>
+    <a class="site-powered-by" href="https://taistat.com/" target="_blank" rel="noopener noreferrer">
+      <img src="/assets/img/taistat-logo.png" alt="TaiStat Firm" />
+      <span>Powered by TaiStat Firm</span>
+    </a>
+  </footer>
+
   <script src="/js/pwa-install.js"></script>
+  <script src="/js/site-chrome.js"></script>
   <script>
     (function () {
       var INSTALL_URL = (window.location.origin || 'https://www.mkulimasokoni.com') + '/install';

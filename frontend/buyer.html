@@ -401,8 +401,13 @@
     }
     .profile-tab-btn:hover { color: var(--forest); }
     .profile-tab-btn.active { color: var(--leaf); border-bottom-color: var(--leaf); }
+    .profile-tab-btn.tab-locked { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
     .profile-tab-content { display: none; }
     .profile-tab-content.active { display: block; }
+    .field-invalid {
+      border-color: #dc2626 !important;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, .12) !important;
+    }
 
     /* Alert */
     .alert { display: none; padding: 11px 14px; border-radius: 10px; margin-bottom: 18px; font-size: .84rem; font-weight: 600; }
@@ -634,6 +639,7 @@
     .bootstrap-retry.show { display:block; }
     .bootstrap-retry .btn { width: 100%; }
   </style>
+  <link rel="stylesheet" href="/css/site-chrome.css" />
 </head>
 <body>
 
@@ -1119,13 +1125,7 @@ function exitSuperUser() {
           <span>From farm to market, fairly.</span>
         </div>
       </div>
-      <div class="footer-social">
-        <a href="#" title="Facebook">f</a>
-        <a href="#" title="X / Twitter">𝕏</a>
-        <a href="#" title="WhatsApp">💬</a>
-        <a href="#" title="Instagram">📷</a>
-      </div>
-    </div>
+</div>
     <div class="footer-col">
       <h5>About Us</h5>
       <ul>
@@ -1157,11 +1157,20 @@ function exitSuperUser() {
       </ul>
     </div>
   </div>
-  <div class="footer-bottom">
-    <p class="footer-copy">© <span id="yr"></span> <strong>Mkulima Sokoni</strong>. All rights reserved.</p>
-    <div class="footer-badges">
-      <span class="footer-badge">Powered by TaiStat Firm</span>
+    <div class="footer-bottom site-bottom-bar">
+    <div class="site-social-links">
+      <a href="https://www.facebook.com/profile.php?id=61590622072682" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on Facebook">
+        <img src="/assets/img/icons/facebook.svg" alt="" />
+      </a>
+      <a href="https://www.tiktok.com/@mkulimasokoni" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on TikTok">
+        <img src="/assets/img/icons/tiktok.svg" alt="" />
+      </a>
     </div>
+    <p class="footer-copy">© <span class="yr" id="yr"></span> <strong>Mkulima Sokoni</strong>. All rights reserved.</p>
+    <a class="site-powered-by" href="https://taistat.com/" target="_blank" rel="noopener noreferrer">
+      <img src="/assets/img/taistat-logo.png" alt="TaiStat Firm" />
+      <span>Powered by TaiStat Firm</span>
+    </a>
   </div>
 </footer>
 
@@ -2623,12 +2632,103 @@ function exitSuperUser() {
   async function submitContact(e) { e.preventDefault(); await uiAlert('Message sent! Our team will get back to you shortly.', 'Success'); e.target.reset(); }
 
   /* ── Profile tabs ── */
+  const PROFILE_TAB_ORDER = ['basic', 'business', 'additional'];
+  const PROFILE_TAB_REQUIRED_FIELDS = {
+    basic: ['company-name', 'location', 'county'],
+    business: [],
+    additional: []
+  };
+
+  function getProfileTabNameFromBtn(btn) {
+    const onclick = (btn && btn.getAttribute('onclick')) || '';
+    const m = onclick.match(/switchTab\('([^']+)'/);
+    return m ? m[1] : null;
+  }
+
+  function markFieldAsInvalid(field) {
+    if (!field) return;
+    field.classList.add('field-invalid');
+  }
+
+  function clearFieldInvalidState(field) {
+    if (!field) return;
+    field.classList.remove('field-invalid');
+  }
+
+  function isProfileTabComplete(tabName) {
+    const fields = PROFILE_TAB_REQUIRED_FIELDS[tabName] || [];
+    if (!fields.length) return true;
+    return fields.every((id) => {
+      const field = document.getElementById(id);
+      return field && String(field.value || '').trim();
+    });
+  }
+
+  function getFirstIncompleteTabIndex() {
+    for (let i = 0; i < PROFILE_TAB_ORDER.length; i++) {
+      const tab = PROFILE_TAB_ORDER[i];
+      const fields = PROFILE_TAB_REQUIRED_FIELDS[tab] || [];
+      if (fields.length && !isProfileTabComplete(tab)) return i;
+    }
+    return PROFILE_TAB_ORDER.length;
+  }
+
+  function updateProfileTabLockState() {
+    const unlockThrough = getFirstIncompleteTabIndex();
+    document.querySelectorAll('.profile-tab-btn').forEach((btn) => {
+      const tabName = getProfileTabNameFromBtn(btn);
+      if (!tabName) return;
+      const idx = PROFILE_TAB_ORDER.indexOf(tabName);
+      const locked = idx > unlockThrough;
+      btn.classList.toggle('tab-locked', locked);
+      btn.setAttribute('aria-disabled', locked ? 'true' : 'false');
+    });
+  }
+
+  function validateProfileTab(tabName) {
+    const fields = PROFILE_TAB_REQUIRED_FIELDS[tabName] || [];
+    let firstInvalid = null;
+    fields.forEach((id) => {
+      const field = document.getElementById(id);
+      if (!field) return;
+      const value = String(field.value || '').trim();
+      if (!value) {
+        markFieldAsInvalid(field);
+        if (!firstInvalid) firstInvalid = field;
+      } else {
+        clearFieldInvalidState(field);
+      }
+    });
+    if (firstInvalid) {
+      showAlert('Please fill all mandatory fields in this tab before proceeding.', 'error');
+      firstInvalid.focus();
+      return false;
+    }
+    return true;
+  }
+
+  function canSwitchToTab(targetName) {
+    const targetIdx = PROFILE_TAB_ORDER.indexOf(targetName);
+    if (targetIdx < 0) return true;
+    for (let i = 0; i < targetIdx; i++) {
+      const tab = PROFILE_TAB_ORDER[i];
+      const fields = PROFILE_TAB_REQUIRED_FIELDS[tab] || [];
+      if (fields.length && !validateProfileTab(tab)) return false;
+    }
+    return true;
+  }
+
   function switchTab(name, btn) {
+    const current = getActiveProfileTab();
+    const currentIdx = PROFILE_TAB_ORDER.indexOf(current);
+    const targetIdx = PROFILE_TAB_ORDER.indexOf(name);
+    if (targetIdx > currentIdx && !canSwitchToTab(name)) return;
     document.querySelectorAll('.profile-tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.profile-tab-content').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + name).classList.add('active');
     updateProfilePrimaryAction();
+    updateProfileTabLockState();
   }
 
   function getActiveProfileTab() {
@@ -2653,14 +2753,15 @@ function exitSuperUser() {
   function handleProfilePrimaryAction() {
     const btn = document.getElementById('save-profile-btn');
     if (!btn) return;
+    const active = getActiveProfileTab();
     if (btn.dataset.action === 'save') {
+      if (!validateProfileTab(active)) return;
       document.getElementById('buyerProfileForm').requestSubmit();
       return;
     }
-    const order = ['basic', 'business', 'additional'];
-    const active = getActiveProfileTab();
-    const i = order.indexOf(active);
-    const next = i >= 0 ? order[i + 1] : null;
+    if (!validateProfileTab(active)) return;
+    const i = PROFILE_TAB_ORDER.indexOf(active);
+    const next = i >= 0 ? PROFILE_TAB_ORDER[i + 1] : null;
     if (!next) return;
     const nextBtn = document.querySelector('.profile-tab-btn[onclick*="' + next + '"]');
     if (nextBtn) switchTab(next, nextBtn);
@@ -2746,6 +2847,7 @@ function exitSuperUser() {
     finally {
       saveBtn.disabled = false; saveSpn.style.display = 'none';
       updateProfilePrimaryAction();
+      updateProfileTabLockState();
     }
   }
 
@@ -3013,6 +3115,15 @@ function exitSuperUser() {
     if (prof && prof.classList.contains('active')) loadBuyerProfile();
   });
 
+  Object.values(PROFILE_TAB_REQUIRED_FIELDS).flat().forEach((id) => {
+    const field = document.getElementById(id);
+    if (!field) return;
+    field.addEventListener('input', () => {
+      if (String(field.value || '').trim()) clearFieldInvalidState(field);
+      updateProfileTabLockState();
+    });
+  });
+
   (function(){
     try {
       var u=JSON.parse(localStorage.getItem('user')||'null'), role=localStorage.getItem('userRole')||'';
@@ -3040,5 +3151,6 @@ function exitSuperUser() {
   }, true);
 </script>
 <script src="/js/pwa-install.js"></script>
+<script src="/js/site-chrome.js"></script>
 </body>
 </html>

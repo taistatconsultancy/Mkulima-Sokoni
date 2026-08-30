@@ -87,6 +87,17 @@
       background: white;
       border-bottom-color: #27AE60;
     }
+
+    .tab.tab-locked {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    
+    .field-invalid {
+      border-color: #dc2626 !important;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, .12) !important;
+    }
     
     .tab-content {
       display: none;
@@ -674,17 +685,114 @@
     }
     
     // Tab switching
+    const PROFILE_TAB_ORDER = ['basic', 'farm', 'experience', 'additional'];
+    const PROFILE_TAB_REQUIRED_FIELDS = {
+      basic: ['farm-name', 'location', 'county'],
+      farm: [],
+      experience: [],
+      additional: []
+    };
+
+    function getProfileTabNameFromBtn(btn) {
+      const onclick = (btn && btn.getAttribute('onclick')) || '';
+      const m = onclick.match(/switchTab\('([^']+)'/);
+      return m ? m[1] : null;
+    }
+
+    function getActiveProfileTab() {
+      const active = document.querySelector('.tab-content.active');
+      return active && active.id ? active.id : 'basic';
+    }
+
+    function markFieldAsInvalid(field) {
+      if (!field) return;
+      field.classList.add('field-invalid');
+    }
+
+    function clearFieldInvalidState(field) {
+      if (!field) return;
+      field.classList.remove('field-invalid');
+    }
+
+    function isProfileTabComplete(tabName) {
+      const fields = PROFILE_TAB_REQUIRED_FIELDS[tabName] || [];
+      if (!fields.length) return true;
+      return fields.every((id) => {
+        const field = document.getElementById(id);
+        return field && String(field.value || '').trim();
+      });
+    }
+
+    function getFirstIncompleteTabIndex() {
+      for (let i = 0; i < PROFILE_TAB_ORDER.length; i++) {
+        const tab = PROFILE_TAB_ORDER[i];
+        const fields = PROFILE_TAB_REQUIRED_FIELDS[tab] || [];
+        if (fields.length && !isProfileTabComplete(tab)) return i;
+      }
+      return PROFILE_TAB_ORDER.length;
+    }
+
+    function updateProfileTabLockState() {
+      const unlockThrough = getFirstIncompleteTabIndex();
+      document.querySelectorAll('.tab').forEach((btn) => {
+        const tabName = getProfileTabNameFromBtn(btn);
+        if (!tabName) return;
+        const idx = PROFILE_TAB_ORDER.indexOf(tabName);
+        const locked = idx > unlockThrough;
+        btn.classList.toggle('tab-locked', locked);
+        btn.setAttribute('aria-disabled', locked ? 'true' : 'false');
+      });
+    }
+
+    function validateProfileTab(tabName) {
+      const fields = PROFILE_TAB_REQUIRED_FIELDS[tabName] || [];
+      let firstInvalid = null;
+      fields.forEach((id) => {
+        const field = document.getElementById(id);
+        if (!field) return;
+        if (!String(field.value || '').trim()) {
+          markFieldAsInvalid(field);
+          if (!firstInvalid) firstInvalid = field;
+        } else {
+          clearFieldInvalidState(field);
+        }
+      });
+      if (firstInvalid) {
+        showAlert('Please fill all mandatory fields in this tab before proceeding.', 'error');
+        firstInvalid.focus();
+        return false;
+      }
+      return true;
+    }
+
+    function canSwitchToTab(targetName) {
+      const targetIdx = PROFILE_TAB_ORDER.indexOf(targetName);
+      if (targetIdx < 0) return true;
+      for (let i = 0; i < targetIdx; i++) {
+        const tab = PROFILE_TAB_ORDER[i];
+        const fields = PROFILE_TAB_REQUIRED_FIELDS[tab] || [];
+        if (fields.length && !validateProfileTab(tab)) return false;
+      }
+      return true;
+    }
+
     function switchTab(tabName, tabButton) {
+      const current = getActiveProfileTab();
+      const currentIdx = PROFILE_TAB_ORDER.indexOf(current);
+      const targetIdx = PROFILE_TAB_ORDER.indexOf(tabName);
+      if (targetIdx > currentIdx && !canSwitchToTab(tabName)) return;
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
       if (tabButton) tabButton.classList.add('active');
       document.getElementById(tabName).classList.add('active');
+      updateProfileTabLockState();
     }
+
     function goToNextTab(currentTab) {
-      const tabOrder = ['basic', 'farm', 'experience', 'additional'];
-      const idx = tabOrder.indexOf(currentTab);
-      if (idx < 0 || idx >= tabOrder.length - 1) return;
-      const nextTab = tabOrder[idx + 1];
+      const idx = PROFILE_TAB_ORDER.indexOf(currentTab);
+      if (idx < 0 || idx >= PROFILE_TAB_ORDER.length - 1) return;
+      if (!validateProfileTab(currentTab)) return;
+      const nextTab = PROFILE_TAB_ORDER[idx + 1];
       const nextTabBtn = document.querySelector('.tab[onclick*="' + nextTab + '"]');
       switchTab(nextTab, nextTabBtn);
     }
@@ -779,6 +887,7 @@
       } catch (error) {
         console.error('Error loading profile:', error);
       }
+      updateProfileTabLockState();
     }
 
     function updateAccountStatus(rawStatus) {
@@ -894,6 +1003,15 @@
     // Image preview handlers
     window.addEventListener('DOMContentLoaded', function() {
       loadProfile();
+      Object.values(PROFILE_TAB_REQUIRED_FIELDS).flat().forEach((id) => {
+        const field = document.getElementById(id);
+        if (!field) return;
+        field.addEventListener('input', () => {
+          if (String(field.value || '').trim()) clearFieldInvalidState(field);
+          updateProfileTabLockState();
+        });
+      });
+      updateProfileTabLockState();
       
       // Update crops display when selection changes
       const cropsSelect = document.getElementById('crops-select');

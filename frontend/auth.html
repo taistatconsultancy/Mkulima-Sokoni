@@ -48,6 +48,7 @@
       align-items: center;
       justify-content: center;
       padding: 1.5rem;
+      padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
       position: relative;
       overflow-x: hidden;
     }
@@ -169,6 +170,7 @@
       .role-tab-icon { margin-bottom: 0; }
     }
   </style>
+  <link rel="stylesheet" href="/css/site-chrome.css" />
 </head>
 <body>
   <div class="auth-wrapper">
@@ -286,6 +288,21 @@
       <a href="/">← Back to Mkulima Sokoni Home</a>
     </div>
   </div>
+
+  <footer class="site-bottom-bar site-bottom-bar--fixed" aria-label="Site links">
+    <div class="site-social-links">
+      <a href="https://www.facebook.com/profile.php?id=61590622072682" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on Facebook">
+        <img src="/assets/img/icons/facebook.svg" alt="" />
+      </a>
+      <a href="https://www.tiktok.com/@mkulimasokoni" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on TikTok">
+        <img src="/assets/img/icons/tiktok.svg" alt="" />
+      </a>
+    </div>
+    <a class="site-powered-by" href="https://taistat.com/" target="_blank" rel="noopener noreferrer">
+      <img src="/assets/img/taistat-logo.png" alt="TaiStat Firm" />
+      <span>Powered by TaiStat Firm</span>
+    </a>
+  </footer>
 
   <!-- Firebase SDK -->
   <script type="module">
@@ -828,5 +845,6 @@
     })();
   </script>
 <script src="/js/pwa-install.js"></script>
+<script src="/js/site-chrome.js"></script>
 </body>
 </html>

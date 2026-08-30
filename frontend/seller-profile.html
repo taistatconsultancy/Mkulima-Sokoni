@@ -168,6 +168,7 @@
       .back-bar { padding: 10px 14px 0; }
     }
   </style>
+  <link rel="stylesheet" href="/css/site-chrome.css" />
 </head>
 <body>
 
@@ -253,9 +254,20 @@
     <div><p style="font-size:.82rem;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:8px;">Legal</p><a href="/terms" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Terms of Service</a><a href="/privacy" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Privacy Policy</a></div>
     <div><p style="font-size:.82rem;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:8px;">Resources</p><a href="/how-it-works" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">How It Works</a><a href="/market" style="display:block;font-size:.78rem;color:rgba(255,255,255,.45);margin-bottom:5px;">Marketplace</a></div>
   </div>
-  <div class="footer-bottom" style="border-top:1px solid rgba(255,255,255,.1);padding-top:16px;">
-    <p class="footer-copy">© <span id="yr"></span> <strong>Mkulima sokoni</strong>. All rights reserved.</p>
-    <span class="footer-badge">Powered by TaiStat Firm</span>
+    <div class="footer-bottom site-bottom-bar" style="border-top:1px solid rgba(255,255,255,.1);padding-top:16px;">
+    <div class="site-social-links">
+      <a href="https://www.facebook.com/profile.php?id=61590622072682" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on Facebook">
+        <img src="/assets/img/icons/facebook.svg" alt="" />
+      </a>
+      <a href="https://www.tiktok.com/@mkulimasokoni" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on TikTok">
+        <img src="/assets/img/icons/tiktok.svg" alt="" />
+      </a>
+    </div>
+    <p class="footer-copy">© <span class="yr" id="yr"></span> <strong>Mkulima sokoni</strong>. All rights reserved.</p>
+    <a class="site-powered-by" href="https://taistat.com/" target="_blank" rel="noopener noreferrer">
+      <img src="/assets/img/taistat-logo.png" alt="TaiStat Firm" />
+      <span>Powered by TaiStat Firm</span>
+    </a>
   </div>
 </footer>
 
@@ -587,5 +599,6 @@ if (isSignedIn()) {
 window.addEventListener('DOMContentLoaded', loadProfile);
 </script>
 <script src="/js/pwa-install.js"></script>
+<script src="/js/site-chrome.js"></script>
 </body>
 </html>

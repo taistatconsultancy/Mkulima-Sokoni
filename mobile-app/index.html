@@ -8,6 +8,7 @@
   <link rel="manifest" href="/mobile-app/manifest.json" />
   <link rel="icon" href="/mobile-app/assets/icons/icon-192.svg" />
   <link rel="stylesheet" href="/mobile-app/css/mobile.css" />
+  <link rel="stylesheet" href="/css/site-chrome.css" />
   <script>
     window.si = window.si || function () { (window.si.q = window.si.q || []).push(arguments) };
   </script>
@@ -32,9 +33,25 @@
     <div class="sticky-cta" id="stickyCta" style="display:none;">
       <button class="btn primary" id="stickyActionBtn">Action</button>
     </div>
+
+    <footer class="site-bottom-bar site-bottom-bar--light site-app-footer" aria-label="Site links">
+      <div class="site-social-links">
+        <a href="https://www.facebook.com/profile.php?id=61590622072682" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on Facebook">
+          <img src="/assets/img/icons/facebook.svg" alt="" />
+        </a>
+        <a href="https://www.tiktok.com/@mkulimasokoni" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on TikTok">
+          <img src="/assets/img/icons/tiktok.svg" alt="" />
+        </a>
+      </div>
+      <a class="site-powered-by" href="https://taistat.com/" target="_blank" rel="noopener noreferrer">
+        <img src="/assets/img/taistat-logo.png" alt="TaiStat Firm" />
+        <span>Powered by TaiStat Firm</span>
+      </a>
+    </footer>
   </div>
 
   <script src="/mobile-app/js/api-client.js"></script>
   <script src="/mobile-app/js/mobile-shell.js"></script>
+  <script src="/js/site-chrome.js"></script>
 </body>
 </html>

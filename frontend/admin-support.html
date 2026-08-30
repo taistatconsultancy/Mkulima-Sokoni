@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/site-chrome.css" />
   <script>
     window.si = window.si || function () { (window.si.q = window.si.q || []).push(arguments) };
   </script>
@@ -618,9 +619,20 @@
         <a href="/privacy" style="color:rgba(255,255,255,.5);">Privacy Policy</a>
         <a href="/how-it-works" style="color:rgba(255,255,255,.5);">How It Works</a>
       </div>
-      <div style="max-width:1400px;margin:0 auto;padding:14px 28px;border-top:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <p class="footer-text">&copy; <span id="year"></span> <strong>Mkulima Sokoni</strong>. All rights reserved. &middot; <a href="/admin-support">Dashboard</a></p>
-        <span style="font-size:.68rem;color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:3px 10px;">Powered by TaiStat Firm</span>
+      <div class="footer-bottom site-bottom-bar" style="max-width:1400px;margin:0 auto;padding:14px 28px;border-top:1px solid rgba(255,255,255,.1);">
+        <div class="site-social-links">
+          <a href="https://www.facebook.com/profile.php?id=61590622072682" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on Facebook">
+            <img src="/assets/img/icons/facebook.svg" alt="" />
+          </a>
+          <a href="https://www.tiktok.com/@mkulimasokoni" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on TikTok">
+            <img src="/assets/img/icons/tiktok.svg" alt="" />
+          </a>
+        </div>
+        <p class="footer-text">&copy; <span class="yr" id="year"></span> <strong>Mkulima Sokoni</strong>. All rights reserved. &middot; <a href="/admin-support">Dashboard</a></p>
+        <a class="site-powered-by" href="https://taistat.com/" target="_blank" rel="noopener noreferrer">
+          <img src="/assets/img/taistat-logo.png" alt="TaiStat Firm" />
+          <span>Powered by TaiStat Firm</span>
+        </a>
       </div>
     </footer>
   </div>
@@ -629,9 +641,8 @@
   <script src="js/support-center.js"></script>
   <script src="js/featured-ticker-sync.js"></script>
   <script src="js/status-utils.js"></script>
+  <script src="/js/site-chrome.js"></script>
   <script>
-    document.getElementById("year").textContent = new Date().getFullYear();
-
     var API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? 'http://localhost:5000/api' : '/api';
 

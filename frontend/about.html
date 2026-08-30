@@ -80,6 +80,7 @@
     @media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr;gap:24px;}.footer-grid>div:first-child{grid-column:1/-1;}}
     @media(max-width:640px){.topbar{padding:0 14px;}.content{padding:32px 16px 40px;}.hero h1{font-size:1.8rem;}.footer-grid{grid-template-columns:1fr 1fr;gap:24px;}}
   </style>
+  <link rel="stylesheet" href="/css/site-chrome.css" />
 </head>
 <body>
 
@@ -185,16 +186,26 @@
         <div class="footer-flogo-mark"><img src="assets/img/logo.jpeg" alt="Mkulima sokoni" /></div>
         <div class="footer-flogo-label"><strong>Mkulima sokoni</strong><span>From farm to market, fairly.</span></div>
       </div>
-      <div class="footer-social"><a href="#" title="Facebook">f</a><a href="#" title="X / Twitter">𝕏</a><a href="#" title="WhatsApp">💬</a><a href="#" title="Instagram">📷</a></div>
-    </div>
+</div>
     <div class="footer-col"><h5>About Us</h5><ul><li><a href="/about#story">Our Story</a></li><li><a href="/about#mission">Mission &amp; Vision</a></li><li><a href="/about#team">Team</a></li></ul></div>
     <div class="footer-col"><h5>Help Center</h5><ul><li><a href="/">Home</a></li><li><a href="/faq">FAQs</a></li><li><a href="/faq#contact">Contact Us</a></li></ul></div>
     <div class="footer-col"><h5>Legal</h5><ul><li><a href="/terms">Terms of Service</a></li><li><a href="/privacy">Privacy Policy</a></li></ul></div>
     <div class="footer-col"><h5>Resources</h5><ul><li><a href="/how-it-works">How It Works</a></li><li><a href="/market">Marketplace</a></li></ul></div>
   </div>
-  <div class="footer-bottom">
-    <p class="footer-copy">© <span id="yr"></span> <strong>Mkulima sokoni</strong>. All rights reserved.</p>
-    <span class="footer-badge">Powered by TaiStat Firm</span>
+    <div class="footer-bottom site-bottom-bar">
+    <div class="site-social-links">
+      <a href="https://www.facebook.com/profile.php?id=61590622072682" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on Facebook">
+        <img src="/assets/img/icons/facebook.svg" alt="" />
+      </a>
+      <a href="https://www.tiktok.com/@mkulimasokoni" target="_blank" rel="noopener noreferrer" aria-label="Mkulima Sokoni on TikTok">
+        <img src="/assets/img/icons/tiktok.svg" alt="" />
+      </a>
+    </div>
+    <p class="footer-copy">© <span class="yr" id="yr"></span> <strong>Mkulima sokoni</strong>. All rights reserved.</p>
+    <a class="site-powered-by" href="https://taistat.com/" target="_blank" rel="noopener noreferrer">
+      <img src="/assets/img/taistat-logo.png" alt="TaiStat Firm" />
+      <span>Powered by TaiStat Firm</span>
+    </a>
   </div>
 </footer>
 
@@ -213,5 +224,6 @@ document.getElementById('yr').textContent=new Date().getFullYear();
 })();
 </script>
 <script src="/js/pwa-install.js"></script>
+<script src="/js/site-chrome.js"></script>
 </body>
 </html>
