@@ -12,6 +12,7 @@ firebase_service_account.json
 backend/firebase_service_account.json
 
 # Virtual environments
+src/
 mku_env/
 venv/
 env/
